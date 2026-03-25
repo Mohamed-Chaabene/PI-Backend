@@ -1,0 +1,142 @@
+package t.esprit.arctic.jobmatch.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import t.esprit.arctic.jobmatch.dto.ChoixDTO;
+import t.esprit.arctic.jobmatch.dto.QuestionDTO;
+import t.esprit.arctic.jobmatch.dto.DomaineDTO;
+import t.esprit.arctic.jobmatch.entity.*;
+import t.esprit.arctic.jobmatch.repository.QuestionRepository;
+import t.esprit.arctic.jobmatch.repository.EntretienRepository;
+import t.esprit.arctic.jobmatch.repository.DomaineRepository;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class QuestionService {
+
+    @Autowired
+    private QuestionRepository questionRepository;
+
+    @Autowired
+    private EntretienRepository entretienRepository;
+
+    @Autowired
+    private DomaineRepository domaineRepository;
+
+    public QuestionDTO createQuestion(QuestionDTO questionDTO, Long entretienId) {
+        Entretien entretien = entretienRepository.findById(entretienId)
+                .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
+
+        DomaineType domaineType = null;
+        if (questionDTO.getDomaine() != null && !questionDTO.getDomaine().trim().isEmpty()) {
+            try {
+                domaineType = DomaineType.valueOf(questionDTO.getDomaine().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Domaine invalide: " + questionDTO.getDomaine());
+            }
+        } else {
+            throw new RuntimeException("Domaine requis pour la question");
+        }
+
+        Question question = new Question();
+        question.setContenu(questionDTO.getContenu());
+        question.setType(TypeQuestion.valueOf(questionDTO.getType()));
+        question.setNiveau(questionDTO.getNiveau());
+        question.setDomaine(domaineType);
+        question.setEntretien(entretien);
+        question.setOrdre(questionDTO.getOrdre());
+        question.setActif(true);
+
+        if (questionDTO.getChoix() != null && !questionDTO.getChoix().isEmpty()) {
+            List<Choix> choixEntities = questionDTO.getChoix().stream().map(dto -> {
+                Choix choix = new Choix();
+                choix.setTexte(dto.getTexte());
+                choix.setCorrecte(dto.isCorrecte());
+                choix.setOrdre(dto.getOrdre());
+                choix.setQuestion(question);
+                return choix;
+            }).collect(Collectors.toList());
+            question.setChoix(choixEntities);
+        }
+
+        Question saved = questionRepository.save(question);
+        return convertToDTO(saved);
+    }
+
+    public List<QuestionDTO> getQuestionsByEntretien(Long entretienId) {
+        Entretien entretien = entretienRepository.findById(entretienId)
+                .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
+        return questionRepository.findByEntretienOrderByOrdre(entretien).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<QuestionDTO> getQuestionsByDomaine(Long entretienId, String domaineName) {
+        Entretien entretien = entretienRepository.findById(entretienId)
+                .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
+
+        final DomaineType domaineType;
+        try {
+            domaineType = DomaineType.valueOf(domaineName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Domaine invalide: " + domaineName);
+        }
+
+        return questionRepository.findByEntretienOrderByOrdre(entretien).stream()
+                .filter(q -> q.getDomaine().equals(domaineType))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public QuestionDTO getQuestion(Long id) {
+        return questionRepository.findById(id)
+                .map(this::convertToDTO)
+                .orElse(null);
+    }
+
+    public QuestionDTO updateQuestion(Long id, QuestionDTO questionDTO) {
+        return questionRepository.findById(id).map(question -> {
+            question.setContenu(questionDTO.getContenu());
+            question.setType(TypeQuestion.valueOf(questionDTO.getType()));
+            question.setNiveau(questionDTO.getNiveau());
+            question.setOrdre(questionDTO.getOrdre());
+            question.setActif(questionDTO.isActif());
+            Question updated = questionRepository.save(question);
+            return convertToDTO(updated);
+        }).orElse(null);
+    }
+
+    public void deleteQuestion(Long id) {
+        questionRepository.deleteById(id);
+    }
+
+    private QuestionDTO convertToDTO(Question question) {
+        QuestionDTO dto = new QuestionDTO();
+        dto.setId(question.getId());
+        dto.setContenu(question.getContenu());
+        dto.setType(question.getType().toString());
+        dto.setNiveau(question.getNiveau());
+        dto.setOrdre(question.getOrdre());
+        dto.setActif(question.isActif());
+        dto.setDomaine(question.getDomaine().toString());
+
+        if (question.getChoix() != null) {
+            dto.setChoix(question.getChoix().stream()
+                    .map(this::convertChoixToDTO)
+                    .collect(Collectors.toList()));
+        }
+        return dto;
+    }
+
+    private ChoixDTO convertChoixToDTO(Choix choix) {
+        return new ChoixDTO(
+            choix.getId(),
+            choix.getTexte(),
+            choix.isCorrecte(),
+            choix.getOrdre()
+        );
+    }
+}
+
