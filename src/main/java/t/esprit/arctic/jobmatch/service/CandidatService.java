@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Education;
+import t.esprit.arctic.jobmatch.entity.Localisation;
 import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import t.esprit.arctic.jobmatch.repository.BackgroundRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.EducationRepository;
+import t.esprit.arctic.jobmatch.repository.LocalisationRepository;
 
 import java.util.List;
 
@@ -18,6 +20,7 @@ public class CandidatService {
 
     private final CandidatRepository repository;
     private final EducationRepository educationRepository;
+    private final LocalisationRepository localisationRepository;
     private final BackgroundRepository backgroundRepository;
 
     public Candidat create(Candidat candidat) {
@@ -63,6 +66,12 @@ public class CandidatService {
         if (candidatDetails.getCv() != null) {
             candidat.setCv(candidatDetails.getCv());
         }
+        if (candidatDetails.getCvUrl() != null) {
+            candidat.setCvUrl(candidatDetails.getCvUrl());
+        }
+        if (candidatDetails.getProfilePictureUrl() != null) {
+            candidat.setProfilePictureUrl(candidatDetails.getProfilePictureUrl());
+        }
         if (candidatDetails.getLienPortfolio() != null) {
             candidat.setLienPortfolio(candidatDetails.getLienPortfolio());
         }
@@ -82,6 +91,13 @@ public class CandidatService {
         // Update localisation only if provided
         if (candidatDetails.getLocalisation() != null) {
             candidat.setLocalisation(candidatDetails.getLocalisation());
+        }
+        
+        // Handle localisationId if provided (when sent from frontend as localisation_id)
+        if (candidatDetails.getLocalisationId() != null) {
+            Localisation localisation = localisationRepository.findById(candidatDetails.getLocalisationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Localisation not found with id: " + candidatDetails.getLocalisationId()));
+            candidat.setLocalisation(localisation);
         }
         
         // Clear education and background lists since they are stored as concatenated strings
