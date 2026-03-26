@@ -29,25 +29,36 @@ public class JwtService {
     public String generateToken(String email) {
         Utilisateur user = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + email));
-        
-        return Jwts.builder()
+
+        String token = Jwts.builder()
                 .setSubject(email)
-                .claim("id", user.getId())  // ✅ Ajouter l'ID de l'utilisateur
+                .claim("id", user.getId())
                 .claim("role", user.getRole().toString())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getKey())
                 .compact();
+
+        System.out.println("✅ [JwtService] Token généré pour: " + email);
+        return token;
     }
 
     public String extractEmail(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            System.out.println("📧 [JwtService] Extraction email du token: " + token.substring(0, Math.min(50, token.length())) + "...");
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
 
-        return claims.getSubject();
+            String email = claims.getSubject();
+            System.out.println("📧 [JwtService] Email extrait: " + email);
+            return email;
+        } catch (Exception e) {
+            System.err.println("❌ [JwtService] Erreur extraction email: " + e.getMessage());
+            return null;
+        }
     }
 
     public String extractRole(String token) {
