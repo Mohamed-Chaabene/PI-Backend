@@ -38,10 +38,8 @@ public class CandidatureController {
 
         Candidature candidature = new Candidature();
         candidature.setDateEnvoi(new Date());
-        candidature.setStatut("EN_ATTENTE");
+        candidature.setStatut("EN_ATTENTE"); // Statut initial : En attente
         candidature.setCandidat(candidat);
-
-        // ⭐ AJOUTE CES LIGNES ⭐
         candidature.setEntreprise(dto.getEntreprise());
         candidature.setPoste(dto.getPoste());
         candidature.setLettreGeneree(dto.getLettreGeneree());
@@ -135,21 +133,17 @@ public class CandidatureController {
     // GET /api/candidatures/recherche
     @GetMapping("/recherche")
     public ResponseEntity<List<CandidatureDTO>> rechercherParEntreprise(@RequestParam String entreprise) {
-        // Note: Cette recherche est basée sur l'ID du candidat connecté
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
         Candidat candidat = candidatRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé pour email: " + email));
 
-        // Filtrage côté Java (à améliorer avec une requête JPQL)
         List<CandidatureDTO> resultats = candidatureRepository.findByCandidatId(candidat.getId())
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
-        // Pour l'instant, on retourne toutes les candidatures
-        // À améliorer avec une vraie recherche par entreprise
         return ResponseEntity.ok(resultats);
     }
 
@@ -182,7 +176,6 @@ public class CandidatureController {
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
 
-        // Vérifier que le candidat connecté est le propriétaire
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         Candidat candidat = candidatRepository.findByEmail(email)
@@ -192,12 +185,59 @@ public class CandidatureController {
             throw new RuntimeException("Vous ne pouvez pas modifier cette candidature");
         }
 
-        // Modifier uniquement les champs autorisés
         candidature.setEntreprise(dto.getEntreprise());
         candidature.setPoste(dto.getPoste());
         candidature.setLettreGeneree(dto.getLettreGeneree());
 
         Candidature updated = candidatureRepository.save(candidature);
+        return ResponseEntity.ok(convertToDTO(updated));
+    }
+
+    // ==================== ENDPOINT POUR RECRUTEUR - MODIFIER STATUT ====================
+    /**
+     * MODIFIER LE STATUT D'UNE CANDIDATURE (Uniquement pour recruteur ou admin)
+     * PUT /api/candidatures/{id}/statut?statut=ACCEPTEE
+     *
+     * @param id ID de la candidature
+     * @param statut Nouveau statut (ACCEPTEE ou REFUSEE)
+     * @return La candidature mise à jour
+     */
+    @PutMapping("/{id}/statut")
+    public ResponseEntity<CandidatureDTO> modifierStatutCandidature(
+            @PathVariable Long id,
+            @RequestParam String statut) {
+
+        // Vérifier que l'utilisateur connecté a le rôle RECRUTEUR ou ADMIN
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isRecruteur = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_RECRUTEUR")
+                        || a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isRecruteur) {
+            throw new RuntimeException("Seul un recruteur peut modifier le statut d'une candidature");
+        }
+
+        // Récupérer la candidature
+        Candidature candidature = candidatureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
+
+        // Vérifier que le statut est valide (uniquement ACCEPTEE ou REFUSEE)
+        if (!statut.equals("ACCEPTEE") && !statut.equals("REFUSEE")) {
+            throw new RuntimeException("Statut invalide. Valeurs acceptées: ACCEPTEE ou REFUSEE");
+        }
+
+        // Sauvegarder l'ancien statut pour le log
+        String ancienStatut = candidature.getStatut();
+
+        // Mettre à jour le statut
+        candidature.setStatut(statut);
+        Candidature updated = candidatureRepository.save(candidature);
+
+        // Log de l'action
+        System.out.println("📝 Statut modifié par recruteur: Candidature ID=" + id +
+                " | " + ancienStatut + " -> " + statut +
+                " | Par: " + authentication.getName());
+
         return ResponseEntity.ok(convertToDTO(updated));
     }
 
@@ -235,22 +275,15 @@ public class CandidatureController {
             dto.setCandidatNom(c.getCandidat().getNom());
         }
 
-        // Ajouter les infos du document
         if (c.getDocument() != null) {
             dto.setDocumentId(c.getDocument().getId());
             dto.setDocumentType(c.getDocument().getType().toString());
         }
 
-        // Ajouter les infos de l'offre d'emploi
         if (c.getOffreEmploi() != null) {
             dto.setOffreId(c.getOffreEmploi().getId());
             dto.setOffreTitre(c.getOffreEmploi().getTitre());
         }
-
-        /* Ajouter les infos de l'entretien
-        if (c.getEntretien() != null) {
-            dto.setEntretienId(c.getEntretien().getId());
-        }*/
 
         return dto;
     }
