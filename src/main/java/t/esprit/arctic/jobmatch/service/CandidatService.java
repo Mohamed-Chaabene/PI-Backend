@@ -5,12 +5,18 @@ import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Education;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.entity.Localisation;
+=======
+>>>>>>> origin/Entre_tien
 import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import t.esprit.arctic.jobmatch.repository.BackgroundRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.EducationRepository;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.repository.LocalisationRepository;
+=======
+>>>>>>> origin/Entre_tien
 
 import java.util.List;
 
@@ -20,7 +26,10 @@ public class CandidatService {
 
     private final CandidatRepository repository;
     private final EducationRepository educationRepository;
+<<<<<<< HEAD
     private final LocalisationRepository localisationRepository;
+=======
+>>>>>>> origin/Entre_tien
     private final BackgroundRepository backgroundRepository;
 
     public Candidat create(Candidat candidat) {
@@ -66,12 +75,15 @@ public class CandidatService {
         if (candidatDetails.getCv() != null) {
             candidat.setCv(candidatDetails.getCv());
         }
+<<<<<<< HEAD
         if (candidatDetails.getCvUrl() != null) {
             candidat.setCvUrl(candidatDetails.getCvUrl());
         }
         if (candidatDetails.getProfilePictureUrl() != null) {
             candidat.setProfilePictureUrl(candidatDetails.getProfilePictureUrl());
         }
+=======
+>>>>>>> origin/Entre_tien
         if (candidatDetails.getLienPortfolio() != null) {
             candidat.setLienPortfolio(candidatDetails.getLienPortfolio());
         }
@@ -93,6 +105,7 @@ public class CandidatService {
             candidat.setLocalisation(candidatDetails.getLocalisation());
         }
         
+<<<<<<< HEAD
         // Handle localisationId if provided (when sent from frontend as localisation_id)
         if (candidatDetails.getLocalisationId() != null) {
             Localisation localisation = localisationRepository.findById(candidatDetails.getLocalisationId())
@@ -100,6 +113,8 @@ public class CandidatService {
             candidat.setLocalisation(localisation);
         }
         
+=======
+>>>>>>> origin/Entre_tien
         // Clear education and background lists since they are stored as concatenated strings
         // in niveauEtude and backgroundExpertise fields respectively
         if (candidat.getEducations() != null) {

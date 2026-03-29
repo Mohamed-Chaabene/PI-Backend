@@ -29,15 +29,23 @@ public class JwtService {
     public String generateToken(String email) {
         Utilisateur user = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + email));
+<<<<<<< HEAD
 
         String token = Jwts.builder()
                 .setSubject(email)
                 .claim("id", user.getId())
+=======
+        
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("id", user.getId())  // ✅ Ajouter l'ID de l'utilisateur
+>>>>>>> origin/Entre_tien
                 .claim("role", user.getRole().toString())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getKey())
                 .compact();
+<<<<<<< HEAD
 
         System.out.println("✅ [JwtService] Token généré pour: " + email);
         return token;
@@ -59,6 +67,18 @@ public class JwtService {
             System.err.println("❌ [JwtService] Erreur extraction email: " + e.getMessage());
             return null;
         }
+=======
+    }
+
+    public String extractEmail(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.getSubject();
+>>>>>>> origin/Entre_tien
     }
 
     public String extractRole(String token) {

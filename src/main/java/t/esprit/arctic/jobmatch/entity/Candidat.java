@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
+<<<<<<< HEAD
 import com.fasterxml.jackson.annotation.JsonProperty;
+=======
+>>>>>>> origin/Entre_tien
 
 import java.util.List;
 
@@ -27,12 +30,15 @@ public class Candidat extends Utilisateur {
 
     private String cv;
 
+<<<<<<< HEAD
     @JsonProperty("cv_url")
     private String cvUrl;
 
     @JsonProperty("profile_picture_url")
     private String profilePictureUrl;
 
+=======
+>>>>>>> origin/Entre_tien
     @URL(message = "Le lien portfolio doit être une URL valide")
     private String lienPortfolio;
 
@@ -50,10 +56,13 @@ public class Candidat extends Utilisateur {
     @JoinColumn(name = "localisation_id")
     private Localisation localisation;
 
+<<<<<<< HEAD
     @Transient
     @JsonProperty("localisation_id")
     private Long localisationId;
 
+=======
+>>>>>>> origin/Entre_tien
     @Column(columnDefinition = "LONGTEXT")
     private String backgroundExpertise;
 
@@ -66,6 +75,7 @@ public class Candidat extends Utilisateur {
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Background> backgrounds = new java.util.ArrayList<>();
 
+<<<<<<< HEAD
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InscriptionFormation> inscriptions = new java.util.ArrayList<>();
 
@@ -93,5 +103,9 @@ public class Candidat extends Utilisateur {
     public void setLocalisationId(Long localisationId) {
         this.localisationId = localisationId;
     }
+=======
+    public void setExperience(int i) {
+    }
+>>>>>>> origin/Entre_tien
 }
 

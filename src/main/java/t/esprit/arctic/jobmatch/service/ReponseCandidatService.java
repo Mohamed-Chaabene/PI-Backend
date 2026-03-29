@@ -51,6 +51,15 @@ public class ReponseCandidatService {
         return convertToDTO(saved);
     }
 
+    public List<ReponseDTO> submitReponses(List<ReponseDTO> reponseDTOs, Long entretienId) {
+        return reponseDTOs.stream().map(dto -> {
+            if (dto.getEntretienId() == null || !dto.getEntretienId().equals(entretienId)) {
+                throw new IllegalArgumentException("EntretienId manquant ou invalide pour la réponse");
+            }
+            return submitReponse(dto);
+        }).collect(Collectors.toList());
+    }
+
     public List<ReponseDTO> getReponsesByEntretien(Long candidatId, Long entretienId) {
         Candidat candidat = candidatRepository.findById(candidatId)
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));

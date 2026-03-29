@@ -2,21 +2,29 @@ package t.esprit.arctic.jobmatch.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+<<<<<<< HEAD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+=======
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+>>>>>>> origin/Entre_tien
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.service.CandidatService;
 
+<<<<<<< HEAD
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+=======
+>>>>>>> origin/Entre_tien
 import java.util.List;
 
 @RestController
@@ -25,7 +33,10 @@ import java.util.List;
 public class CandidatController {
 
     private final CandidatService service;
+<<<<<<< HEAD
     private static final Logger logger = LoggerFactory.getLogger(CandidatController.class);
+=======
+>>>>>>> origin/Entre_tien
 
     @PostMapping
     public ResponseEntity<Candidat> create(@Valid @RequestBody Candidat candidat) {
@@ -37,6 +48,7 @@ public class CandidatController {
         return ResponseEntity.ok(service.getAll());
     }
 
+<<<<<<< HEAD
     @GetMapping("/email/{email}")
     public ResponseEntity<Candidat> getByEmail(@PathVariable String email) {
         return ResponseEntity.ok(service.findByEmail(email));
@@ -73,6 +85,8 @@ public class CandidatController {
         }
     }
 
+=======
+>>>>>>> origin/Entre_tien
     @GetMapping("/{id}")
     public ResponseEntity<Candidat> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
@@ -88,5 +102,13 @@ public class CandidatController {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
+<<<<<<< HEAD
+=======
+
+    @GetMapping("/email/{email}")
+    public ResponseEntity<Candidat> getByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(service.findByEmail(email));
+    }
+>>>>>>> origin/Entre_tien
 }
 

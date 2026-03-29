@@ -17,6 +17,7 @@ public class EntretienDTO {
     private Long recruteurId;
     private Long candidatId;
     private String description;
+    private String photo;
     private boolean completed;
     private LocalDateTime createdAt;
     private List<QuestionDTO> questions;

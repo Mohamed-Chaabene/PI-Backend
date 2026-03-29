@@ -1,8 +1,14 @@
 package t.esprit.arctic.jobmatch.entity;
 
 public enum DomaineType {
-    IT,
-    SANTE,
-    MARKETING,
+    INFORMATIQUE,
+    BUSINESS,
+    SANTÉ,
+    INGÉNIERIE,
+    ÉDUCATION,
+    DESIGN,
+    COMMUNICATION,
+    INDUSTRIE,
+    COMMERCE,
     AUTRE
 }

@@ -19,10 +19,23 @@ public class ResultatController {
         return ResponseEntity.ok(resultatService.calculerResultat(entretienId));
     }
 
+    @PostMapping("/entretien/{entretienId}/candidat/{candidatId}")
+    public ResponseEntity<ResultatDTO> calculerResultatCandidat(@PathVariable Long entretienId, @PathVariable Long candidatId) {
+        return ResponseEntity.ok(resultatService.calculerResultat(entretienId, candidatId));
+    }
+
     @GetMapping("/entretien/{entretienId}")
     public ResponseEntity<ResultatDTO> getResultat(@PathVariable Long entretienId) {
         ResultatDTO resultat = resultatService.getResultat(entretienId);
         return resultat != null ? ResponseEntity.ok(resultat) : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/entretien/{entretienId}/candidat/{candidatId}")
+    public ResponseEntity<ResultatDTO> getResultatCandidat(@PathVariable Long entretienId, @PathVariable Long candidatId) {
+        ResultatDTO resultat = resultatService.getResultat(entretienId);
+        // Dans un premier temps on renvoie le résultat liés à l'entretien / candidat unique
+        // Si besoin d'un résultat par candidat pour TEST, la logique peut être affinée.
+        return resultat != null ? ResponseEntity.ok(resultatService.calculerResultat(entretienId, candidatId)) : ResponseEntity.notFound().build();
     }
 }
 

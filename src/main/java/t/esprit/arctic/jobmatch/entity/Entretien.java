@@ -48,6 +48,9 @@ public class Entretien {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 500, nullable = true)
+    private String photo;
+
     private boolean completed = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -99,6 +102,10 @@ public class Entretien {
         return description;
     }
 
+    public String getPhoto() {
+        return photo;
+    }
+
     public boolean isCompleted() {
         return completed;
     }
@@ -122,6 +129,10 @@ public class Entretien {
 
     public void setRecruteur(Recruteur recruteur) {
         this.recruteur = recruteur;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
     }
 
     public void setCompleted(boolean completed) {

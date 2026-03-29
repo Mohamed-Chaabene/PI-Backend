@@ -5,7 +5,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
 import t.esprit.arctic.jobmatch.dto.EntretienCreateDTO;
+import t.esprit.arctic.jobmatch.dto.ReponseDTO;
+import t.esprit.arctic.jobmatch.dto.ResultatDTO;
 import t.esprit.arctic.jobmatch.service.EntretienService;
+import t.esprit.arctic.jobmatch.service.ReponseCandidatService;
+import t.esprit.arctic.jobmatch.service.ResultatService;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -17,9 +22,15 @@ public class EntretienController {
     @Autowired
     private EntretienService entretienService;
 
+    @Autowired
+    private ReponseCandidatService reponseCandidatService;
+
+    @Autowired
+    private ResultatService resultatService;
+
     @PostMapping
     public ResponseEntity<EntretienDTO> createEntretien(
-            @RequestBody EntretienCreateDTO dto,
+            @Valid @RequestBody EntretienCreateDTO dto,
             @RequestHeader("Recruteur-ID") Long recruteurId) {
         return ResponseEntity.ok(entretienService.createEntretien(dto, recruteurId));
     }
@@ -45,9 +56,69 @@ public class EntretienController {
         return entretien != null ? ResponseEntity.ok(entretien) : ResponseEntity.notFound().build();
     }
 
+    @PostMapping("/{id}/submit-responses")
+    public ResponseEntity<?> submitResponses(
+            @PathVariable("id") Long entretienId,
+            @RequestBody List<t.esprit.arctic.jobmatch.dto.ReponseDTO> responses
+    ) {
+        try {
+            if (responses == null || responses.isEmpty()) {
+                return ResponseEntity.badRequest().body("Aucune réponse fournie");
+            }
+
+            // Use first candidate id (supposé identique dans toutes les réponses)
+            Long candidatId = responses.get(0).getCandidatId();
+            if (candidatId == null) {
+                return ResponseEntity.badRequest().body("CandidatId requis dans les réponses");
+            }
+
+            reponseCandidatService.submitReponses(responses, entretienId);
+            ResultatDTO resultat = resultatService.calculerResultat(entretienId, candidatId);
+            return ResponseEntity.ok(resultat);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Erreur interne pendant la soumission des réponses");
+        }
+    }
+
     @PutMapping("/{id}/complete")
     public ResponseEntity<Void> markAsCompleted(@PathVariable Long id) {
         entretienService.markAsCompleted(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateEntretien(
+            @PathVariable Long id,
+            @Valid @RequestBody EntretienCreateDTO dto,
+            @RequestHeader("Recruteur-ID") Long recruteurId) {
+        try {
+            EntretienDTO updated = entretienService.updateEntretien(id, dto, recruteurId);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Erreur interne lors de la mise à jour de l'entretien");
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteEntretien(
+            @PathVariable Long id,
+            @RequestHeader("Recruteur-ID") Long recruteurId) {
+        try {
+            entretienService.deleteEntretien(id, recruteurId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Erreur interne lors de la suppression de l'entretien");
+        }
     }
 }

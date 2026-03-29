@@ -2,9 +2,13 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Localisation;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
+=======
+import t.esprit.arctic.jobmatch.entity.Localisation;
+>>>>>>> origin/Entre_tien
 import t.esprit.arctic.jobmatch.repository.LocalisationRepository;
 
 import java.util.List;
@@ -14,7 +18,10 @@ import java.util.List;
 public class LocalisationService {
 
     private final LocalisationRepository repository;
+<<<<<<< HEAD
     private final CandidatRepository candidatRepository;
+=======
+>>>>>>> origin/Entre_tien
 
     public Localisation create(Localisation localisation) {
         return repository.save(localisation);
@@ -39,6 +46,7 @@ public class LocalisationService {
     }
 
     public void delete(Long id) {
+<<<<<<< HEAD
         Localisation localisation = getById(id);
         
         // Find all candidats referencing this localisation
@@ -51,6 +59,8 @@ public class LocalisationService {
         }
         
         // Now delete the localisation
+=======
+>>>>>>> origin/Entre_tien
         repository.deleteById(id);
     }
 }
