@@ -61,6 +61,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/recruteur/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
                         .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
+                         // ENDPOINTS FORMATIONS
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations/**").permitAll() // lecture ouverte
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/formations/**").hasAuthority("ROLE_ADMIN") // création réservée à admin
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/formations/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/formations/**").hasAuthority("ROLE_ADMIN")
+                        // ENDPOINTS INSCRIPTIONS
+                        .requestMatchers("/api/inscriptions/**").hasAnyAuthority("ROLE_CANDIDAT", "ROLE_ADMIN")
+                        // ENDPOINTS CERTIFICATS
+                        .requestMatchers("/api/certificats/**").hasAnyAuthority("ROLE_CANDIDAT", "ROLE_ADMIN")
+                        // Ajoute cette ligne dans authorizeHttpRequests
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET,
+                                "/api/certificats/*/telecharger"
+                        ).hasAnyAuthority("ROLE_CANDIDAT", "ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
 

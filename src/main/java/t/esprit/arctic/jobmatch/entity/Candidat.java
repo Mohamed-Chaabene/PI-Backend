@@ -55,6 +55,9 @@ public class Candidat extends Utilisateur {
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Background> backgrounds = new java.util.ArrayList<>();
 
+    @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InscriptionFormation> inscriptions = new java.util.ArrayList<>();
+
     public void setExperience(int i) {
     }
 }
