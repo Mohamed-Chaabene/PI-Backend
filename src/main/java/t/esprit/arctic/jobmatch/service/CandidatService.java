@@ -3,14 +3,15 @@ package t.esprit.arctic.jobmatch.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import t.esprit.arctic.jobmatch.dto.CandidatListDto;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Education;
+import t.esprit.arctic.jobmatch.entity.Localisation;
 import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import t.esprit.arctic.jobmatch.repository.BackgroundRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.EducationRepository;
+import t.esprit.arctic.jobmatch.repository.LocalisationRepository;
 
 import java.util.List;
 
@@ -20,41 +21,26 @@ public class CandidatService {
 
     private final CandidatRepository repository;
     private final EducationRepository educationRepository;
+    private final LocalisationRepository localisationRepository;
     private final BackgroundRepository backgroundRepository;
 
+    @Transactional
     public Candidat create(Candidat candidat) {
-        // Clear background and education lists since they are stored as concatenated strings
-        // in backgroundExpertise and niveauEtude fields respectively
-        if (candidat.getBackgrounds() != null) {
-            candidat.getBackgrounds().clear();
-        }
-        if (candidat.getEducations() != null) {
-            candidat.getEducations().clear();
-        }
+        // Do not touch lazy relation collections here.
+        // Candidate profile uses concatenated fields and may come as partial payload.
         return repository.save(candidat);
     }
 
-    @Transactional(readOnly = true)
-    public List<CandidatListDto> getAll() {
-        return repository.findAllProjected();
+    public List<Candidat> getAll() {
+        return repository.findAll();
     }
 
-    @Transactional(readOnly = true)
     public Candidat getById(Long id) {
-        Candidat c = repository.findById(id).orElseThrow(() ->
+        return repository.findById(id).orElseThrow(() -> 
             new ResourceNotFoundException("Candidat not found with id: " + id));
-        if (c.getEducations() != null) {
-            c.getEducations().size();
-        }
-        if (c.getBackgrounds() != null) {
-            c.getBackgrounds().size();
-        }
-        if (c.getCompetences() != null) {
-            c.getCompetences().size();
-        }
-        return c;
     }
 
+    @Transactional
     public Candidat update(Long id, Candidat candidatDetails) {
         Candidat candidat = getById(id);
         
@@ -77,6 +63,12 @@ public class CandidatService {
         if (candidatDetails.getCv() != null) {
             candidat.setCv(candidatDetails.getCv());
         }
+        if (candidatDetails.getCvUrl() != null) {
+            candidat.setCvUrl(candidatDetails.getCvUrl());
+        }
+        if (candidatDetails.getProfilePictureUrl() != null) {
+            candidat.setProfilePictureUrl(candidatDetails.getProfilePictureUrl());
+        }
         if (candidatDetails.getLienPortfolio() != null) {
             candidat.setLienPortfolio(candidatDetails.getLienPortfolio());
         }
@@ -98,13 +90,11 @@ public class CandidatService {
             candidat.setLocalisation(candidatDetails.getLocalisation());
         }
         
-        // Clear education and background lists since they are stored as concatenated strings
-        // in niveauEtude and backgroundExpertise fields respectively
-        if (candidat.getEducations() != null) {
-            candidat.getEducations().clear();
-        }
-        if (candidat.getBackgrounds() != null) {
-            candidat.getBackgrounds().clear();
+        // Handle localisationId if provided (when sent from frontend as localisation_id)
+        if (candidatDetails.getLocalisationId() != null) {
+            Localisation localisation = localisationRepository.findById(candidatDetails.getLocalisationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Localisation not found with id: " + candidatDetails.getLocalisationId()));
+            candidat.setLocalisation(localisation);
         }
         
         return repository.save(candidat);
@@ -114,20 +104,9 @@ public class CandidatService {
         repository.deleteById(id);
     }
 
-    @Transactional(readOnly = true)
     public Candidat findByEmail(String email) {
-        Candidat c = repository.findByEmail(email).orElseThrow(() ->
+        return repository.findByEmail(email).orElseThrow(() -> 
             new ResourceNotFoundException("Candidat not found with email: " + email));
-        if (c.getEducations() != null) {
-            c.getEducations().size();
-        }
-        if (c.getBackgrounds() != null) {
-            c.getBackgrounds().size();
-        }
-        if (c.getCompetences() != null) {
-            c.getCompetences().size();
-        }
-        return c;
     }
 }
 

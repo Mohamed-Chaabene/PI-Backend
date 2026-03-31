@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/candidat/**").hasAuthority("ROLE_CANDIDAT")
                         .requestMatchers("/api/recruteur/**").hasAuthority("ROLE_RECRUTEUR")
+                        .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
                         .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
                         .anyRequest().authenticated()
