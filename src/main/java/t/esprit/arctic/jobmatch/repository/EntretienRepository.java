@@ -16,5 +16,7 @@ public interface EntretienRepository extends JpaRepository<Entretien, Long> {
     List<Entretien> findByRecruteur(Recruteur recruteur);
     List<Entretien> findByCategorie(CategorieEntretien categorie);
     List<Entretien> findByCandidatAndCompleted(Candidat candidat, boolean completed);
+
+    List<Entretien> findByCategorieAndCompleted(CategorieEntretien categorie, boolean completed);
 }
 

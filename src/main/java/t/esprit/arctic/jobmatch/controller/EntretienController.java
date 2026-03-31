@@ -5,11 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
 import t.esprit.arctic.jobmatch.dto.EntretienCreateDTO;
-import t.esprit.arctic.jobmatch.dto.ReponseDTO;
-import t.esprit.arctic.jobmatch.dto.ResultatDTO;
+import t.esprit.arctic.jobmatch.dto.EntretienTestPublicDto;
 import t.esprit.arctic.jobmatch.service.EntretienService;
-import t.esprit.arctic.jobmatch.service.ReponseCandidatService;
-import t.esprit.arctic.jobmatch.service.ResultatService;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -22,22 +19,32 @@ public class EntretienController {
     @Autowired
     private EntretienService entretienService;
 
-    @Autowired
-    private ReponseCandidatService reponseCandidatService;
-
-    @Autowired
-    private ResultatService resultatService;
-
     @PostMapping
-    public ResponseEntity<EntretienDTO> createEntretien(
+    public ResponseEntity<?> createEntretien(
             @Valid @RequestBody EntretienCreateDTO dto,
             @RequestHeader("Recruteur-ID") Long recruteurId) {
-        return ResponseEntity.ok(entretienService.createEntretien(dto, recruteurId));
+        try {
+            EntretienDTO created = entretienService.createEntretien(dto, recruteurId);
+            return ResponseEntity.ok(created);
+        } catch (RuntimeException ex) {
+            if (ex.getMessage().contains("Recruteur non trouvé")) {
+                return ResponseEntity.status(404).body("Recruteur non trouvé");
+            }
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Erreur interne lors de la création de l'entretien");
+        }
     }
 
     @GetMapping
     public ResponseEntity<List<EntretienDTO>> getAllEntretiens() {
         return ResponseEntity.ok(entretienService.getAllEntretiens());
+    }
+
+    @GetMapping("/public/tests")
+    public ResponseEntity<List<EntretienTestPublicDto>> getPublicTestEntretiens() {
+        return ResponseEntity.ok(entretienService.getPublicTestEntretiens());
     }
 
     @GetMapping("/recruteur/{recruteurId}")
@@ -59,21 +66,19 @@ public class EntretienController {
     @PostMapping("/{id}/submit-responses")
     public ResponseEntity<?> submitResponses(
             @PathVariable("id") Long entretienId,
-            @RequestBody List<t.esprit.arctic.jobmatch.dto.ReponseDTO> responses
+            @RequestBody java.util.Map<String, Object> scoreData
     ) {
         try {
-            if (responses == null || responses.isEmpty()) {
-                return ResponseEntity.badRequest().body("Aucune réponse fournie");
+            // Récupère le score depuis le payload
+            Double score = null;
+            if (scoreData.containsKey("score")) {
+                score = ((Number) scoreData.get("score")).doubleValue();
+            }
+            if (score == null) {
+                return ResponseEntity.badRequest().body("Le score est obligatoire");
             }
 
-            // Use first candidate id (supposé identique dans toutes les réponses)
-            Long candidatId = responses.get(0).getCandidatId();
-            if (candidatId == null) {
-                return ResponseEntity.badRequest().body("CandidatId requis dans les réponses");
-            }
-
-            reponseCandidatService.submitReponses(responses, entretienId);
-            ResultatDTO resultat = resultatService.calculerResultat(entretienId, candidatId);
+            EntretienDTO resultat = entretienService.updateScore(entretienId, score);
             return ResponseEntity.ok(resultat);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -81,8 +86,14 @@ public class EntretienController {
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (Exception ex) {
             ex.printStackTrace();
-            return ResponseEntity.status(500).body("Erreur interne pendant la soumission des réponses");
+            return ResponseEntity.status(500).body("Erreur interne pendant l'enregistrement du score");
         }
+    }
+
+    @GetMapping("/{id}/resultat")
+    public ResponseEntity<EntretienDTO> getResultat(@PathVariable Long id) {
+        EntretienDTO entretien = entretienService.getEntretien(id);
+        return entretien != null ? ResponseEntity.ok(entretien) : ResponseEntity.notFound().build();
     }
 
     @PutMapping("/{id}/complete")

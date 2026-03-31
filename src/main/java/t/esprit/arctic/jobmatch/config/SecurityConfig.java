@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/domaines").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/candidats/email/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")

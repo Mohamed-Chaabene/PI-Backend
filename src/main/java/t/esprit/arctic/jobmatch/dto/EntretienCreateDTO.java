@@ -35,6 +35,15 @@ public class EntretienCreateDTO {
     @Size(max = 500, message = "L'URL de la photo ne peut pas dépasser 500 caractères")
     private String photo;
 
+    @NotBlank(message = "Le domaine est obligatoire")
+    @Pattern(regexp = "INFORMATIQUE|BUSINESS|SANTE|INGENIERIE|EDUCATION|DESIGN|COMMUNICATION|INDUSTRIE|COMMERCE|AUTRE",
+             message = "Le domaine doit être un des suivants : INFORMATIQUE, BUSINESS, SANTE, INGENIERIE, EDUCATION, DESIGN, COMMUNICATION, INDUSTRIE, COMMERCE, AUTRE")
+    private String domaine;
+
+    @Min(value = 0, message = "Le seuil de réussite doit être d'au moins 0%")
+    @Max(value = 100, message = "Le seuil de réussite ne peut pas dépasser 100%")
+    private Integer seuilReussite;
+
     // Getters explicites
     public String getTitre() {
         return titre;
@@ -56,12 +65,20 @@ public class EntretienCreateDTO {
         return categorie;
     }
 
+    public String getDomaine() {
+        return domaine;
+    }
+
     public Long getCandidatId() {
         return candidatId;
     }
 
     public String getPhoto() {
         return photo;
+    }
+
+    public Integer getSeuilReussite() {
+        return seuilReussite;
     }
 }
 

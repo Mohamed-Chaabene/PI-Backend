@@ -32,25 +32,14 @@ public class QuestionService {
             throw new RuntimeException("Impossible d'ajouter des questions à un entretien terminé");
         }
 
-        DomaineType domaineType = null;
-        if (questionDTO.getDomaine() != null && !questionDTO.getDomaine().trim().isEmpty()) {
-            try {
-                domaineType = DomaineType.valueOf(questionDTO.getDomaine().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Domaine invalide: " + questionDTO.getDomaine());
-            }
-        } else {
-            throw new RuntimeException("Domaine requis pour la question");
-        }
-
         Question question = new Question();
         question.setContenu(questionDTO.getContenu());
         question.setType(TypeQuestion.valueOf(questionDTO.getType()));
         question.setNiveau(questionDTO.getNiveau());
-        question.setDomaine(domaineType);
         question.setEntretien(entretien);
         question.setOrdre(questionDTO.getOrdre());
         question.setActif(true);
+        question.setPoints(questionDTO.getPoints());
 
         if (questionDTO.getChoix() != null && !questionDTO.getChoix().isEmpty()) {
             List<Choix> choixEntities = questionDTO.getChoix().stream().map(dto -> {
@@ -88,7 +77,7 @@ public class QuestionService {
         }
 
         return questionRepository.findByEntretienOrderByOrdre(entretien).stream()
-                .filter(q -> q.getDomaine().equals(domaineType))
+                .filter(q -> q.getEntretien().getDomaine() != null && q.getEntretien().getDomaine().equals(domaineType))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -109,16 +98,9 @@ public class QuestionService {
             question.setNiveau(questionDTO.getNiveau());
             question.setOrdre(questionDTO.getOrdre());
             question.setActif(questionDTO.isActif());
+            question.setPoints(questionDTO.getPoints());
             
-            // Update domaine
-            if (questionDTO.getDomaine() != null && !questionDTO.getDomaine().trim().isEmpty()) {
-                try {
-                    DomaineType domaineType = DomaineType.valueOf(questionDTO.getDomaine().toUpperCase());
-                    question.setDomaine(domaineType);
-                } catch (IllegalArgumentException e) {
-                    throw new RuntimeException("Domaine invalide: " + questionDTO.getDomaine());
-                }
-            }
+            // Le domaine de la question est hérité de l'entretien parent : ne mettez pas à jour ici.
             
             // Update choix
             if (questionDTO.getChoix() != null) {
@@ -158,7 +140,8 @@ public class QuestionService {
         dto.setNiveau(question.getNiveau());
         dto.setOrdre(question.getOrdre());
         dto.setActif(question.isActif());
-        dto.setDomaine(question.getDomaine().toString());
+        dto.setPoints(question.getPoints());
+        // domaine est défini sur Entretien; ne pas exposer ici
 
         if (question.getChoix() != null) {
             dto.setChoix(question.getChoix().stream()

@@ -2,6 +2,8 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import t.esprit.arctic.jobmatch.dto.CandidatListDto;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Education;
@@ -32,13 +34,25 @@ public class CandidatService {
         return repository.save(candidat);
     }
 
-    public List<Candidat> getAll() {
-        return repository.findAll();
+    @Transactional(readOnly = true)
+    public List<CandidatListDto> getAll() {
+        return repository.findAllProjected();
     }
 
+    @Transactional(readOnly = true)
     public Candidat getById(Long id) {
-        return repository.findById(id).orElseThrow(() -> 
+        Candidat c = repository.findById(id).orElseThrow(() ->
             new ResourceNotFoundException("Candidat not found with id: " + id));
+        if (c.getEducations() != null) {
+            c.getEducations().size();
+        }
+        if (c.getBackgrounds() != null) {
+            c.getBackgrounds().size();
+        }
+        if (c.getCompetences() != null) {
+            c.getCompetences().size();
+        }
+        return c;
     }
 
     public Candidat update(Long id, Candidat candidatDetails) {
@@ -100,9 +114,20 @@ public class CandidatService {
         repository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
     public Candidat findByEmail(String email) {
-        return repository.findByEmail(email).orElseThrow(() -> 
+        Candidat c = repository.findByEmail(email).orElseThrow(() ->
             new ResourceNotFoundException("Candidat not found with email: " + email));
+        if (c.getEducations() != null) {
+            c.getEducations().size();
+        }
+        if (c.getBackgrounds() != null) {
+            c.getBackgrounds().size();
+        }
+        if (c.getCompetences() != null) {
+            c.getCompetences().size();
+        }
+        return c;
     }
 }
 

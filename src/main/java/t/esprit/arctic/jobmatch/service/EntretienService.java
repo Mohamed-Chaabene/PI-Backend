@@ -2,15 +2,20 @@ package t.esprit.arctic.jobmatch.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
 import t.esprit.arctic.jobmatch.dto.EntretienCreateDTO;
+import t.esprit.arctic.jobmatch.dto.EntretienTestPublicDto;
 import t.esprit.arctic.jobmatch.entity.*;
 import t.esprit.arctic.jobmatch.repository.*;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class EntretienService {
 
     @Autowired
@@ -25,9 +30,7 @@ public class EntretienService {
     @Autowired
     private QuestionRepository questionRepository;
 
-    @Autowired
-    private ResultatRepository resultatRepository;
-
+    @Transactional
     public EntretienDTO createEntretien(EntretienCreateDTO dto, Long recruteurId) {
         // Validation métier
         validateEntretienData(dto, recruteurId);
@@ -45,6 +48,11 @@ public class EntretienService {
         entretien.setPhoto(dto.getPhoto());
 
         boolean isTestType = "TEST".equalsIgnoreCase(dto.getType()) || "TEST".equalsIgnoreCase(dto.getCategorie());
+        if (isTestType) {
+            entretien.setSeuilReussite(null);
+        } else {
+            entretien.setSeuilReussite(dto.getSeuilReussite() != null ? dto.getSeuilReussite() : 70);
+        }
 
         if (!isTestType) {
             if (dto.getCandidatId() == null) {
@@ -57,11 +65,35 @@ public class EntretienService {
             entretien.setCandidat(null);
         }
 
-        entretien.setDomaine(null);   // Pas de domaine à la création
+        if (dto.getDomaine() == null || dto.getDomaine().trim().isEmpty()) {
+            throw new IllegalArgumentException("Le domaine de l'entretien est obligatoire");
+        }
+        entretien.setDomaine(DomaineType.fromString(dto.getDomaine()));
         entretien.setCompleted(false);
 
         Entretien saved = entretienRepository.save(entretien);
         return convertToDTO(saved);
+    }
+
+    public List<EntretienTestPublicDto> getPublicTestEntretiens() {
+        return entretienRepository.findByCategorieAndCompleted(CategorieEntretien.TEST, false).stream()
+                .sorted(Comparator.comparing(Entretien::getDateEntretien, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::toPublicTestDto)
+                .collect(Collectors.toList());
+    }
+
+    private EntretienTestPublicDto toPublicTestDto(Entretien e) {
+        EntretienTestPublicDto d = new EntretienTestPublicDto();
+        d.setId(e.getId());
+        d.setTitre(e.getTitre());
+        d.setDescription(e.getDescription());
+        if (e.getDomaine() != null) {
+            d.setDomaine(e.getDomaine().name());
+            d.setDomaineLabel(e.getDomaine().getLabel());
+        }
+        d.setDateEntretien(e.getDateEntretien());
+        d.setPhoto(e.getPhoto());
+        return d;
     }
 
     public List<EntretienDTO> getAllEntretiens() {
@@ -92,6 +124,7 @@ public class EntretienService {
                 .orElse(null);
     }
 
+    @Transactional
     public void markAsCompleted(Long id) {
         entretienRepository.findById(id).ifPresent(entretien -> {
             entretien.setCompleted(true);
@@ -99,6 +132,7 @@ public class EntretienService {
         });
     }
 
+    @Transactional
     public EntretienDTO updateEntretien(Long id, EntretienCreateDTO dto, Long recruteurId) {
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
@@ -134,8 +168,18 @@ public class EntretienService {
             entretien.setPhoto(dto.getPhoto());
         }
 
-        // Gestion du candidat (seulement si ce n'est pas un TEST)
         boolean isTestType = "TEST".equalsIgnoreCase(dto.getType()) || "TEST".equalsIgnoreCase(dto.getCategorie());
+        if (isTestType) {
+            entretien.setSeuilReussite(null);
+        } else if (dto.getSeuilReussite() != null) {
+            entretien.setSeuilReussite(dto.getSeuilReussite());
+        }
+
+        if (dto.getDomaine() != null && !dto.getDomaine().trim().isEmpty()) {
+            entretien.setDomaine(DomaineType.fromString(dto.getDomaine()));
+        }
+
+        // Gestion du candidat (seulement si ce n'est pas un TEST)
         if (!isTestType) {
             if (dto.getCandidatId() != null) {
                 Candidat candidat = candidatRepository.findById(dto.getCandidatId())
@@ -150,6 +194,7 @@ public class EntretienService {
         return convertToDTO(saved);
     }
 
+    @Transactional
     public void deleteEntretien(Long id, Long recruteurId) {
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
@@ -167,6 +212,28 @@ public class EntretienService {
         entretienRepository.delete(entretien);
     }
 
+    @Transactional
+    public EntretienDTO updateScore(Long entretienId, Double score) {
+        Entretien entretien = entretienRepository.findById(entretienId)
+                .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
+
+        if (score < 0 || score > 100) {
+            throw new IllegalArgumentException("Le score doit être entre 0 et 100");
+        }
+
+        entretien.setScore(score);
+        Integer seuil = entretien.getSeuilReussite();
+        if (seuil == null) {
+            entretien.setDecision(String.format(java.util.Locale.FRANCE, "Score : %.0f %% (test général)", score));
+        } else {
+            entretien.setDecision(score >= seuil ? "accepté" : "refusé");
+        }
+        entretien.setEvaluatedAt(LocalDateTime.now());
+
+        Entretien saved = entretienRepository.save(entretien);
+        return convertToDTO(saved);
+    }
+
     private EntretienDTO convertToDTO(Entretien entretien) {
         EntretienDTO dto = new EntretienDTO();
         dto.setId(entretien.getId());
@@ -175,10 +242,18 @@ public class EntretienService {
         dto.setType(entretien.getCategorie().toString());
         dto.setDescription(entretien.getDescription());
         dto.setPhoto(entretien.getPhoto());
+        dto.setDomaine(entretien.getDomaine() != null ? entretien.getDomaine().name() : null);
         dto.setCompleted(entretien.isCompleted());
+        dto.setSeuilReussite(entretien.getSeuilReussite());
         dto.setCreatedAt(entretien.getCreatedAt());
         dto.setRecruteurId(entretien.getRecruteur().getId());
         dto.setCandidatId(entretien.getCandidat() != null ? entretien.getCandidat().getId() : null);
+        dto.setScore(entretien.getScore());
+        dto.setTotalQuestions(entretien.getTotalQuestions());
+        dto.setBonnesReponses(entretien.getBonnesReponses());
+        dto.setDecision(entretien.getDecision());
+        dto.setCommentaire(entretien.getCommentaire());
+        dto.setEvaluatedAt(entretien.getEvaluatedAt());
         // Les questions peuvent être ajoutées ici si besoin
         return dto;
     }
@@ -213,6 +288,9 @@ public class EntretienService {
             // Vérifier que le candidat existe
             candidatRepository.findById(dto.getCandidatId())
                     .orElseThrow(() -> new IllegalArgumentException("Candidat non trouvé : " + dto.getCandidatId()));
+            if (dto.getSeuilReussite() == null) {
+                throw new IllegalArgumentException("Le seuil de réussite est obligatoire pour ce type d'entretien");
+            }
         }
     }
 }

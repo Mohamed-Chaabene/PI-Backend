@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import t.esprit.arctic.jobmatch.dto.CandidatListDto;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.service.CandidatService;
 
@@ -23,7 +24,7 @@ public class CandidatController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Candidat>> getAll() {
+    public ResponseEntity<List<CandidatListDto>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
