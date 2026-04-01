@@ -13,6 +13,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
 
     // Tous les feedbacks d'un candidat
     List<Feedback> findByCandidatId(Long candidatId);
+    
+    // Tous les feedbacks d'une participation
+    List<Feedback> findByParticipationId(Long participationId);
 
     // Feedbacks d'un candidat pour une formation précise
     List<Feedback> findByFormationIdAndCandidatId(Long formationId, Long candidatId);

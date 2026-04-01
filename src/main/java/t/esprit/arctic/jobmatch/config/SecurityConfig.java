@@ -3,6 +3,7 @@ package t.esprit.arctic.jobmatch.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -63,6 +64,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
                         .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAuthority("ROLE_ORGANISATEUR")
+
                         .anyRequest().authenticated()
                 )
 

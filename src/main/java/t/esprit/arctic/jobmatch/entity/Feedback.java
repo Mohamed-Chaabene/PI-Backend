@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Entity
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
+@Builder
 public class Feedback {
 
     @Id
@@ -30,6 +31,9 @@ public class Feedback {
     @Temporal(TemporalType.TIMESTAMP)
     private Date dateModification;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date date;
+
     @ManyToOne
     @JoinColumn(name = "formation_id", nullable = false)
     @JsonIgnoreProperties({"inscriptions", "competences"})
@@ -39,6 +43,10 @@ public class Feedback {
     @JoinColumn(name = "candidat_id", nullable = false)
     @JsonIgnoreProperties({"motDePasse", "inscriptions", "candidatures", "competences"})
     private Candidat candidat;
+
+    @ManyToOne
+    @JoinColumn(name = "participation_id")
+    private Participation participation;
 
     @PrePersist
     public void prePersist() {
