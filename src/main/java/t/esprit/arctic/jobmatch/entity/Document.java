@@ -1,5 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,25 +11,36 @@ public class Document {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String nom;
+
     @Enumerated(EnumType.STRING)
-    private TypeDocument type;  // CV, LETTRE_DE_MOTIVATION, PORTFOLIO, AUTRE
+    private TypeDocument type;
 
     @Column(columnDefinition = "TEXT")
     private String contenu;
 
     private String template;
 
+    @Column(name = "compatibleats")
     private Boolean compatibleATS;
 
-    // Relation inverse avec Candidature
+    @Column(name = "ajouter_photo")
+    private Boolean ajouterPhoto = false;
+
+    @JsonIgnore
     @OneToOne(mappedBy = "document")
     private Candidature candidature;
 
+
+    // Constructeurs
     public Document() {}
 
     // Getters et Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
 
     public TypeDocument getType() { return type; }
     public void setType(TypeDocument type) { this.type = type; }
@@ -42,6 +54,7 @@ public class Document {
     public Boolean getCompatibleATS() { return compatibleATS; }
     public void setCompatibleATS(Boolean compatibleATS) { this.compatibleATS = compatibleATS; }
 
-    public Candidature getCandidature() { return candidature; }
-    public void setCandidature(Candidature candidature) { this.candidature = candidature; }
+    public Boolean getAjouterPhoto() { return ajouterPhoto; }
+    public void setAjouterPhoto(Boolean ajouterPhoto) { this.ajouterPhoto = ajouterPhoto; }
+
 }

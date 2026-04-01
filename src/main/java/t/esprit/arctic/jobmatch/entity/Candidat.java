@@ -4,10 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
-<<<<<<< HEAD
-import com.fasterxml.jackson.annotation.JsonProperty;
-=======
->>>>>>> origin/Entre_tien
 
 import java.util.List;
 
@@ -30,15 +26,6 @@ public class Candidat extends Utilisateur {
 
     private String cv;
 
-<<<<<<< HEAD
-    @JsonProperty("cv_url")
-    private String cvUrl;
-
-    @JsonProperty("profile_picture_url")
-    private String profilePictureUrl;
-
-=======
->>>>>>> origin/Entre_tien
     @URL(message = "Le lien portfolio doit être une URL valide")
     private String lienPortfolio;
 
@@ -46,9 +33,9 @@ public class Candidat extends Utilisateur {
 
     @ManyToMany
     @JoinTable(
-        name = "candidat_competence",
-        joinColumns = @JoinColumn(name = "candidat_id"),
-        inverseJoinColumns = @JoinColumn(name = "competence_id")
+            name = "candidat_competence",
+            joinColumns = @JoinColumn(name = "candidat_id"),
+            inverseJoinColumns = @JoinColumn(name = "competence_id")
     )
     private List<Competence> competences;
 
@@ -56,13 +43,6 @@ public class Candidat extends Utilisateur {
     @JoinColumn(name = "localisation_id")
     private Localisation localisation;
 
-<<<<<<< HEAD
-    @Transient
-    @JsonProperty("localisation_id")
-    private Long localisationId;
-
-=======
->>>>>>> origin/Entre_tien
     @Column(columnDefinition = "LONGTEXT")
     private String backgroundExpertise;
 
@@ -75,37 +55,7 @@ public class Candidat extends Utilisateur {
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Background> backgrounds = new java.util.ArrayList<>();
 
-<<<<<<< HEAD
-    @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InscriptionFormation> inscriptions = new java.util.ArrayList<>();
-
     public void setExperience(int i) {
     }
-
-    /**
-     * Custom getter for localisationId - returns ID from localisation if it exists
-     */
-    @com.fasterxml.jackson.annotation.JsonGetter("localisation_id")
-    public Long getLocalisationId() {
-        if (this.localisationId != null) {
-            return this.localisationId;
-        }
-        if (this.localisation != null) {
-            return this.localisation.getId();
-        }
-        return null;
-    }
-
-    /**
-     * Custom setter for localisationId
-     */
-    @com.fasterxml.jackson.annotation.JsonSetter("localisation_id")
-    public void setLocalisationId(Long localisationId) {
-        this.localisationId = localisationId;
-    }
-=======
-    public void setExperience(int i) {
-    }
->>>>>>> origin/Entre_tien
 }
 

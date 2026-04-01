@@ -12,9 +12,6 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
     // Trouver les candidatures par statut
     List<Candidature> findByStatut(String statut);
 
-    // Rechercher par entreprise (contient, ignore la casse)
-    List<Candidature> findByEntrepriseContainingIgnoreCase(String entreprise);
-
     // Trier par date du plus récent au plus ancien
     List<Candidature> findAllByOrderByDateEnvoiDesc();
 }
