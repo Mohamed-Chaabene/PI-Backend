@@ -69,7 +69,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
                         .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAuthority("ROLE_ORGANISATEUR")
-
+                        .requestMatchers("/api/partenaires/**").permitAll()
+                        .requestMatchers("/api/offres-partenaires/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
