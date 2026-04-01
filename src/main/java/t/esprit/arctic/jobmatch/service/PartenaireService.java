@@ -39,7 +39,7 @@ public class PartenaireService {
             Utilisateur utilisateur = utilisateurRepo.findById(p.getUtilisateur().getId())
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-            // 🔥 Vérifier que c'est ADMIN
+
             if (utilisateur.getRole() != Role.ADMIN) {
                 throw new RuntimeException("L'utilisateur doit être ADMIN");
             }
