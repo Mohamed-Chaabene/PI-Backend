@@ -38,7 +38,7 @@ public class Formation {
     private String niveau;
 
     // ✅ On expose les compétences sans leurs propres relations
-    @ManyToMany
+        @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "formation_competence",
             joinColumns = @JoinColumn(name = "formation_id"),

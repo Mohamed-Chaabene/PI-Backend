@@ -20,7 +20,10 @@ public class FormationService {
 
     // ✅ Liste publique — exclut les formations archivées
     public List<Formation> getAllActives() {
-        return formationRepository.findByStatutNot("Archivée");
+        List<Formation> formations = formationRepository.findByStatutNot("Archivée");
+        System.out.println("📚 getAllActives() retourne: " + formations.size() + " formations");
+        formations.forEach(f -> System.out.println("  - " + f.getTitre() + " (statut: " + f.getStatut() + ")"));
+        return formations;
     }
 
     // ✅ Liste admin — toutes formations y compris archivées

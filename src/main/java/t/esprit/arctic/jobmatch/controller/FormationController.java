@@ -15,30 +15,7 @@ public class FormationController {
 
     private final FormationService formationService;
 
-    // ── Endpoints publics (sans formations archivées) ─────────────────────────
-
-    // ✅ Liste publique — exclut les archivées
-    @GetMapping
-    public ResponseEntity<List<Formation>> getAll() {
-        return ResponseEntity.ok(formationService.getAllActives());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Formation> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(formationService.getById(id));
-    }
-
-    @GetMapping("/niveau/{niveau}")
-    public ResponseEntity<List<Formation>> getByNiveau(@PathVariable String niveau) {
-        return ResponseEntity.ok(formationService.getByNiveau(niveau));
-    }
-
-    @GetMapping("/categorie/{categorie}")
-    public ResponseEntity<List<Formation>> getByCategorie(@PathVariable String categorie) {
-        return ResponseEntity.ok(formationService.getByCategorie(categorie));
-    }
-
-    // ── Endpoints admin ───────────────────────────────────────────────────────
+    // ── Endpoints admin (routes statiques AVANT routes dynamiques) ────────────
 
     // ✅ Liste complète pour admin (avec archivées)
     @GetMapping("/admin/all")
@@ -50,6 +27,31 @@ public class FormationController {
     @GetMapping("/admin/archivees")
     public ResponseEntity<List<Formation>> getArchivees() {
         return ResponseEntity.ok(formationService.getArchivees());
+    }
+
+    // ── Endpoints publics filtrage (routes statiques AVANT routes dynamiques) ─
+
+    @GetMapping("/niveau/{niveau}")
+    public ResponseEntity<List<Formation>> getByNiveau(@PathVariable String niveau) {
+        return ResponseEntity.ok(formationService.getByNiveau(niveau));
+    }
+
+    @GetMapping("/categorie/{categorie}")
+    public ResponseEntity<List<Formation>> getByCategorie(@PathVariable String categorie) {
+        return ResponseEntity.ok(formationService.getByCategorie(categorie));
+    }
+
+    // ── Endpoints publics génériques (routes génériques en dernier! ───────────
+
+    // ✅ Liste publique — exclut les archivées (sans paramètres = doit être après les routes spécifiques)
+    @GetMapping
+    public ResponseEntity<List<Formation>> getAll() {
+        return ResponseEntity.ok(formationService.getAllActives());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Formation> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(formationService.getById(id));
     }
 
     @PostMapping

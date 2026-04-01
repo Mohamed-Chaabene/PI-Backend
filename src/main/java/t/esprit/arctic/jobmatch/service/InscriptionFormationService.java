@@ -2,6 +2,7 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.InscriptionFormation;
 import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
 import java.util.Date;
@@ -52,10 +53,12 @@ public class InscriptionFormationService {
         inscriptionRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
     public List<InscriptionFormation> getByCandidat(Long candidatId) {
         return inscriptionRepository.findByCandidatId(candidatId);
     }
 
+    @Transactional(readOnly = true)
     public List<InscriptionFormation> getByFormation(Long formationId) {
         return inscriptionRepository.findByFormationId(formationId);
     }
