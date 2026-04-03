@@ -111,4 +111,12 @@ public class EvenementService {
                 e.getOrganisateur() != null ? e.getOrganisateur().getNom() : null   // ✅ a changer
         );
     }
+
+    // Suppression admin — sans vérifier l'organisateur
+    public void annulerAdmin(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RuntimeException("Événement non trouvé : " + id);
+        }
+        repository.deleteById(id);
+    }
 }
