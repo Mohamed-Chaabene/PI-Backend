@@ -9,12 +9,12 @@ public class CandidatureDTO {
 
     // Identifiants
     private Long id;
+    private Long candidatId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date dateEnvoi;
     private String statut;
     private String lettreGeneree;
-    private Long candidatId;
     private String candidatNom;
 
 
@@ -22,8 +22,9 @@ public class CandidatureDTO {
     private String poste;
 
     // ==================== CHAMPS OBLIGATOIRES ====================
-    @NotBlank(message = "Le nom complet est obligatoire")
+    @NotBlank(message = "Le nom complet est obligatoire")  //Le champ ne doit pas être vide.
     @Size(min = 2, max = 100, message = "Le nom doit contenir entre 2 et 100 caractères")
+    // Vérifie le format du champ avec une expression régulièr
     @Pattern(regexp = "^[a-zA-ZÀ-ÿ\\s'-]+$", message = "Le nom ne doit contenir que des lettres, espaces, tirets ou apostrophes")
     private String nomComplet;
 

@@ -24,12 +24,15 @@ import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 @RestController
 @RequestMapping("/api/candidatures")
 @CrossOrigin(origins = "http://localhost:4200")
-@RequiredArgsConstructor
+@RequiredArgsConstructor   //Crée automatiquement le constructeur pour injecter les repositories.
 public class CandidatureController {
 
     private final CandidatureRepository candidatureRepository;
     private final CandidatRepository candidatRepository;
     private final OffreEmploiRepository offreEmploiRepository;
+
+
+
     // ==================== CREATE ====================
     @PostMapping
     public ResponseEntity<?> creerCandidature(@Valid @RequestBody CandidatureDTO dto, BindingResult result) {
@@ -453,6 +456,59 @@ public class CandidatureController {
             return ResponseEntity.badRequest().body(error);
         }
     }
+
+
+
+
+
+    /*
+            ==================== ANALYSE TAUX DE RÉUSSITE ====================
+
+            @GetMapping("/taux-reussite")
+            public ResponseEntity<TauxReussiteDTO> analyserTauxReussite() {
+                // Calculer le taux de réussite du candidat connecté
+                return ResponseEntity.ok(new TauxReussiteDTO());
+            }
+*/
+
+
+/*
+        ==================== OPTIMISATION CV PAR IA ====================
+            @PostMapping("/optimiser-cv/{offreId}")
+            public ResponseEntity<Map<String, Object>> optimiserCV(@PathVariable Long offreId) {
+                // Analyser le CV du candidat par rapport à l'offre
+                // Retourner les mots-clés manquants et suggestions
+
+                Map<String, Object> resultat = new HashMap<>();
+                resultat.put("scoreCompatibilite", 75);
+                resultat.put("motsClesManquants", List.of("Spring Security", "Docker"));
+                resultat.put("suggestions", List.of("Ajoutez Spring Security à vos compétences"));
+
+                return ResponseEntity.ok(resultat);
+            }
+*/
+
+
+            /*
+
+                    SUGGESTIONS AMÉLIORATION
+             @GetMapping("/suggestions/{candidatureId}")
+             public ResponseEntity<Map<String, Object>> getSuggestionsAmelioration(@PathVariable Long candidatureId) {
+             Map<String, Object> suggestions = new HashMap<>();
+             return ResponseEntity.ok(suggestions);
+             }
+
+             **/
+
+
+
+
+
+
+
+
+
+
     // ==================== METHODE UTILITAIRE ====================
     private CandidatureDTO convertToDTO(Candidature c) {
         CandidatureDTO dto = new CandidatureDTO();

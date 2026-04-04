@@ -72,7 +72,6 @@ public class CandidatureService implements ICandidatureService {
 
     @Override
     public List<CandidatureDTO> rechercherParEntreprise(String entreprise) {
-        // Temporairement, retourne une liste vide
         // À implémenter plus tard
         return new ArrayList<>();
     }

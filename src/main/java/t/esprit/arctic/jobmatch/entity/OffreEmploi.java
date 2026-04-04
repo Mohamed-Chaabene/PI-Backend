@@ -29,6 +29,7 @@ public class OffreEmploi {
     @Column(name = "date_limite")
     private Date deadline;
 
+  // @ElementCollection pour stocker une liste de compétences requises pour chaque offre
     @ElementCollection
     @CollectionTable(name = "offre_competences", joinColumns = @JoinColumn(name = "offre_id"))
     @Column(name = "competence")

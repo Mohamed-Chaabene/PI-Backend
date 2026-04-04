@@ -15,3 +15,5 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
     // Trier par date du plus récent au plus ancien
     List<Candidature> findAllByOrderByDateEnvoiDesc();
 }
+
+//Le repository me permet d’interagir avec la base de données sans écrire manuellement les requêtes SQL
