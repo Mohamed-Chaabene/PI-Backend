@@ -26,10 +26,6 @@ public class Question {
     @Column(nullable = false)
     private String niveau;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private DomaineType domaine;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entretien_id", nullable = false)
     private Entretien entretien;
@@ -42,6 +38,9 @@ public class Question {
 
     @Column(nullable = false)
     private boolean actif = true;
+
+    @Column(nullable = false)
+    private int points = 1;
 
     // Getters explicites
     public Long getId() {
@@ -60,10 +59,6 @@ public class Question {
         return niveau;
     }
 
-    public DomaineType getDomaine() {
-        return domaine;
-    }
-
     public Entretien getEntretien() {
         return entretien;
     }
@@ -80,16 +75,20 @@ public class Question {
         return actif;
     }
 
-    // Setters explicites
-    public void setDomaine(DomaineType domaine) {
-        this.domaine = domaine;
+    public int getPoints() {
+        return points;
     }
 
+    // Setters explicites
     public void setEntretien(Entretien entretien) {
         this.entretien = entretien;
     }
 
     public void setActif(boolean actif) {
         this.actif = actif;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
     }
 }

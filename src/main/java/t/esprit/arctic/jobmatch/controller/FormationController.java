@@ -15,9 +15,38 @@ public class FormationController {
 
     private final FormationService formationService;
 
+    // ── Endpoints admin (routes statiques AVANT routes dynamiques) ────────────
+
+    // ✅ Liste complète pour admin (avec archivées)
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<Formation>> getAllForAdmin() {
+        return ResponseEntity.ok(formationService.getAllForAdmin());
+    }
+
+    // ✅ Liste des archivées uniquement
+    @GetMapping("/admin/archivees")
+    public ResponseEntity<List<Formation>> getArchivees() {
+        return ResponseEntity.ok(formationService.getArchivees());
+    }
+
+    // ── Endpoints publics filtrage (routes statiques AVANT routes dynamiques) ─
+
+    @GetMapping("/niveau/{niveau}")
+    public ResponseEntity<List<Formation>> getByNiveau(@PathVariable String niveau) {
+        return ResponseEntity.ok(formationService.getByNiveau(niveau));
+    }
+
+    @GetMapping("/categorie/{categorie}")
+    public ResponseEntity<List<Formation>> getByCategorie(@PathVariable String categorie) {
+        return ResponseEntity.ok(formationService.getByCategorie(categorie));
+    }
+
+    // ── Endpoints publics génériques (routes génériques en dernier! ───────────
+
+    // ✅ Liste publique — exclut les archivées (sans paramètres = doit être après les routes spécifiques)
     @GetMapping
     public ResponseEntity<List<Formation>> getAll() {
-        return ResponseEntity.ok(formationService.getAll());
+        return ResponseEntity.ok(formationService.getAllActives());
     }
 
     @GetMapping("/{id}")
@@ -41,13 +70,15 @@ public class FormationController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/niveau/{niveau}")
-    public ResponseEntity<List<Formation>> getByNiveau(@PathVariable String niveau) {
-        return ResponseEntity.ok(formationService.getByNiveau(niveau));
+    // ✅ Archiver une formation
+    @PutMapping("/{id}/archiver")
+    public ResponseEntity<Formation> archiver(@PathVariable Long id) {
+        return ResponseEntity.ok(formationService.archiver(id));
     }
 
-    @GetMapping("/categorie/{categorie}")
-    public ResponseEntity<List<Formation>> getByCategorie(@PathVariable String categorie) {
-        return ResponseEntity.ok(formationService.getByCategorie(categorie));
+    // ✅ Désarchiver une formation
+    @PutMapping("/{id}/desarchiver")
+    public ResponseEntity<Formation> desarchiver(@PathVariable Long id) {
+        return ResponseEntity.ok(formationService.desarchiver(id));
     }
 }

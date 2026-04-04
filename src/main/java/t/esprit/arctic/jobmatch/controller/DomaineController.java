@@ -1,11 +1,13 @@
 package t.esprit.arctic.jobmatch.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import t.esprit.arctic.jobmatch.dto.DomaineDTO;
-import t.esprit.arctic.jobmatch.service.DomaineService;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import t.esprit.arctic.jobmatch.entity.DomaineType;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -13,40 +15,13 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class DomaineController {
 
-    @Autowired
-    private DomaineService domaineService;
-
-    @PostMapping
-    public ResponseEntity<DomaineDTO> createDomaine(@RequestBody DomaineDTO domaineDTO) {
-        return ResponseEntity.ok(domaineService.createDomaine(domaineDTO));
-    }
-
     @GetMapping
-    public ResponseEntity<List<DomaineDTO>> getAllDomaines() {
-        return ResponseEntity.ok(domaineService.getAllDomaines());
+    public ResponseEntity<List<DomaineResponse>> getDomaines() {
+        List<DomaineResponse> domaines = Arrays.stream(DomaineType.values())
+                .map(d -> new DomaineResponse(d.name(), d.getLabel()))
+                .toList();
+        return ResponseEntity.ok(domaines);
     }
 
-    @GetMapping("/active")
-    public ResponseEntity<List<DomaineDTO>> getActiveDomaines() {
-        return ResponseEntity.ok(domaineService.getActiveDomaines());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<DomaineDTO> getDomaine(@PathVariable Long id) {
-        DomaineDTO domaine = domaineService.getDomaine(id);
-        return domaine != null ? ResponseEntity.ok(domaine) : ResponseEntity.notFound().build();
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<DomaineDTO> updateDomaine(@PathVariable Long id, @RequestBody DomaineDTO domaineDTO) {
-        DomaineDTO updated = domaineService.updateDomaine(id, domaineDTO);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDomaine(@PathVariable Long id) {
-        domaineService.deleteDomaine(id);
-        return ResponseEntity.ok().build();
-    }
+    public record DomaineResponse(String nom, String label) {}
 }
-

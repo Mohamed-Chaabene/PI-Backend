@@ -26,15 +26,16 @@ public class QuestionDTO {
              message = "Le niveau doit être : DEBUTANT, INTERMEDIAIRE, AVANCE ou EXPERT")
     private String niveau;
 
-    @NotBlank(message = "Le domaine est obligatoire")
-    private String domaine;
-
     private List<ChoixDTO> choix;
 
     @Min(value = 1, message = "L'ordre doit être supérieur à 0")
     private int ordre;
 
     private boolean actif = true;
+
+    @Min(value = 1, message = "Les points doivent être au minimum 1")
+    @Max(value = 100, message = "Les points ne peuvent pas dépasser 100")
+    private int points = 1;
 
     // Getters explicites
     public Long getId() {
@@ -53,10 +54,6 @@ public class QuestionDTO {
         return niveau;
     }
 
-    public String getDomaine() {
-        return domaine;
-    }
-
     public List<ChoixDTO> getChoix() {
         return choix;
     }
@@ -67,5 +64,9 @@ public class QuestionDTO {
 
     public boolean isActif() {
         return actif;
+    }
+
+    public int getPoints() {
+        return points;
     }
 }

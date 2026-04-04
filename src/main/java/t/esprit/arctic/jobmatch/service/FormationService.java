@@ -12,7 +12,22 @@ public class FormationService {
 
     private final FormationRepository formationRepository;
 
+    // ── CRUD ─────────────────────────────────────────────────────────────────
+
     public List<Formation> getAll() {
+        return formationRepository.findAll();
+    }
+
+    // ✅ Liste publique — exclut les formations archivées
+    public List<Formation> getAllActives() {
+        List<Formation> formations = formationRepository.findByStatutNot("Archivée");
+        System.out.println("📚 getAllActives() retourne: " + formations.size() + " formations");
+        formations.forEach(f -> System.out.println("  - " + f.getTitre() + " (statut: " + f.getStatut() + ")"));
+        return formations;
+    }
+
+    // ✅ Liste admin — toutes formations y compris archivées
+    public List<Formation> getAllForAdmin() {
         return formationRepository.findAll();
     }
 
@@ -42,11 +57,31 @@ public class FormationService {
         formationRepository.deleteById(id);
     }
 
+    // ✅ Archiver une formation (admin)
+    public Formation archiver(Long id) {
+        Formation formation = getById(id);
+        formation.setStatut("Archivée");
+        return formationRepository.save(formation);
+    }
+
+    // ✅ Désarchiver une formation (admin) — remet en "Disponible"
+    public Formation desarchiver(Long id) {
+        Formation formation = getById(id);
+        formation.setStatut("Disponible");
+        return formationRepository.save(formation);
+    }
+
+    // ── Filtres ───────────────────────────────────────────────────────────────
+
     public List<Formation> getByNiveau(String niveau) {
         return formationRepository.findByNiveau(niveau);
     }
 
     public List<Formation> getByCategorie(String categorie) {
         return formationRepository.findByCategorie(categorie);
+    }
+
+    public List<Formation> getArchivees() {
+        return formationRepository.findByStatut("Archivée");
     }
 }

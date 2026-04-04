@@ -2,13 +2,16 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Education;
+import t.esprit.arctic.jobmatch.entity.Localisation;
 import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import t.esprit.arctic.jobmatch.repository.BackgroundRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.EducationRepository;
+import t.esprit.arctic.jobmatch.repository.LocalisationRepository;
 
 import java.util.List;
 
@@ -18,17 +21,13 @@ public class CandidatService {
 
     private final CandidatRepository repository;
     private final EducationRepository educationRepository;
+    private final LocalisationRepository localisationRepository;
     private final BackgroundRepository backgroundRepository;
 
+    @Transactional
     public Candidat create(Candidat candidat) {
-        // Clear background and education lists since they are stored as concatenated strings
-        // in backgroundExpertise and niveauEtude fields respectively
-        if (candidat.getBackgrounds() != null) {
-            candidat.getBackgrounds().clear();
-        }
-        if (candidat.getEducations() != null) {
-            candidat.getEducations().clear();
-        }
+        // Do not touch lazy relation collections here.
+        // Candidate profile uses concatenated fields and may come as partial payload.
         return repository.save(candidat);
     }
 
@@ -37,13 +36,14 @@ public class CandidatService {
     }
 
     public Candidat getById(Long id) {
-        return repository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Candidat not found with id: " + id));
+        return repository.findById(id).orElseThrow(() -> 
+            new ResourceNotFoundException("Candidat not found with id: " + id));
     }
 
+    @Transactional
     public Candidat update(Long id, Candidat candidatDetails) {
         Candidat candidat = getById(id);
-
+        
         // Update only fields that are provided (not null)
         if (candidatDetails.getNom() != null) {
             candidat.setNom(candidatDetails.getNom());
@@ -63,6 +63,12 @@ public class CandidatService {
         if (candidatDetails.getCv() != null) {
             candidat.setCv(candidatDetails.getCv());
         }
+        if (candidatDetails.getCvUrl() != null) {
+            candidat.setCvUrl(candidatDetails.getCvUrl());
+        }
+        if (candidatDetails.getProfilePictureUrl() != null) {
+            candidat.setProfilePictureUrl(candidatDetails.getProfilePictureUrl());
+        }
         if (candidatDetails.getLienPortfolio() != null) {
             candidat.setLienPortfolio(candidatDetails.getLienPortfolio());
         }
@@ -78,21 +84,19 @@ public class CandidatService {
         if (candidatDetails.getPassionAndGoals() != null) {
             candidat.setPassionAndGoals(candidatDetails.getPassionAndGoals());
         }
-
+        
         // Update localisation only if provided
         if (candidatDetails.getLocalisation() != null) {
             candidat.setLocalisation(candidatDetails.getLocalisation());
         }
-
-        // Clear education and background lists since they are stored as concatenated strings
-        // in niveauEtude and backgroundExpertise fields respectively
-        if (candidat.getEducations() != null) {
-            candidat.getEducations().clear();
+        
+        // Handle localisationId if provided (when sent from frontend as localisation_id)
+        if (candidatDetails.getLocalisationId() != null) {
+            Localisation localisation = localisationRepository.findById(candidatDetails.getLocalisationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Localisation not found with id: " + candidatDetails.getLocalisationId()));
+            candidat.setLocalisation(localisation);
         }
-        if (candidat.getBackgrounds() != null) {
-            candidat.getBackgrounds().clear();
-        }
-
+        
         return repository.save(candidat);
     }
 
@@ -101,8 +105,8 @@ public class CandidatService {
     }
 
     public Candidat findByEmail(String email) {
-        return repository.findByEmail(email).orElseThrow(() ->
-                new ResourceNotFoundException("Candidat not found with email: " + email));
+        return repository.findByEmail(email).orElseThrow(() -> 
+            new ResourceNotFoundException("Candidat not found with email: " + email));
     }
 }
 

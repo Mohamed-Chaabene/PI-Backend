@@ -120,6 +120,7 @@ public class AuthController {
             
             // Extraire le rôle du token
             String role = jwtService.extractRole(token);
+            System.out.println("[AUTH DEBUG] login email=" + request.email + " roleFromToken=" + role);
             
             return new LoginResponse(token, request.email, role, "Connexion réussie");
         } catch (BadCredentialsException ex) {

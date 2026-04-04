@@ -44,11 +44,23 @@ public class InscriptionFormationController {
 
     @GetMapping("/candidat/{candidatId}")
     public ResponseEntity<List<InscriptionFormation>> getByCandidat(@PathVariable Long candidatId) {
-        return ResponseEntity.ok(inscriptionService.getByCandidat(candidatId));
+        try {
+            List<InscriptionFormation> inscriptions = inscriptionService.getByCandidat(candidatId);
+            return ResponseEntity.ok(inscriptions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/formation/{formationId}")
     public ResponseEntity<List<InscriptionFormation>> getByFormation(@PathVariable Long formationId) {
-        return ResponseEntity.ok(inscriptionService.getByFormation(formationId));
+        try {
+            List<InscriptionFormation> inscriptions = inscriptionService.getByFormation(formationId);
+            return ResponseEntity.ok(inscriptions);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
