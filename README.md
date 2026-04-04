@@ -1,4 +1,4 @@
-# JobMatch AI Backend
+# Matchy Khedma Backend
 
 A Spring Boot REST API backend for the JobMatch platform - an AI-powered job matching system connecting candidates with employers.
 

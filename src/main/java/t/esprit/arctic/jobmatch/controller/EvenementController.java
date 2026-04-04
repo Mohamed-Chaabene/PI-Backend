@@ -60,4 +60,11 @@ public class EvenementController {
         service.annuler(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
+
+    // DELETE /api/evenements/admin/{id} → pour l'admin
+    @DeleteMapping("/admin/{id}")
+    public ResponseEntity<Void> annulerAdmin(@PathVariable Long id) {
+        service.annulerAdmin(id);
+        return ResponseEntity.noContent().build();
+    }
 }
