@@ -41,7 +41,7 @@ public class Feedback {
 
     @ManyToOne
     @JoinColumn(name = "candidat_id", nullable = false)
-    @JsonIgnoreProperties({"motDePasse", "inscriptions", "candidatures", "competences"})
+    @JsonIgnoreProperties({"motDePasse", "inscriptions", "candidatures", "competences", "educations", "backgrounds"})
     private Candidat candidat;
 
     @ManyToOne

@@ -1,8 +1,7 @@
-package t.esprit.arctic.jobmatch.entity.freelance;
+package t.esprit.arctic.jobmatch.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import t.esprit.arctic.jobmatch.entity.Utilisateur;
 
 import java.time.LocalDateTime;
 

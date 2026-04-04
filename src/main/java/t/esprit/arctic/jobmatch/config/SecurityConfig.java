@@ -45,19 +45,27 @@ public class SecurityConfig {
 
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
+// SecurityConfig.java — le bloc authorizeHttpRequests complet
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/domaines").permitAll()
-                           .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations").permitAll()
-                           .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/candidats/email/**").permitAll()
+
+                        // ✅ TOUT /api/suggestions/** sans authentification
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/suggestions/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/proxy/**").permitAll()
+
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
@@ -66,11 +74,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
                         .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
-                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/feedbacks/**").permitAll()
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
                         .anyRequest().authenticated()
