@@ -1,5 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.Date;
 import java.util.List;
@@ -29,12 +30,22 @@ public class OffreEmploi {
     @Column(name = "date_limite")
     private Date deadline;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "offre_competences", joinColumns = @JoinColumn(name = "offre_id"))
     @Column(name = "competence")
     private List<String> competencesRequises;
 
     private String image;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recruteur_id")
+    private Recruteur recruteur;
+
+    // Une offre peut recevoir 0..* candidatures
+    @JsonIgnore
+    @OneToMany(mappedBy = "offreEmploi", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Candidature> candidatures;
 
     // Constructors
     public OffreEmploi() {}
@@ -143,5 +154,21 @@ public class OffreEmploi {
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public Recruteur getRecruteur() {
+        return recruteur;
+    }
+
+    public void setRecruteur(Recruteur recruteur) {
+        this.recruteur = recruteur;
+    }
+
+    public List<Candidature> getCandidatures() {
+        return candidatures;
+    }
+
+    public void setCandidatures(List<Candidature> candidatures) {
+        this.candidatures = candidatures;
     }
 }

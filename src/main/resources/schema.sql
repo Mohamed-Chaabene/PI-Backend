@@ -2,3 +2,7 @@
 ALTER TABLE entretiens MODIFY COLUMN domaine VARCHAR(64) NULL;
 -- Tests généraux sans seuil
 ALTER TABLE entretiens MODIFY COLUMN seuil_reussite INT NULL;
+
+-- Messagerie bidirectionnelle (recruteur <-> candidat)
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS receiver_email VARCHAR(255) NULL;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS receiver_name VARCHAR(255) NULL;

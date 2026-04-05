@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.validator.constraints.URL;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;
 
@@ -38,7 +39,7 @@ public class Candidat extends Utilisateur {
 
     private String niveauEtude;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "candidat_competence",
         joinColumns = @JoinColumn(name = "candidat_id"),
@@ -68,6 +69,11 @@ public class Candidat extends Utilisateur {
 
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InscriptionFormation> inscriptions = new java.util.ArrayList<>();
+
+    // Un candidat peut postuler à 0..* emplois via la table de liaison Candidature
+    @JsonIgnore
+    @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Candidature> candidatures = new java.util.ArrayList<>();
 
     public void setExperience(int i) {
     }

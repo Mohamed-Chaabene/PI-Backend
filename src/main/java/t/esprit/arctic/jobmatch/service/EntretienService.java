@@ -111,9 +111,8 @@ public class EntretienService {
     }
 
     public List<EntretienDTO> getEntretiensByCandidat(Long candidatId) {
-        Candidat candidat = candidatRepository.findById(candidatId)
-                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
-        return entretienRepository.findByCandidat(candidat).stream()
+        // Return empty list when candidate id is unknown instead of throwing 500 upstream.
+        return entretienRepository.findByCandidatId(candidatId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -292,5 +291,9 @@ public class EntretienService {
                 throw new IllegalArgumentException("Le seuil de réussite est obligatoire pour ce type d'entretien");
             }
         }
+
+
     }
-}
+
+
+    }

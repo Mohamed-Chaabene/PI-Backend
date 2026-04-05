@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // Public GET endpoints
                         .requestMatchers(HttpMethod.GET, "/api/domaines").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations/**").permitAll()
@@ -56,7 +58,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/proxy/**").permitAll()
 
+                        // Offres emploi
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // Questions / Entretiens
                         .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // Role-based access
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/candidat/**").hasAuthority("ROLE_CANDIDAT")
