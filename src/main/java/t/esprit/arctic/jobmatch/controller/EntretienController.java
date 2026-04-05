@@ -54,7 +54,12 @@ public class EntretienController {
 
     @GetMapping("/candidat/{candidatId}")
     public ResponseEntity<List<EntretienDTO>> getEntretiensByCandidat(@PathVariable Long candidatId) {
-        return ResponseEntity.ok(entretienService.getEntretiensByCandidat(candidatId));
+        try {
+            return ResponseEntity.ok(entretienService.getEntretiensByCandidat(candidatId));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/{id}")
