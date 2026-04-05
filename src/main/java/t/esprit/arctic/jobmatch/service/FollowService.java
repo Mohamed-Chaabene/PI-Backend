@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class FollowService {
 
     private final UtilisateurRepository utilisateurRepository;
+    private final NotificationService notificationService;
 
     /**
      * Add a follower to a user
@@ -32,7 +33,12 @@ public class FollowService {
             userToFollow.setFollowers(followers + "," + followerId);
         }
 
-        return utilisateurRepository.save(userToFollow);
+        Utilisateur savedUser = utilisateurRepository.save(userToFollow);
+
+        // Send real-time notification
+        notificationService.createFollowNotification(userToFollowId, followerId);
+
+        return savedUser;
     }
 
     /**
