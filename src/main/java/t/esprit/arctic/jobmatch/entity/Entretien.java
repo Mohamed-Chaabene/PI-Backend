@@ -24,11 +24,11 @@ public class Entretien {
     private String titre;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     private CategorieEntretien categorie;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = true)
+    @Column(nullable = true, columnDefinition = "VARCHAR(64)")
     private DomaineType domaine;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,13 +42,35 @@ public class Entretien {
     @OneToMany(mappedBy = "entretien", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
-    @OneToOne(mappedBy = "entretien", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Resultat resultat;
-
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 500, nullable = true)
+    private String photo;
+
     private boolean completed = false;
+
+    /** Null pour les entretiens de type TEST (généraux, sans barème). */
+    @Column(nullable = true)
+    private Integer seuilReussite;
+
+    @Column(nullable = true)
+    private Double score;
+
+    @Column(nullable = true)
+    private Integer totalQuestions;
+
+    @Column(nullable = true)
+    private Integer bonnesReponses;
+
+    @Column(nullable = true)
+    private String decision;
+
+    @Column(columnDefinition = "TEXT")
+    private String commentaire;
+
+    @Column(name = "evaluated_at")
+    private LocalDateTime evaluatedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -91,16 +113,44 @@ public class Entretien {
         return questions;
     }
 
-    public Resultat getResultat() {
-        return resultat;
-    }
-
     public String getDescription() {
         return description;
     }
 
+    public String getPhoto() {
+        return photo;
+    }
+
     public boolean isCompleted() {
         return completed;
+    }
+
+    public Integer getSeuilReussite() {
+        return seuilReussite;
+    }
+
+    public Double getScore() {
+        return score;
+    }
+
+    public Integer getTotalQuestions() {
+        return totalQuestions;
+    }
+
+    public Integer getBonnesReponses() {
+        return bonnesReponses;
+    }
+
+    public String getDecision() {
+        return decision;
+    }
+
+    public String getCommentaire() {
+        return commentaire;
+    }
+
+    public LocalDateTime getEvaluatedAt() {
+        return evaluatedAt;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -124,7 +174,39 @@ public class Entretien {
         this.recruteur = recruteur;
     }
 
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public void setSeuilReussite(Integer seuilReussite) {
+        this.seuilReussite = seuilReussite;
+    }
+
+    public void setScore(Double score) {
+        this.score = score;
+    }
+
+    public void setTotalQuestions(Integer totalQuestions) {
+        this.totalQuestions = totalQuestions;
+    }
+
+    public void setBonnesReponses(Integer bonnesReponses) {
+        this.bonnesReponses = bonnesReponses;
+    }
+
+    public void setDecision(String decision) {
+        this.decision = decision;
+    }
+
+    public void setCommentaire(String commentaire) {
+        this.commentaire = commentaire;
+    }
+
+    public void setEvaluatedAt(LocalDateTime evaluatedAt) {
+        this.evaluatedAt = evaluatedAt;
     }
 }

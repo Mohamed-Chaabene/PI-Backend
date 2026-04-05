@@ -13,8 +13,11 @@ import java.util.Optional;
 @Repository
 public interface EntretienRepository extends JpaRepository<Entretien, Long> {
     List<Entretien> findByCandidat(Candidat candidat);
+    List<Entretien> findByCandidatId(Long candidatId);
     List<Entretien> findByRecruteur(Recruteur recruteur);
     List<Entretien> findByCategorie(CategorieEntretien categorie);
     List<Entretien> findByCandidatAndCompleted(Candidat candidat, boolean completed);
+
+    List<Entretien> findByCategorieAndCompleted(CategorieEntretien categorie, boolean completed);
 }
 

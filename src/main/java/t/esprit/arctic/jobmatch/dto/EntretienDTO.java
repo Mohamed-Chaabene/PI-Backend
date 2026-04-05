@@ -17,7 +17,16 @@ public class EntretienDTO {
     private Long recruteurId;
     private Long candidatId;
     private String description;
+    private String photo;
+    private String domaine;
     private boolean completed;
+    private Integer seuilReussite;
     private LocalDateTime createdAt;
     private List<QuestionDTO> questions;
+    private Double score;
+    private Integer totalQuestions;
+    private Integer bonnesReponses;
+    private String decision;
+    private String commentaire;
+    private LocalDateTime evaluatedAt;
 }

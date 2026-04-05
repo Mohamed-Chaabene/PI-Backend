@@ -2,6 +2,7 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Education;
@@ -23,15 +24,10 @@ public class CandidatService {
     private final LocalisationRepository localisationRepository;
     private final BackgroundRepository backgroundRepository;
 
+    @Transactional
     public Candidat create(Candidat candidat) {
-        // Clear background and education lists since they are stored as concatenated strings
-        // in backgroundExpertise and niveauEtude fields respectively
-        if (candidat.getBackgrounds() != null) {
-            candidat.getBackgrounds().clear();
-        }
-        if (candidat.getEducations() != null) {
-            candidat.getEducations().clear();
-        }
+        // Do not touch lazy relation collections here.
+        // Candidate profile uses concatenated fields and may come as partial payload.
         return repository.save(candidat);
     }
 
@@ -44,6 +40,7 @@ public class CandidatService {
             new ResourceNotFoundException("Candidat not found with id: " + id));
     }
 
+    @Transactional
     public Candidat update(Long id, Candidat candidatDetails) {
         Candidat candidat = getById(id);
         
@@ -98,15 +95,6 @@ public class CandidatService {
             Localisation localisation = localisationRepository.findById(candidatDetails.getLocalisationId())
                     .orElseThrow(() -> new ResourceNotFoundException("Localisation not found with id: " + candidatDetails.getLocalisationId()));
             candidat.setLocalisation(localisation);
-        }
-        
-        // Clear education and background lists since they are stored as concatenated strings
-        // in niveauEtude and backgroundExpertise fields respectively
-        if (candidat.getEducations() != null) {
-            candidat.getEducations().clear();
-        }
-        if (candidat.getBackgrounds() != null) {
-            candidat.getBackgrounds().clear();
         }
         
         return repository.save(candidat);

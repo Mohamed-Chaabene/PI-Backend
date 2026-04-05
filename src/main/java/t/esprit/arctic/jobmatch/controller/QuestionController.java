@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.QuestionDTO;
 import t.esprit.arctic.jobmatch.service.QuestionService;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class QuestionController {
     @PostMapping("/entretien/{entretienId}")
     public ResponseEntity<?> createQuestion(
             @PathVariable Long entretienId,
-            @RequestBody QuestionDTO questionDTO) {
+            @Valid @RequestBody QuestionDTO questionDTO) {
         try {
             QuestionDTO created = questionService.createQuestion(questionDTO, entretienId);
             return ResponseEntity.ok(created);
@@ -50,11 +51,18 @@ public class QuestionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<QuestionDTO> updateQuestion(
+    public ResponseEntity<?> updateQuestion(
             @PathVariable Long id,
-            @RequestBody QuestionDTO questionDTO) {
-        QuestionDTO updated = questionService.updateQuestion(id, questionDTO);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+            @Valid @RequestBody QuestionDTO questionDTO) {
+        try {
+            QuestionDTO updated = questionService.updateQuestion(id, questionDTO);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Erreur interne lors de la mise à jour de la question: " + ex.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
