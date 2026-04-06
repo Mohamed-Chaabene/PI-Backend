@@ -29,7 +29,7 @@ public class CandidatureDTO {
     // ==================== CHAMPS OBLIGATOIRES ====================
     @NotBlank(message = "Le nom complet est obligatoire")
     @Size(min = 2, max = 100, message = "Le nom doit contenir entre 2 et 100 caractères")
-    @Pattern(regexp = "^[a-zA-ZÀ-ÿ\\s'-]+$", message = "Le nom ne doit contenir que des lettres, espaces, tirets ou apostrophes")
+    @Pattern(regexp = "^[\\p{L}\\s'-]+$", message = "Le nom ne doit contenir que des lettres, espaces, tirets ou apostrophes")
     private String nomComplet;
 
     @Email(message = "Format d'email invalide")

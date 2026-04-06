@@ -1,5 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -18,6 +19,10 @@ public class Recruteur extends Utilisateur {
 
     @OneToMany(mappedBy = "recruteur", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Entretien> entretiens;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "recruteur", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OffreEmploi> offresEmploi;
 
     // Setters explicites pour Lombok
     public void setEntreprise(String entreprise) {

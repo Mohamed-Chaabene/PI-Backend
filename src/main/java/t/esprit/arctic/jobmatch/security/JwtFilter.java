@@ -33,7 +33,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     var userDetails = userDetailsService.loadUserByUsername(email);
-                    System.out.println("Authorities: " + userDetails.getAuthorities());
 
                     var auth = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -45,16 +44,12 @@ public class JwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (io.jsonwebtoken.ExpiredJwtException e) {
-                logger.warn("JWT expired", e);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Token expiré");
-                return;
+                logger.warn("JWT expired for " + request.getMethod() + " " + request.getRequestURI());
+                SecurityContextHolder.clearContext();
             } catch (Exception e) {
-                // token invalide/expiré : ne pas bloquer les endpoints publics (api/auth/**)
-                logger.warn("JWT invalid or expired", e);
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Token invalide");
-                return;
+                // Token invalide: on laisse la chaîne continuer, la sécurité décidera pour les routes protégées.
+                logger.warn("JWT invalid for " + request.getMethod() + " " + request.getRequestURI() + ": " + e.getMessage());
+                SecurityContextHolder.clearContext();
             }
         }
 

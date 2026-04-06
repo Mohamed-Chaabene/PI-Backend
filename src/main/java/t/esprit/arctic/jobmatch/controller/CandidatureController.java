@@ -29,6 +29,29 @@ public class CandidatureController {
     private final CandidatRepository candidatRepository;
     private final OffreEmploiRepository offreEmploiRepository;
 
+
+    @GetMapping("/admin/toutes")
+    public ResponseEntity<List<CandidatureDTO>> getAllCandidaturesForAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthorized = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN")
+                        || authority.getAuthority().equals("ROLE_RECRUTEUR"));
+
+        if (!isAuthorized) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        List<CandidatureDTO> candidatures = candidatureRepository.findAllByOrderByDateEnvoiDesc()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(candidatures);
+    }
+
+
+
+
     // ==================== CREATE ====================
     @PostMapping
     public ResponseEntity<?> creerCandidature(@Valid @RequestBody CandidatureDTO dto, BindingResult result) {
