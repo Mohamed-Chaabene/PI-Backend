@@ -61,4 +61,13 @@ public class UtilisateurService {
         user.setRole(updatedUser.getRole());
         return repository.save(user);
     }
+
+    // Reset password by phone number
+    public void resetPasswordByPhone(String phoneNumber, String newPassword) {
+        Utilisateur user = repository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec le numéro: " + phoneNumber));
+        
+        user.setMotDePasse(passwordEncoder.encode(newPassword));
+        repository.save(user);
+    }
 }
