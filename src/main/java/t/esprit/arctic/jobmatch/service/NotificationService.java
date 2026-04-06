@@ -118,4 +118,47 @@ public class NotificationService {
         notificationRepository.deleteAll(allNotifications);
         System.out.println("✅ All notifications deleted for user: " + userId);
     }
+
+    /**
+     * Create job posted notifications and send via Pusher to all followers
+     */
+    public void notifyFollowersOfNewJob(Long recruiterUserId, String recruiterName, String jobTitle) {
+        // Get recruiter with followers info
+        Utilisateur recruiter = utilisateurRepository.findById(recruiterUserId)
+                .orElseThrow(() -> new RuntimeException("Recruiter not found"));
+        
+        String followersString = recruiter.getFollowers();
+        if (followersString == null || followersString.isEmpty()) {
+            System.out.println("✅ No followers to notify for recruiter: " + recruiterName);
+            return;
+        }
+        
+        // Parse follower IDs
+        String[] followerIds = followersString.split(",");
+        
+        for (String followerId : followerIds) {
+            try {
+                Long followerIdLong = Long.parseLong(followerId.trim());
+                
+                // Create notification
+                Notification notification = new Notification();
+                notification.setUserId(followerIdLong);
+                notification.setSenderId(recruiterUserId);
+                notification.setType("new_job_posted");
+                notification.setMessage(recruiterName + " posted a new job: " + jobTitle);
+                notification.setIsRead(false);
+                
+                // Save to database
+                Notification savedNotification = notificationRepository.save(notification);
+                
+                // Send real-time notification via Pusher
+                sendPusherNotification(followerIdLong, savedNotification);
+                
+            } catch (NumberFormatException e) {
+                System.err.println("❌ Error parsing follower ID: " + followerId);
+            }
+        }
+        
+        System.out.println("✅ Notifications sent to " + followerIds.length + " followers");
+    }
 }
