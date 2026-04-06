@@ -64,6 +64,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
 
+                        // ── Search / Users ────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/search/utilisateurs/nom").authenticated()
+
                         // ── Offres emploi ─────────────────────────────────────
                         .requestMatchers(HttpMethod.GET,
                                 "/api/offres-emploi",
@@ -110,8 +114,11 @@ public class SecurityConfig {
                         .hasAuthority("ROLE_ORGANISATEUR")
                         .requestMatchers(HttpMethod.PUT, "/api/evenements/**")
                         .hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.GET,  "/api/video-progression/**").permitAll()
+
+                        // ── Vidéo progression ─────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/video-progression/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

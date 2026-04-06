@@ -7,6 +7,9 @@ import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
+
+import t.esprit.arctic.jobmatch.dto.UtilisateurSearchDto;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,22 @@ public class UtilisateurService {
 
     public List<Utilisateur> getAll() {
         return repository.findAll();
+    }
+
+    public List<UtilisateurSearchDto> searchByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return List.of();
+        }
+
+        return repository.findByNomContainingIgnoreCase(name.trim())
+                .stream()
+                .map(user -> new UtilisateurSearchDto(
+                        user.getId(),
+                        user.getNom(),
+                        user.getEmail(),
+                        user.getRole() == null ? null : user.getRole().name()
+                ))
+                .collect(Collectors.toList());
     }
 
     public Utilisateur getById(Long id) {
