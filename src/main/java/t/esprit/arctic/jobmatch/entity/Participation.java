@@ -20,10 +20,16 @@ public class Participation {
     private Date dateInscription;
 
     private String statut;
+    @Column(columnDefinition = "TEXT")
+    private String qrCode; // stocke le QR en Base64
 
     @ManyToOne
     @JoinColumn(name = "evenement_id")
     private Evenement evenement;
+
+    @ManyToOne
+    @JoinColumn(name = "candidat_id")
+    private Candidat candidat;
 
     @OneToMany(mappedBy = "participation", cascade = CascadeType.ALL)
     private List<Feedback> feedbacks;

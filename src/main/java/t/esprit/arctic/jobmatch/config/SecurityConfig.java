@@ -53,8 +53,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/domaines").permitAll()
-                           .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations").permitAll()
-                           .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/candidats/email/**").permitAll()
@@ -66,11 +66,26 @@ public class SecurityConfig {
                         .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
                         // evenements
+                        //  stats AVANT la règle générale GET
+                        .requestMatchers(HttpMethod.GET, "/api/participations/stats/**")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/stats")
+                        .hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR")
                         .requestMatchers(HttpMethod.DELETE, "/api/evenements/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                         //  Organisateur APRÈS
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/**").hasAnyAuthority("ROLE_CANDIDAT", "ROLE_ORGANISATEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
                         .requestMatchers(HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
                         .requestMatchers(HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+                        //  Participations — règles propres sans doublons
+                        .requestMatchers(HttpMethod.POST, "/api/participations")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/participations/**")
+                        .hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
+
+                        .requestMatchers(HttpMethod.GET, "/api/participations/**")
+                        .hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
                         .requestMatchers("/api/partenaires/**").permitAll()
