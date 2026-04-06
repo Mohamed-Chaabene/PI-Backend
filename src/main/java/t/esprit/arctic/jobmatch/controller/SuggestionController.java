@@ -1,7 +1,6 @@
 package t.esprit.arctic.jobmatch.controller;
 
 import t.esprit.arctic.jobmatch.dto.FormationSuggestion;
-import t.esprit.arctic.jobmatch.dto.DocSuggestion;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,20 +23,24 @@ public class SuggestionController {
     @Value("${youtube.api.key}")
     private String youtubeApiKey;
 
-    @Value("${github.token:}")
-    private String githubToken;
+    @Value("${google.search.api.key}")
+    private String googleApiKey;
 
-    private final HttpClient http = HttpClient.newHttpClient();
+    @Value("${google.search.cx}")
+    private String googleCx;
+
+    private final HttpClient  http   = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ══════════════════════════════════════════════════════════
-    // 1. SUGGESTIONS PLAYLISTS YOUTUBE
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════════
+    // 1. PLAYLISTS YOUTUBE
+    // ══════════════════════════════════════════════════════════════════
     @GetMapping("/formations")
     public ResponseEntity<List<FormationSuggestion>> suggest(
             @RequestParam String titre) throws Exception {
 
-        String query = URLEncoder.encode(titre + " cours complet tutoriel", StandardCharsets.UTF_8);
+        String query = URLEncoder.encode(
+                titre + " cours complet tutoriel", StandardCharsets.UTF_8);
 
         String ytUrl = "https://www.googleapis.com/youtube/v3/search"
                 + "?part=snippet&type=playlist&relevanceLanguage=fr"
@@ -60,7 +63,8 @@ public class SuggestionController {
         for (JsonNode item : root.path("items")) {
             String playlistId  = item.path("id").path("playlistId").asText();
             String videoTitle  = item.path("snippet").path("title").asText();
-            String thumbnail   = item.path("snippet").path("thumbnails").path("medium").path("url").asText();
+            String thumbnail   = item.path("snippet")
+                    .path("thumbnails").path("medium").path("url").asText();
             String channelName = item.path("snippet").path("channelTitle").asText();
 
             if (playlistId.isEmpty() || playlistId.equals("null")) continue;
@@ -70,284 +74,16 @@ public class SuggestionController {
 
             suggestions.add(new FormationSuggestion(
                     playlistId, videoTitle, thumbnail, channelName,
-                    "", // writtenUrl vide — l'admin choisit la source doc séparément
-                    detectCategorie(titre), detectNiveau(titre), nbVideos
+                    "", detectCategorie(titre), detectNiveau(titre), nbVideos
             ));
             if (suggestions.size() >= 3) break;
         }
         return ResponseEntity.ok(suggestions);
     }
 
-    // ══════════════════════════════════════════════════════════
-    // 2. SUGGESTIONS DOCUMENTATION — 3 sources fonctionnelles
-    // ══════════════════════════════════════════════════════════
-
-    // Source 1 : DevDocs.io API — retourne JSON, rendu dans l'app
-    @GetMapping("/docs/devdocs")
-    public ResponseEntity<List<DocSuggestion>> searchDevDocs(
-            @RequestParam String titre) throws Exception {
-
-        // DevDocs liste toutes les entrées disponibles
-        // On filtre selon le titre pour trouver la doc la plus pertinente
-        String url = "https://devdocs.io/docs.json";
-        HttpResponse<String> response = http.send(
-                HttpRequest.newBuilder().uri(URI.create(url)).build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        JsonNode docs = mapper.readTree(response.body());
-        List<DocSuggestion> results = new ArrayList<>();
-        String titreLower = titre.toLowerCase();
-
-        for (JsonNode doc : docs) {
-            String name = doc.path("name").asText().toLowerCase();
-            String slug = doc.path("slug").asText();
-            if (name.contains(titreLower) || titreLower.contains(name)) {
-                results.add(new DocSuggestion(
-                        slug,
-                        doc.path("name").asText(),
-                        "DevDocs.io",
-                        "devdocs",
-                        "https://devdocs.io/" + slug
-                ));
-                if (results.size() >= 3) break;
-            }
-        }
-
-        // Fallback : chercher par catégorie
-        if (results.isEmpty()) {
-            String cat = detectCategorie(titre).toLowerCase();
-            for (JsonNode doc : docs) {
-                String name = doc.path("name").asText().toLowerCase();
-                String slug = doc.path("slug").asText();
-                if (name.contains(cat) || cat.contains(name.split(" ")[0])) {
-                    results.add(new DocSuggestion(
-                            slug,
-                            doc.path("name").asText(),
-                            "DevDocs.io",
-                            "devdocs",
-                            "https://devdocs.io/" + slug
-                    ));
-                    if (results.size() >= 3) break;
-                }
-            }
-        }
-        return ResponseEntity.ok(results);
-    }
-
-    // Source 2 : dev.to API — articles tech gratuits
-    @GetMapping("/docs/devto")
-    public ResponseEntity<List<DocSuggestion>> searchDevTo(
-            @RequestParam String titre) throws Exception {
-
-        String query = URLEncoder.encode(titre, StandardCharsets.UTF_8);
-        String url = "https://dev.to/api/articles?per_page=5&tag=" + query + "&top=1";
-
-        HttpResponse<String> response = http.send(
-                HttpRequest.newBuilder().uri(URI.create(url))
-                        .header("Accept", "application/json").build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        JsonNode articles = mapper.readTree(response.body());
-        List<DocSuggestion> results = new ArrayList<>();
-
-        if (articles.isArray()) {
-            for (JsonNode article : articles) {
-                String articleId = article.path("id").asText();
-                String title     = article.path("title").asText();
-                String articleUrl= article.path("url").asText();
-                String cover     = article.path("cover_image").asText("");
-
-                results.add(new DocSuggestion(
-                        articleId, title, "dev.to", "devto", articleUrl
-                ));
-                if (results.size() >= 3) break;
-            }
-        }
-
-        // Si pas de résultats avec tag, chercher avec search
-        if (results.isEmpty()) {
-            String searchUrl = "https://dev.to/api/articles?per_page=5&"
-                    + "search=" + URLEncoder.encode(titre + " tutorial", StandardCharsets.UTF_8);
-            HttpResponse<String> r2 = http.send(
-                    HttpRequest.newBuilder().uri(URI.create(searchUrl))
-                            .header("Accept", "application/json").build(),
-                    HttpResponse.BodyHandlers.ofString()
-            );
-            JsonNode a2 = mapper.readTree(r2.body());
-            if (a2.isArray()) {
-                for (JsonNode article : a2) {
-                    results.add(new DocSuggestion(
-                            article.path("id").asText(),
-                            article.path("title").asText(),
-                            "dev.to", "devto",
-                            article.path("url").asText()
-                    ));
-                    if (results.size() >= 3) break;
-                }
-            }
-        }
-        return ResponseEntity.ok(results);
-    }
-
-    // Source 3 : GitHub — cours open source (freeCodeCamp, The Odin Project...)
-    @GetMapping("/docs/github")
-    public ResponseEntity<List<DocSuggestion>> searchGithub(
-            @RequestParam String titre) throws Exception {
-
-        String query = URLEncoder.encode(titre + " course tutorial", StandardCharsets.UTF_8);
-        String url = "https://api.github.com/search/repositories"
-                + "?q=" + query + "+topic:tutorial&sort=stars&per_page=5";
-
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Accept", "application/vnd.github.v3+json");
-
-        if (!githubToken.isEmpty()) {
-            builder.header("Authorization", "Bearer " + githubToken);
-        }
-
-        HttpResponse<String> response = http.send(
-                builder.build(), HttpResponse.BodyHandlers.ofString()
-        );
-
-        JsonNode root = mapper.readTree(response.body());
-        List<DocSuggestion> results = new ArrayList<>();
-
-        for (JsonNode repo : root.path("items")) {
-            String repoFullName = repo.path("full_name").asText();
-            String repoName     = repo.path("name").asText();
-            String description  = repo.path("description").asText("Cours open source");
-            int stars           = repo.path("stargazers_count").asInt();
-
-            // Seulement les repos populaires avec plus de 1000 étoiles
-            if (stars < 1000) continue;
-
-            results.add(new DocSuggestion(
-                    repoFullName,
-                    repoName + " (" + stars / 1000 + "k ★)",
-                    "GitHub",
-                    "github",
-                    "https://github.com/" + repoFullName
-            ));
-            if (results.size() >= 3) break;
-        }
-        return ResponseEntity.ok(results);
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // 3. CONTENU DE DOCUMENTATION — rendu dans l'app
-    // ══════════════════════════════════════════════════════════
-
-// Dans SuggestionController.java — remplacer getDevDocsContent
-
-    @GetMapping("/docs/devdocs/content")
-    public ResponseEntity<String> getDevDocsContent(
-            @RequestParam String slug) {
-        try {
-            // DevDocs index.json peut être très lourd — on récupère juste les entrées
-            String url = "https://devdocs.io/docs/" + slug + "/index.json";
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Accept", "application/json")
-                    .header("User-Agent", "Mozilla/5.0")
-                    .build();
-
-            HttpResponse<String> response = http.send(
-                    request, HttpResponse.BodyHandlers.ofString()
-            );
-
-            if (response.statusCode() != 200) {
-                // Retourner un JSON minimal si DevDocs refuse
-                return ResponseEntity.ok(
-                        "{\"entries\":[{\"name\":\"" + slug + "\",\"type\":\"guide\"}]}"
-                );
-            }
-
-            // Limiter la taille — prendre seulement les 50 premières entrées
-            JsonNode root = mapper.readTree(response.body());
-            JsonNode entries = root.path("entries");
-
-            com.fasterxml.jackson.databind.node.ObjectNode result = mapper.createObjectNode();
-            com.fasterxml.jackson.databind.node.ArrayNode limited = mapper.createArrayNode();
-
-            int count = 0;
-            if (entries.isArray()) {
-                for (JsonNode entry : entries) {
-                    limited.add(entry);
-                    if (++count >= 50) break;
-                }
-            }
-            result.set("entries", limited);
-            result.put("slug", slug);
-
-            return ResponseEntity.ok()
-                    .header("Content-Type", "application/json")
-                    .body(mapper.writeValueAsString(result));
-
-        } catch (Exception e) {
-            System.err.println("DevDocs error: " + e.getMessage());
-            return ResponseEntity.ok(
-                    "{\"entries\":[{\"name\":\"Documentation\",\"type\":\"guide\"}],\"slug\":\"" + slug + "\"}"
-            );
-        }
-    }
-
-    // Récupérer un article dev.to complet en HTML
-    @GetMapping("/docs/devto/content")
-    public ResponseEntity<String> getDevToContent(
-            @RequestParam String articleId) throws Exception {
-
-        String url = "https://dev.to/api/articles/" + articleId;
-        HttpResponse<String> response = http.send(
-                HttpRequest.newBuilder().uri(URI.create(url))
-                        .header("Accept", "application/json").build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        JsonNode article = mapper.readTree(response.body());
-        // body_html contient le HTML de l'article complet
-        String bodyHtml = article.path("body_html").asText("");
-        String title    = article.path("title").asText("");
-        String cover    = article.path("cover_image").asText("");
-
-        // Construire un HTML propre
-        String html = "<h1>" + title + "</h1>"
-                + (cover.isEmpty() ? "" : "<img src='" + cover + "' style='width:100%;border-radius:8px;margin-bottom:1rem'>")
-                + bodyHtml;
-
-        return ResponseEntity.ok()
-                .header("Content-Type", "text/html; charset=UTF-8")
-                .body(html);
-    }
-
-    // Récupérer le README d'un repo GitHub en HTML
-    @GetMapping("/docs/github/content")
-    public ResponseEntity<String> getGithubContent(
-            @RequestParam String repo) throws Exception {
-
-        String url = "https://api.github.com/repos/" + repo + "/readme";
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Accept", "application/vnd.github.v3.html"); // GitHub retourne HTML directement
-
-        if (!githubToken.isEmpty()) {
-            builder.header("Authorization", "Bearer " + githubToken);
-        }
-
-        HttpResponse<String> response = http.send(
-                builder.build(), HttpResponse.BodyHandlers.ofString()
-        );
-        return ResponseEntity.ok()
-                .header("Content-Type", "text/html; charset=UTF-8")
-                .body(response.body());
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // 4. VIDEOS D'UNE PLAYLIST YOUTUBE
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════════
+    // 2. VIDEOS D'UNE PLAYLIST
+    // ══════════════════════════════════════════════════════════════════
     @GetMapping("/playlist-videos/{playlistId}")
     public ResponseEntity<List<JsonNode>> getPlaylistVideos(
             @PathVariable String playlistId) throws Exception {
@@ -368,66 +104,242 @@ public class SuggestionController {
         List<JsonNode> videos = new ArrayList<>();
         int position = 1;
         for (JsonNode item : root.path("items")) {
-            String videoId  = item.path("snippet").path("resourceId").path("videoId").asText();
-            String title    = item.path("snippet").path("title").asText();
+            String videoId = item.path("snippet")
+                    .path("resourceId").path("videoId").asText();
+            String title   = item.path("snippet").path("title").asText();
+
             if ("Private video".equals(title) || "Deleted video".equals(title)) continue;
 
-            String thumbnail = item.path("snippet").path("thumbnails").path("medium").path("url").asText("");
-            if (thumbnail.isEmpty())
-                thumbnail = item.path("snippet").path("thumbnails").path("default").path("url").asText("");
+            String thumbnail = item.path("snippet")
+                    .path("thumbnails").path("medium").path("url").asText("");
+            if (thumbnail.isEmpty()) {
+                thumbnail = item.path("snippet")
+                        .path("thumbnails").path("default").path("url").asText("");
+            }
 
-            com.fasterxml.jackson.databind.node.ObjectNode v = mapper.createObjectNode();
-            v.put("videoId", videoId);
-            v.put("title", title);
+            com.fasterxml.jackson.databind.node.ObjectNode v =
+                    mapper.createObjectNode();
+            v.put("videoId",   videoId);
+            v.put("title",     title);
             v.put("thumbnail", thumbnail);
-            v.put("position", position++);
+            v.put("position",  position++);
             videos.add(v);
         }
         return ResponseEntity.ok(videos);
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════════
+    // 3. DOCUMENTATION AUTOMATIQUE — Google Search
+    // ══════════════════════════════════════════════════════════════════
+    @GetMapping("/docs/auto")
+    public ResponseEntity<Map<String, Object>> findDocAuto(
+            @RequestParam String titre) throws Exception {
+
+        List<Map<String, String>> results = new ArrayList<>();
+
+        try {
+            // ── DuckDuckGo Instant Answer API — gratuit, sans clé ─────
+            String query = URLEncoder.encode(
+                titre + " documentation tutorial",
+                StandardCharsets.UTF_8
+            );
+
+            String ddgUrl = "https://api.duckduckgo.com/?q=" + query
+                + "&format=json&no_html=1&skip_disambig=1";
+
+            HttpResponse<String> ddgResp = http.send(
+                HttpRequest.newBuilder()
+                    .uri(URI.create(ddgUrl))
+                    .header("User-Agent", "Mozilla/5.0")
+                    .build(),
+                HttpResponse.BodyHandlers.ofString()
+            );
+
+            JsonNode ddg = mapper.readTree(ddgResp.body());
+
+            // Résultats DuckDuckGo
+            JsonNode relatedTopics = ddg.path("RelatedTopics");
+            if (relatedTopics.isArray()) {
+                for (JsonNode topic : relatedTopics) {
+                    String url  = topic.path("FirstURL").asText("");
+                    String text = topic.path("Text").asText("");
+                    if (url.isEmpty() || text.isEmpty()) continue;
+
+                    Map<String, String> r = new HashMap<>();
+                    r.put("title",   text.length() > 80
+                        ? text.substring(0, 80) + "..." : text);
+                    r.put("url",     url);
+                    r.put("snippet", text);
+                    r.put("source",  extractDomain(url));
+                    r.put("type",    "proxy");
+                    results.add(r);
+                    if (results.size() >= 3) break;
+                }
+            }
+
+            // ── Fallback : URLs directes selon le titre ────────────────
+            if (results.isEmpty()) {
+                results.addAll(buildDirectUrls(titre));
+            }
+
+        } catch (Exception e) {
+            System.err.println("Search error: " + e.getMessage());
+            results.addAll(buildDirectUrls(titre));
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("results", results);
+        result.put("query",   titre);
+        return ResponseEntity.ok(result);
+    }
+
+    // ── URLs directes selon mots-clés du titre ──────────────────────
+    private List<Map<String, String>> buildDirectUrls(String titre) {
+        List<Map<String, String>> results = new ArrayList<>();
+        String t = titre.toLowerCase();
+
+        // Mapping titre → URL documentation officielle directe
+        String url  = null;
+        String name = null;
+
+        if (t.contains("angular")) {
+            url = "https://angular.io/docs"; name = "angular.io"; }
+        else if (t.contains("react")) {
+            url = "https://react.dev/learn"; name = "react.dev"; }
+        else if (t.contains("vue")) {
+            url = "https://vuejs.org/guide/introduction.html"; name = "vuejs.org"; }
+        else if (t.contains("python")) {
+            url = "https://docs.python.org/fr/3/tutorial/index.html"; name = "docs.python.org"; }
+        else if (t.contains("javascript") || t.contains("js")) {
+            url = "https://developer.mozilla.org/fr/docs/Web/JavaScript/Guide"; name = "MDN"; }
+        else if (t.contains("html")) {
+            url = "https://developer.mozilla.org/fr/docs/Learn/HTML"; name = "MDN"; }
+        else if (t.contains("css")) {
+            url = "https://developer.mozilla.org/fr/docs/Learn/CSS"; name = "MDN"; }
+        else if (t.contains("node")) {
+            url = "https://nodejs.org/fr/docs"; name = "nodejs.org"; }
+        else if (t.contains("spring")) {
+            url = "https://spring.io/guides"; name = "spring.io"; }
+        else if (t.contains("docker")) {
+            url = "https://docs.docker.com/get-started/"; name = "docs.docker.com"; }
+        else if (t.contains("kubernetes") || t.contains("k8s")) {
+            url = "https://kubernetes.io/fr/docs/home/"; name = "kubernetes.io"; }
+        else if (t.contains("php")) {
+            url = "https://www.php.net/manual/fr/"; name = "php.net"; }
+        else if (t.contains("laravel")) {
+            url = "https://laravel.com/docs"; name = "laravel.com"; }
+        else if (t.contains("django")) {
+            url = "https://docs.djangoproject.com/fr/"; name = "djangoproject.com"; }
+        else if (t.contains("flutter")) {
+            url = "https://docs.flutter.dev/get-started/codelab"; name = "docs.flutter.dev"; }
+        else if (t.contains("kotlin")) {
+            url = "https://kotlinlang.org/docs/getting-started.html"; name = "kotlinlang.org"; }
+        else if (t.contains("swift")) {
+            url = "https://docs.swift.org/swift-book/"; name = "swift.org"; }
+        else if (t.contains("rust")) {
+            url = "https://doc.rust-lang.org/book/"; name = "rust-lang.org"; }
+        else if (t.contains("go") || t.contains("golang")) {
+            url = "https://go.dev/doc/"; name = "go.dev"; }
+        else if (t.contains("c++") || t.contains("cpp")) {
+            url = "https://www.cplusplus.com/doc/tutorial/"; name = "cplusplus.com"; }
+        else if (t.contains("java") && !t.contains("javascript")) {
+            url = "https://dev.java/learn/"; name = "dev.java"; }
+        else if (t.contains("typescript")) {
+            url = "https://www.typescriptlang.org/docs/"; name = "typescriptlang.org"; }
+        else if (t.contains("sql") || t.contains("mysql")) {
+            url = "https://dev.mysql.com/doc/refman/8.0/en/tutorial.html"; name = "mysql.com"; }
+        else if (t.contains("mongodb")) {
+            url = "https://www.mongodb.com/docs/manual/tutorial/"; name = "mongodb.com"; }
+        else if (t.contains("tensorflow")) {
+            url = "https://www.tensorflow.org/tutorials"; name = "tensorflow.org"; }
+        else if (t.contains("pandas")) {
+            url = "https://pandas.pydata.org/docs/getting_started/index.html"; name = "pandas.pydata.org"; }
+        else if (t.contains("power bi") || t.contains("powerbi")) {
+            url = "https://learn.microsoft.com/fr-fr/power-bi/"; name = "learn.microsoft.com"; }
+        else if (t.contains("aws")) {
+            url = "https://docs.aws.amazon.com/"; name = "docs.aws.amazon.com"; }
+        else if (t.contains("git")) {
+            url = "https://git-scm.com/doc"; name = "git-scm.com"; }
+        else if (t.contains("linux") || t.contains("bash")) {
+            url = "https://www.gnu.org/software/bash/manual/"; name = "gnu.org"; }
+        else {
+            // Fallback absolu : MDN
+            url  = "https://developer.mozilla.org/fr/docs/Learn";
+            name = "MDN Web Docs";
+        }
+
+        Map<String, String> r = new HashMap<>();
+        r.put("title",   titre + " — Documentation officielle");
+        r.put("url",     url);
+        r.put("snippet", "Documentation officielle pour " + titre);
+        r.put("source",  name);
+        r.put("type",    "proxy");
+        results.add(r);
+
+        return results;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
     // UTILITAIRES PRIVÉS
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════════
     private int getPlaylistVideoCount(String playlistId) {
         try {
             String url = "https://www.googleapis.com/youtube/v3/playlists"
-                    + "?part=contentDetails&id=" + playlistId + "&key=" + youtubeApiKey;
+                    + "?part=contentDetails&id=" + playlistId
+                    + "&key=" + youtubeApiKey;
             HttpResponse<String> resp = http.send(
                     HttpRequest.newBuilder().uri(URI.create(url)).build(),
                     HttpResponse.BodyHandlers.ofString()
             );
-            JsonNode root = mapper.readTree(resp.body());
+            JsonNode root  = mapper.readTree(resp.body());
             JsonNode items = root.path("items");
             if (items.isArray() && items.size() > 0)
-                return items.get(0).path("contentDetails").path("itemCount").asInt(0);
+                return items.get(0).path("contentDetails")
+                        .path("itemCount").asInt(0);
         } catch (Exception e) { return 10; }
         return 0;
     }
 
+    private String extractDomain(String url) {
+        try {
+            java.net.URL u = new java.net.URL(url);
+            return u.getHost().replace("www.", "");
+        } catch (Exception e) { return url; }
+    }
+
     private List<FormationSuggestion> fallbackSuggestion(String titre) {
-        List<FormationSuggestion> fallback = new ArrayList<>();
-        fallback.add(new FormationSuggestion(
+        List<FormationSuggestion> list = new ArrayList<>();
+        list.add(new FormationSuggestion(
                 "", "Quota YouTube dépassé — saisir manuellement",
                 "https://cdn-icons-png.flaticon.com/512/376/376048.png",
                 "Système", "", detectCategorie(titre), detectNiveau(titre), 0
         ));
-        return fallback;
+        return list;
     }
 
     private String detectCategorie(String titre) {
         String t = titre.toLowerCase();
         if (t.contains("react") || t.contains("angular") || t.contains("vue") ||
-                t.contains("html") || t.contains("css") || t.contains("javascript"))  return "Frontend";
+                t.contains("html") || t.contains("css") || t.contains("javascript"))
+            return "Frontend";
         if (t.contains("spring") || t.contains("node") || t.contains("django") ||
-                t.contains("laravel") || t.contains("php") || t.contains("java"))     return "Backend";
+                t.contains("laravel") || t.contains("php") || t.contains("java"))
+            return "Backend";
         if (t.contains("docker") || t.contains("kubernetes") ||
-                t.contains("aws") || t.contains("devops"))                            return "DevOps";
+                t.contains("aws") || t.contains("devops") || t.contains("linux"))
+            return "DevOps";
         if (t.contains("machine learning") || t.contains("deep learning") ||
-                t.contains("tensorflow") || t.contains("ia"))                         return "IA";
-        if (t.contains("pandas") || t.contains("sql") || t.contains("data"))     return "Data";
-        if (t.contains("figma") || t.contains("ux") || t.contains("design"))     return "Design";
-        if (t.contains("flutter") || t.contains("android") || t.contains("ios")) return "Mobile";
+                t.contains("tensorflow") || t.contains("ia") ||
+                t.contains("intelligence"))
+            return "IA";
+        if (t.contains("pandas") || t.contains("sql") ||
+                t.contains("data") || t.contains("power bi"))
+            return "Data";
+        if (t.contains("figma") || t.contains("ux") || t.contains("design"))
+            return "Design";
+        if (t.contains("flutter") || t.contains("android") ||
+                t.contains("ios") || t.contains("swift") || t.contains("kotlin"))
+            return "Mobile";
         return "Développement";
     }
 
@@ -435,9 +347,11 @@ public class SuggestionController {
         String t = titre.toLowerCase();
         if (t.contains("débutant") || t.contains("initiation") ||
                 t.contains("introduction") || t.contains("bases") ||
-                t.contains("beginner"))                             return "Débutant";
+                t.contains("beginner") || t.contains("zéro"))
+            return "Débutant";
         if (t.contains("avancé") || t.contains("expert") ||
-                t.contains("master") || t.contains("advanced"))    return "Avancé";
+                t.contains("master") || t.contains("advanced"))
+            return "Avancé";
         return "Intermédiaire";
     }
 }

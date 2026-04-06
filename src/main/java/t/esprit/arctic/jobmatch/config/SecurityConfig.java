@@ -25,7 +25,8 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -36,7 +37,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -48,47 +48,70 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Public GET endpoints
+                        // ── Endpoints publics GET ─────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/domaines").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/candidats/email/**").permitAll()
+
+                        // ── Suggestions et proxy — sans authentification ──────
                         .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/proxy/**").permitAll()
 
-                        // Offres emploi
-                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        // ── Partenaires ───────────────────────────────────────
+                        .requestMatchers("/api/partenaires/**").permitAll()
+                        .requestMatchers("/api/offres-partenaires/**").permitAll()
 
-                        // Questions / Entretiens
-                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        // ── Offres emploi ─────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/offres-emploi",
+                                "/api/offres-emploi/").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/offres-emploi/mes-offres")
+                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**")
+                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**")
+                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**")
+                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
 
-                        // Role-based access
+                        // ── Feedbacks ─────────────────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks")
+                        .hasAuthority("ROLE_CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**")
+                        .hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
+
+                        // ── Questions / Entretiens ────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**")
+                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // ── Rôles admin ───────────────────────────────────────
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
+                        // ── Rôles métier ──────────────────────────────────────
                         .requestMatchers("/api/candidat/**").hasAuthority("ROLE_CANDIDAT")
                         .requestMatchers("/api/recruteur/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
-                        .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
-                        .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers("/api/client-freelance/**")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers("/api/organisateur/**")
+                        .hasAuthority("ROLE_ORGANISATEUR")
 
-                        // Evenements — admin d'abord, puis organisateur
-                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
-
-                        // Feedbacks
-                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
-                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
-
-                        .requestMatchers("/api/partenaires/**").permitAll()
-                        .requestMatchers("/api/offres-partenaires/**").permitAll()
+                        // ── Événements ────────────────────────────────────────
+                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/admin/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/**")
+                        .hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.POST, "/api/evenements")
+                        .hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.PUT, "/api/evenements/**")
+                        .hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.GET,  "/api/video-progression/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/video-progression/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -101,10 +124,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(
+                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
