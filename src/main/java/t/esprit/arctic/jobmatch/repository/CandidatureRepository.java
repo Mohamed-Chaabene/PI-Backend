@@ -16,4 +16,3 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
     List<Candidature> findAllByOrderByDateEnvoiDesc();
 }
 
-//Le repository me permet d’interagir avec la base de données sans écrire manuellement les requêtes SQL

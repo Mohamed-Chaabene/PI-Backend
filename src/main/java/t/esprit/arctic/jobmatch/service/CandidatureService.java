@@ -8,9 +8,7 @@ import t.esprit.arctic.jobmatch.entity.Candidature;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,7 +70,6 @@ public class CandidatureService implements ICandidatureService {
 
     @Override
     public List<CandidatureDTO> rechercherParEntreprise(String entreprise) {
-        // À implémenter plus tard
         return new ArrayList<>();
     }
 
@@ -90,77 +87,23 @@ public class CandidatureService implements ICandidatureService {
 
     @Override
     public CandidatureDTO modifierCandidature(Long id, CandidatureDTO dto) {
-        // Log pour déboguer
-        System.out.println("=== MODIFICATION CANDIDATURE ===");
-        System.out.println("ID: " + id);
-        System.out.println("DTO reçu: " + dto);
-
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
 
-        // Mettre à jour TOUS les champs modifiables
-        if (dto.getNomComplet() != null) {
-            candidature.setNomComplet(dto.getNomComplet());
-            System.out.println("Nom complet mis à jour: " + dto.getNomComplet());
-        }
-
-        if (dto.getEmail() != null) {
-            candidature.setEmail(dto.getEmail());
-            System.out.println("Email mis à jour: " + dto.getEmail());
-        }
-
-        if (dto.getTelephone() != null) {
-            candidature.setTelephone(dto.getTelephone());
-            System.out.println("Téléphone mis à jour: " + dto.getTelephone());
-        }
-
-        if (dto.getFormation() != null) {
-            candidature.setFormation(dto.getFormation());
-            System.out.println("Formation mise à jour: " + dto.getFormation());
-        }
-
-        if (dto.getExperience() != null) {
-            candidature.setExperience(dto.getExperience());
-            System.out.println("Expérience mise à jour: " + dto.getExperience());
-        }
-
-        if (dto.getCompetences() != null) {
-            candidature.setCompetences(dto.getCompetences());
-            System.out.println("Compétences mises à jour: " + dto.getCompetences());
-        }
-
-        if (dto.getLettreMotivation() != null) {
-            candidature.setLettreMotivation(dto.getLettreMotivation());
-            System.out.println("Lettre de motivation mise à jour: " + dto.getLettreMotivation());
-        }
-
-        if (dto.getDateDisponibilite() != null) {
-            candidature.setDateDisponibilite(dto.getDateDisponibilite());
-            System.out.println("Date disponibilité mise à jour: " + dto.getDateDisponibilite());
-        }
-
-        if (dto.getPreavis() != null) {
-            candidature.setPreavis(dto.getPreavis());
-            System.out.println("Préavis mis à jour: " + dto.getPreavis());
-        }
-
-        if (dto.getDescription() != null) {
-            candidature.setDescription(dto.getDescription());
-            System.out.println("Description mise à jour: " + dto.getDescription());
-        }
-
-        if (dto.getAcceptContact() != null) {
-            candidature.setAcceptContact(dto.getAcceptContact());
-            System.out.println("Accept contact mis à jour: " + dto.getAcceptContact());
-        }
-
+        if (dto.getNomComplet() != null) candidature.setNomComplet(dto.getNomComplet());
+        if (dto.getEmail() != null) candidature.setEmail(dto.getEmail());
+        if (dto.getTelephone() != null) candidature.setTelephone(dto.getTelephone());
+        if (dto.getFormation() != null) candidature.setFormation(dto.getFormation());
+        if (dto.getExperience() != null) candidature.setExperience(dto.getExperience());
+        if (dto.getCompetences() != null) candidature.setCompetences(dto.getCompetences());
+        if (dto.getLettreMotivation() != null) candidature.setLettreMotivation(dto.getLettreMotivation());
+        if (dto.getDateDisponibilite() != null) candidature.setDateDisponibilite(dto.getDateDisponibilite());
+        if (dto.getPreavis() != null) candidature.setPreavis(dto.getPreavis());
+        if (dto.getDescription() != null) candidature.setDescription(dto.getDescription());
+        if (dto.getAcceptContact() != null) candidature.setAcceptContact(dto.getAcceptContact());
         candidature.setAcceptRGPD(dto.isAcceptRGPD());
 
-        // Sauvegarder les modifications
-        Candidature updated = candidatureRepository.save(candidature);
-        System.out.println(" Candidature sauvegardée avec succès");
-
-        return convertToDTO(updated);
+        return convertToDTO(candidatureRepository.save(candidature));
     }
 
     private CandidatureDTO convertToDTO(Candidature c) {
