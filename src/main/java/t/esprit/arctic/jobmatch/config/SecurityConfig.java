@@ -118,6 +118,7 @@ public class SecurityConfig {
                         // ── Vidéo progression ─────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/video-progression/**").permitAll()
+                        .requestMatchers("/api/chatbot/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
