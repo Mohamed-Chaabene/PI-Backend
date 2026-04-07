@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.FeedbackEventRequest;
 import t.esprit.arctic.jobmatch.dto.FeedbackEventResponse;
+import t.esprit.arctic.jobmatch.dto.OrganisateurReputationResponse;
 import t.esprit.arctic.jobmatch.service.FeedbackEventService;
 
 import java.util.List;
@@ -60,5 +61,19 @@ public class FeedbackEventController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         feedbackEventService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // Réputation d'un organisateur pour un événement précis
+    @GetMapping("/reputation")
+    public ResponseEntity<OrganisateurReputationResponse> getReputation(
+            @RequestParam Long organisateurId,
+            @RequestParam String nomOrganisateur,
+            @RequestParam String type,
+            @RequestParam String titre) {
+        return ResponseEntity.ok(
+                feedbackEventService.getReputation(
+                        organisateurId, nomOrganisateur, type, titre
+                )
+        );
     }
 }

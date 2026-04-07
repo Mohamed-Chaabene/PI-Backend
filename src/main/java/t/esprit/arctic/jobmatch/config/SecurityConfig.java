@@ -92,6 +92,8 @@ public class SecurityConfig {
                         .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers(HttpMethod.DELETE, "/api/feedbacks-evenement/**")
                         .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/reputation")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
                         .anyRequest().authenticated()

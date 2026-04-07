@@ -21,4 +21,39 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
     // Note moyenne d'un événement
     @Query("SELECT AVG(f.note) FROM FeedbackEvent f WHERE f.participation.evenement.id = :evenementId")
     Double findNoteMoyenneByEvenementId(@Param("evenementId") Long evenementId);
+
+    // Tous les feedbacks d'un organisateur — données brutes
+    @Query("""
+    SELECT f FROM FeedbackEvent f
+    JOIN f.participation p
+    JOIN p.evenement e
+    WHERE e.organisateur.id = :organisateurId
+""")
+    List<FeedbackEvent> findByOrganisateurId(@Param("organisateurId") Long organisateurId);
+
+    // Tous les feedbacks d'un organisateur par type
+    @Query("""
+    SELECT f FROM FeedbackEvent f
+    JOIN f.participation p
+    JOIN p.evenement e
+    WHERE e.organisateur.id = :organisateurId
+    AND e.type = :type
+""")
+    List<FeedbackEvent> findByOrganisateurIdAndType(
+            @Param("organisateurId") Long organisateurId,
+            @Param("type") String type
+    );
+
+    // Tous les feedbacks d'un organisateur par titre
+    @Query("""
+    SELECT f FROM FeedbackEvent f
+    JOIN f.participation p
+    JOIN p.evenement e
+    WHERE e.organisateur.id = :organisateurId
+    AND e.titre = :titre
+""")
+    List<FeedbackEvent> findByOrganisateurIdAndTitre(
+            @Param("organisateurId") Long organisateurId,
+            @Param("titre") String titre
+    );
 }

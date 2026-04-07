@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.dto.FeedbackEventRequest;
 import t.esprit.arctic.jobmatch.dto.FeedbackEventResponse;
+import t.esprit.arctic.jobmatch.dto.OrganisateurReputationResponse;
 import t.esprit.arctic.jobmatch.entity.FeedbackEvent;
 import t.esprit.arctic.jobmatch.entity.Participation;
 import t.esprit.arctic.jobmatch.repository.FeedbackEventRepository;
@@ -109,5 +110,99 @@ public class FeedbackEventService {
                 f.getParticipation() != null ? f.getParticipation().getId() : null,
                 titreEvenement
         );
+    }
+
+    public OrganisateurReputationResponse getReputation(
+            Long organisateurId,
+            String nomOrganisateur,
+            String type,
+            String titre) {
+
+        // ── Niveau 1 : réputation globale ────────────────────────────────────────
+        // On récupère tous les feedbacks de cet organisateur
+        List<FeedbackEvent> tousLesFeedbacks =
+                repository.findByOrganisateurId(organisateurId);
+
+        // On calcule la moyenne avec les streams Java — plus lisible qu'une @Query AVG
+        double noteMoyenneGlobale = tousLesFeedbacks.stream()
+                .mapToInt(FeedbackEvent::getNote)
+                .average()
+                .orElse(0.0);
+        noteMoyenneGlobale = Math.round(noteMoyenneGlobale * 10.0) / 10.0;
+        long totalFeedbacks = tousLesFeedbacks.size();
+
+        // On attribue le badge selon la note
+        String badgeReputation = calculerBadge(noteMoyenneGlobale, totalFeedbacks);
+
+        // ── Niveau 2 : réputation par type ───────────────────────────────────────
+        // Ex: si l'événement actuel est un WORKSHOP, on regarde tous ses workshops passés
+        List<FeedbackEvent> feedbacksParType =
+                repository.findByOrganisateurIdAndType(organisateurId, type);
+
+        double noteMoyenneParType = feedbacksParType.stream()
+                .mapToInt(FeedbackEvent::getNote)
+                .average()
+                .orElse(0.0);
+        noteMoyenneParType = Math.round(noteMoyenneParType * 10.0) / 10.0;
+        long totalFeedbacksParType = feedbacksParType.size();
+
+        String badgeType = calculerBadgeType(
+                noteMoyenneParType, totalFeedbacksParType, type
+        );
+
+        // ── Niveau 3 : réputation par titre ──────────────────────────────────────
+        // Ex: si l'événement s'appelle "Job Fair Tunis", on regarde les éditions passées
+        List<FeedbackEvent> feedbacksParTitre =
+                repository.findByOrganisateurIdAndTitre(organisateurId, titre);
+
+        double noteMoyenneTitrePasse = feedbacksParTitre.stream()
+                .mapToInt(FeedbackEvent::getNote)
+                .average()
+                .orElse(0.0);
+        noteMoyenneTitrePasse = Math.round(noteMoyenneTitrePasse * 10.0) / 10.0;
+
+        String badgeTitre = calculerBadgeTitre(
+                noteMoyenneTitrePasse, (long) feedbacksParTitre.size()
+        );
+
+        return new OrganisateurReputationResponse(
+                organisateurId,
+                nomOrganisateur,
+                noteMoyenneGlobale,
+                totalFeedbacks,
+                badgeReputation,
+                noteMoyenneParType,
+                totalFeedbacksParType,
+                badgeType,
+                noteMoyenneTitrePasse,
+                badgeTitre
+        );
+    }
+
+    // Badge global — basé sur la note moyenne toutes catégories confondues
+    private String calculerBadge(double note, long total) {
+        if (total == 0) return "NOUVEAU";
+        if (note >= 4.5) return "EXCELLENT";
+        if (note >= 3.5) return "RECOMMANDE";
+        if (note >= 2.5) return "MOYEN";
+        return "PEU_RECOMMANDE";
+    }
+
+    // Badge par type — ajoute le type au badge pour plus de précision
+    private String calculerBadgeType(double note, long total, String type) {
+        if (total == 0) return "PREMIER_" + type;
+        if (note >= 4.5) return "EXCELLENT_" + type;
+        if (note >= 3.5) return "BON_" + type;
+        if (note >= 2.5) return "MOYEN_" + type;
+        return "MAUVAIS_" + type;
+    }
+
+    // Badge par titre — indique si les éditions précédentes étaient appréciées
+    private String calculerBadgeTitre(double note, long total) {
+        if (total == 0) return "NOUVEAU";
+        if (note >= 4.5) return "TRES_APPRECIE";
+        if (note >= 3.5) return "BIEN_NOTE";
+        if (note >= 2.5) return "MOYEN";
+        return "MAUVAIS_RETOUR";
     }
 }
