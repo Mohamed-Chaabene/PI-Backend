@@ -80,14 +80,18 @@ public class SecurityConfig {
                         //  Participations — règles propres sans doublons
                         .requestMatchers(HttpMethod.POST, "/api/participations")
                         .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
-
                         .requestMatchers(HttpMethod.PUT, "/api/participations/**")
                         .hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
-
                         .requestMatchers(HttpMethod.GET, "/api/participations/**")
                         .hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
-                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
-                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks-evenement")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/**")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT", "ROLE_ORGANISATEUR", "ORGANISATEUR")
+                        .requestMatchers(HttpMethod.PUT, "/api/feedbacks-evenement/**")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.DELETE, "/api/feedbacks-evenement/**")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
                         .anyRequest().authenticated()
