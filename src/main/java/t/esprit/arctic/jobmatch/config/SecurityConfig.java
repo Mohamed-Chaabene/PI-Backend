@@ -75,6 +75,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
+                        .requestMatchers("/api/notifications-partenaire/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
