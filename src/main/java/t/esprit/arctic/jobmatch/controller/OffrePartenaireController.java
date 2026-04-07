@@ -68,4 +68,20 @@ public class OffrePartenaireController {
         return ResponseEntity.ok(
                 service.predictNextOffreType(partenaireId));
     }
+
+
+    @PutMapping("/{id}/epingle")
+    public ResponseEntity<OffrePartenaire> toggleEpingle(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(
+                service.toggleEpingle(id));
+    }
+
+
+    @GetMapping("/partenaire/{id}/triees")
+    public ResponseEntity<List<OffrePartenaire>>
+    getByPartenaireTriees(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                service.getByPartenaireTriees(id));
+    }
 }

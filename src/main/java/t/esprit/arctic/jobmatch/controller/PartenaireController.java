@@ -77,7 +77,7 @@ public class PartenaireController {
             @RequestParam Long id2) {
         return ResponseEntity.ok(service.comparerPartenaires(id1, id2));
     }
-    // ✅ Incrémente les vues
+
     @PutMapping("/{id}/vues")
     public ResponseEntity<Void> incrementerVues(
             @PathVariable Long id) {
@@ -85,7 +85,7 @@ public class PartenaireController {
         return ResponseEntity.ok().build();
     }
 
-    // ✅ Récupère les vues
+
     @GetMapping("/{id}/vues")
     public ResponseEntity<Integer> getNombreVues(
             @PathVariable Long id) {

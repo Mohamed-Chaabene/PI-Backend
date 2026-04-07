@@ -68,7 +68,7 @@ public class OffrePartenaireService {
         return offreRepo.searchByKeyword(keyword.trim());
     }
 
-    // ✅ Prédiction ML — Naive Bayes manuel
+
     @Transactional
     public String predictNextOffreType(Long partenaireId) {
 
@@ -80,7 +80,7 @@ public class OffrePartenaireService {
             return "EMPLOI (50%)";
         }
 
-        // ✅ Étape 1 — Compte total EMPLOI / STAGE
+
         long nbEmploi = offres.stream()
                 .filter(o -> o.getType()
                         == TypeOffrePartenaire.EMPLOI)
@@ -93,11 +93,11 @@ public class OffrePartenaireService {
 
         long total = nbEmploi + nbStage;
 
-        // ✅ Étape 2 — Probabilités a priori (Naive Bayes)
+
         double probEmploi = (double) nbEmploi / total;
         double probStage  = (double) nbStage  / total;
 
-        // ✅ Étape 3 — Saisonnalité (feature mois)
+
         int moisActuel = Calendar.getInstance()
                 .get(Calendar.MONTH) + 1;
 
@@ -111,7 +111,7 @@ public class OffrePartenaireService {
             probEmploi *= 1.5;
         }
 
-        // ✅ Étape 4 — Type partenaire (feature)
+
         Partenaire partenaire = partenaireRepo
                 .findById(partenaireId).orElse(null);
 
@@ -126,8 +126,7 @@ public class OffrePartenaireService {
             }
         }
 
-        // ✅ Étape 5 — Tendance récente
-        // (3 dernières offres comptent double)
+
         List<OffrePartenaire> dernieres = offres.stream()
                 .sorted((a, b) -> {
                     if (a.getDatePublication() == null) return 1;
@@ -146,7 +145,7 @@ public class OffrePartenaireService {
             }
         }
 
-        // ✅ Étape 6 — Normalisation et confiance
+
         double totalProb = probEmploi + probStage;
         int confidenceEmploi =
                 (int)((probEmploi / totalProb) * 100);
@@ -158,5 +157,25 @@ public class OffrePartenaireService {
         } else {
             return "STAGE (" + confidenceStage + "%)";
         }
+    }
+
+
+    public OffrePartenaire toggleEpingle(Long offreId) {
+        OffrePartenaire offre = getById(offreId);
+        offre.setEpinglee(!offre.isEpinglee());
+        return offreRepo.save(offre);
+    }
+
+
+    public List<OffrePartenaire> getByPartenaireTriees(
+            Long partenaireId) {
+        return offreRepo.findByPartenaireId(partenaireId)
+                .stream()
+                .sorted((a, b) -> {
+                    if (a.isEpinglee() && !b.isEpinglee()) return -1;
+                    if (!a.isEpinglee() && b.isEpinglee()) return 1;
+                    return 0;
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 }

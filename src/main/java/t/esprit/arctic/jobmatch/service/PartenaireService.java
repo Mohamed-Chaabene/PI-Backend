@@ -51,7 +51,7 @@ public class PartenaireService {
 
         Partenaire saved = partenaireRepo.save(p);
 
-        // ✅ Notifie tous les candidats
+
         notificationPartenaireService.notifierTousCandidats(
                 "🎉 Nouveau partenaire !",
                 "'" + saved.getNom()
@@ -178,19 +178,19 @@ public class PartenaireService {
         );
     }
 
-    // ✅ Incrémente le compteur de vues
+
     public void incrementerVues(Long partenaireId) {
         Partenaire partenaire = getById(partenaireId);
         partenaire.setNombreVues(partenaire.getNombreVues() + 1);
         partenaireRepo.save(partenaire);
     }
 
-    // ✅ Récupère le nombre de vues
+
     public int getNombreVues(Long partenaireId) {
         return getById(partenaireId).getNombreVues();
     }
 
-    // ✅ Top partenaires par vues
+
     public List<Partenaire> getTopParVues(int limit) {
         return partenaireRepo.findAll()
                 .stream()
