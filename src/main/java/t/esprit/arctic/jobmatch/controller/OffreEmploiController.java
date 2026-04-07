@@ -18,6 +18,7 @@ import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 import t.esprit.arctic.jobmatch.entity.Recruteur;
 import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
 import t.esprit.arctic.jobmatch.repository.RecruteurRepository;
+import t.esprit.arctic.jobmatch.service.NotificationService;
 
 import java.util.Comparator;
 import java.util.Date;
@@ -32,6 +33,7 @@ public class OffreEmploiController {
 
     private final OffreEmploiRepository offreEmploiRepository;
     private final RecruteurRepository recruteurRepository;
+    private final NotificationService notificationService;
 
     @GetMapping
     public ResponseEntity<List<OffreEmploi>> getAllOffres() {
@@ -99,7 +101,16 @@ public class OffreEmploiController {
         offre.setDatePublication(new Date());
         offre.setRecruteur(recruteur);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(offreEmploiRepository.save(offre));
+        OffreEmploi savedOffre = offreEmploiRepository.save(offre);
+        
+        // Notify all followers of this recruiter about the new job
+        notificationService.notifyFollowersOfNewJob(
+            recruteur.getId(),
+            recruteur.getNom(),
+            offre.getTitre()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedOffre);
     }
 
     @PutMapping("/{id}")
