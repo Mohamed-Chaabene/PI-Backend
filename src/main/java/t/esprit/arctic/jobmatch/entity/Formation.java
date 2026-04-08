@@ -1,7 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.*;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -16,25 +15,16 @@ public class Formation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Le titre est requis")
-    @Size(min = 3, max = 150)
     private String titre;
 
-    @NotBlank(message = "La catégorie est requise")
     private String categorie;
 
-    @NotBlank(message = "La plateforme est requise")
     private String plateforme;
 
-    @NotBlank(message = "Le statut est requis")
-    @Pattern(regexp = "(Disponible|Archivée|Bientôt)", message = "Statut invalide")
     private String statut;
 
-    @NotBlank(message = "La durée est requise")
     private String duree;
 
-    @NotBlank(message = "Le niveau est requis")
-    @Pattern(regexp = "(Débutant|Intermédiaire|Avancé|Expert)", message = "Niveau invalide")
     private String niveau;
 
     // ── Champs contenus enrichis ──────────────────────────────────────────────

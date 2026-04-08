@@ -23,13 +23,13 @@ public class VideoProgression {
     private Long formationId;
 
     @Column(nullable = false)
-    private String videoId;      // YouTube video ID
+    private String videoId;
 
-    private boolean vuComplete;  // vidéo vue jusqu'à la fin
-    private boolean quizReussi;  // quiz validé après la vidéo
+    private boolean vuComplete;
+    private boolean quizReussi;
 
     private LocalDateTime dateVue;
     private LocalDateTime dateQuiz;
 
-    private int scoreQuiz;       // score obtenu au quiz (0-100)
+    private int scoreQuiz;
 }

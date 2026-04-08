@@ -1,11 +1,17 @@
 package t.esprit.arctic.jobmatch.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Formation;
+import t.esprit.arctic.jobmatch.dto.FormationDTO;
+import org.springframework.beans.BeanUtils;
 import t.esprit.arctic.jobmatch.service.FormationService;
+
 import java.util.List;
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/formations")
@@ -55,12 +61,16 @@ public class FormationController {
     }
 
     @PostMapping
-    public ResponseEntity<Formation> create(@RequestBody Formation formation) {
+    public ResponseEntity<Formation> create(@Valid @RequestBody FormationDTO formationDto) {
+        Formation formation = new Formation();
+        BeanUtils.copyProperties(formationDto, formation);
         return ResponseEntity.ok(formationService.create(formation));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Formation> update(@PathVariable Long id, @RequestBody Formation formation) {
+    public ResponseEntity<Formation> update(@PathVariable Long id, @Valid @RequestBody FormationDTO formationDto) {
+        Formation formation = new Formation();
+        BeanUtils.copyProperties(formationDto, formation);
         return ResponseEntity.ok(formationService.update(id, formation));
     }
 

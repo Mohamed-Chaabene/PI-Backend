@@ -1,9 +1,12 @@
 package t.esprit.arctic.jobmatch.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Feedback;
+import t.esprit.arctic.jobmatch.dto.FeedbackDTO;
+import org.springframework.beans.BeanUtils;
 import t.esprit.arctic.jobmatch.service.FeedbackService;
 import java.util.List;
 import java.util.Map;
@@ -29,12 +32,16 @@ public class FeedbackController {
     }
 
     @PostMapping
-    public ResponseEntity<Feedback> create(@RequestBody Feedback feedback) {
+    public ResponseEntity<Feedback> create(@Valid @RequestBody FeedbackDTO feedbackDto) {
+        Feedback feedback = new Feedback();
+        BeanUtils.copyProperties(feedbackDto, feedback);
         return ResponseEntity.ok(feedbackService.create(feedback));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Feedback> update(@PathVariable Long id, @RequestBody Feedback feedback) {
+    public ResponseEntity<Feedback> update(@PathVariable Long id, @Valid @RequestBody FeedbackDTO feedbackDto) {
+        Feedback feedback = new Feedback();
+        BeanUtils.copyProperties(feedbackDto, feedback);
         return ResponseEntity.ok(feedbackService.update(id, feedback));
     }
 
