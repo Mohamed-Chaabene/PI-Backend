@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.EvenementRequest;
 import t.esprit.arctic.jobmatch.dto.EvenementResponse;
+import t.esprit.arctic.jobmatch.dto.EvenementStatsResponse;
 import t.esprit.arctic.jobmatch.service.EvenementService;
 
 import java.util.List;
@@ -66,5 +67,15 @@ public class EvenementController {
     public ResponseEntity<Void> annulerAdmin(@PathVariable Long id) {
         service.annulerAdmin(id);
         return ResponseEntity.noContent().build();
+    }
+
+    //  GET /api/evenements/stats?mois=4&annee=2026&organisateurId=152
+// Retourne les statistiques d'un organisateur pour un mois
+    @GetMapping("/stats")
+    public ResponseEntity<EvenementStatsResponse> getStats(
+            @RequestParam int mois,
+            @RequestParam int annee,
+            @RequestParam Long organisateurId) {
+        return ResponseEntity.ok(service.getStats(mois, annee, organisateurId));
     }
 }

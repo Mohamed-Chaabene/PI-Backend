@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/candidats/email/**").permitAll()
 
-                        // ── Suggestions et proxy — sans authentification ──────
+                        // ── Suggestions et proxy ──────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/proxy/**").permitAll()
 
@@ -69,28 +69,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/search/utilisateurs/nom").authenticated()
 
                         // ── Offres emploi ─────────────────────────────────────
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/offres-emploi",
-                                "/api/offres-emploi/").permitAll()
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/offres-emploi/mes-offres")
-                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**")
-                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**")
-                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**")
-                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
 
                         // ── Feedbacks ─────────────────────────────────────────
-                        .requestMatchers(HttpMethod.POST, "/api/feedbacks")
-                        .hasAuthority("ROLE_CANDIDAT")
-                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**")
-                        .hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
 
                         // ── Questions / Entretiens ────────────────────────────
-                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**")
-                        .hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
 
                         // ── Rôles admin ───────────────────────────────────────
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
@@ -100,20 +90,29 @@ public class SecurityConfig {
                         .requestMatchers("/api/candidat/**").hasAuthority("ROLE_CANDIDAT")
                         .requestMatchers("/api/recruteur/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
-                        .requestMatchers("/api/client-freelance/**")
-                        .hasAuthority("ROLE_CLIENT_FREELANCE")
-                        .requestMatchers("/api/organisateur/**")
-                        .hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
 
                         // ── Événements ────────────────────────────────────────
-                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/admin/**")
-                        .hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/**")
-                        .hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.POST, "/api/evenements")
-                        .hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.PUT, "/api/evenements/**")
-                        .hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.GET, "/api/participations/stats/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/stats").hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/**").hasAnyAuthority("ROLE_CANDIDAT", "ROLE_ORGANISATEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
+                        .requestMatchers(HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
+
+                        // ── Participations ────────────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/participations").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.PUT, "/api/participations/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/participations/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
+
+                        // ── Feedbacks Evenement ───────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks-evenement").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT", "ROLE_ORGANISATEUR", "ORGANISATEUR")
+                        .requestMatchers(HttpMethod.PUT, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.DELETE, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/reputation").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
 
                         // ── Vidéo progression ─────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()
@@ -121,6 +120,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/chatbot/**").permitAll()
 
                         .anyRequest().authenticated()
+
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
