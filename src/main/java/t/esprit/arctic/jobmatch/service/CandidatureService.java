@@ -11,6 +11,9 @@ import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+import java.util.*;
+import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CandidatureService implements ICandidatureService {

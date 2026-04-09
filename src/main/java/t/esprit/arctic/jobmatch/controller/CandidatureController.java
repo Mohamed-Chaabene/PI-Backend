@@ -362,6 +362,521 @@ public class CandidatureController {
         }
     }
 
+
+
+
+
+    // ==================== FONCTIONNALITÉS AVANCÉES ====================
+
+    // 1 — Analyse taux de réussite
+    @GetMapping("/taux-reussite")
+    public ResponseEntity<Map<String, Object>> getTauxReussite() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        long total = candidatures.size();
+        long acceptees = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count();
+        long refusees = candidatures.stream().filter(c -> "REFUSEE".equals(c.getStatut())).count();
+        long enAttente = candidatures.stream().filter(c -> "EN_ATTENTE".equals(c.getStatut())).count();
+
+        double tauxReussite = total > 0 ? (double) acceptees / total * 100 : 0;
+        double tauxRefus = total > 0 ? (double) refusees / total * 100 : 0;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", total);
+        result.put("acceptees", acceptees);
+        result.put("refusees", refusees);
+        result.put("enAttente", enAttente);
+        result.put("tauxReussite", Math.round(tauxReussite));
+        result.put("tauxRefus", Math.round(tauxRefus));
+
+        return ResponseEntity.ok(result);
+    }
+
+    // 2 — Statistiques par mois
+    @GetMapping("/stats-par-mois")
+    public ResponseEntity<List<Map<String, Object>>> getStatsParMois() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        String[] mois = {"Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"};
+        int[] compteur = new int[12];
+
+        candidatures.forEach(c -> {
+            if (c.getDateEnvoi() != null) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(c.getDateEnvoi());
+                compteur[cal.get(Calendar.MONTH)]++;
+            }
+        });
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("mois", mois[i]);
+            m.put("count", compteur[i]);
+            result.add(m);
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    // 3 — Smart Match Score (compatibilité avec les offres)
+    @GetMapping("/smart-match")
+    public ResponseEntity<List<Map<String, Object>>> getSmartMatch() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        // Récupérer toutes les compétences du candidat depuis ses candidatures
+        List<Candidature> mesCandidatures = candidatureRepository.findByCandidatId(candidat.getId());
+        Set<String> mesCompetences = new HashSet<>();
+        mesCandidatures.forEach(c -> {
+            if (c.getCompetences() != null) {
+                Arrays.stream(c.getCompetences().split(","))
+                        .map(String::trim)
+                        .map(String::toLowerCase)
+                        .forEach(mesCompetences::add);
+            }
+        });
+
+        // Récupérer toutes les offres
+        List<OffreEmploi> offres = offreEmploiRepository.findAll();
+
+        List<Map<String, Object>> result = offres.stream().map(offre -> {
+                    // Calculer le score de compatibilité
+                    String descOffre = ((offre.getDescription() != null ? offre.getDescription() : "") + " " +
+                            (offre.getTitre() != null ? offre.getTitre() : "")).toLowerCase();
+
+                    long matches = mesCompetences.stream()
+                            .filter(comp -> descOffre.contains(comp))
+                            .count();
+
+                    int score = mesCompetences.size() > 0
+                            ? (int) Math.min((matches * 100) / mesCompetences.size(), 99)
+                            : 30;
+
+                    String label = score >= 70 ? "Excellent match" : score >= 40 ? "Bon match" : "Match partiel";
+
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("offreId", offre.getId());
+                    m.put("titrOffre", offre.getTitre());
+                    m.put("entreprise", offre.getEntreprise());
+                    m.put("localisation", offre.getLocation());
+                    m.put("score", score);
+                    m.put("label", label);
+                    m.put("typeContrat", offre.getTypeContrat());
+                    m.put("salary", offre.getSalary());
+                    return m;
+                })
+                .sorted((a, b) -> (int) b.get("score") - (int) a.get("score"))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    // 4 — Radar compétences
+    @GetMapping("/radar-competences")
+    public ResponseEntity<Map<String, Object>> getRadarCompetences() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        // Collecter toutes les compétences
+        Set<String> competences = new HashSet<>();
+        candidatures.forEach(c -> {
+            if (c.getCompetences() != null) {
+                Arrays.stream(c.getCompetences().split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .forEach(competences::add);
+            }
+        });
+
+        long total = candidatures.size();
+        long acceptees = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count();
+        long avecExperience = candidatures.stream().filter(c -> c.getExperience() != null && !c.getExperience().isEmpty()).count();
+
+        // Calculer les scores radar
+        List<Map<String, Object>> radarData = new ArrayList<>();
+
+        Map<String, Object> r1 = new HashMap<>();
+        r1.put("label", "Compétences techniques");
+        r1.put("valeur", Math.min(competences.size() * 15, 100));
+        radarData.add(r1);
+
+        Map<String, Object> r2 = new HashMap<>();
+        r2.put("label", "Expérience");
+        r2.put("valeur", avecExperience > 0 ? 75 : 20);
+        radarData.add(r2);
+
+        Map<String, Object> r3 = new HashMap<>();
+        r3.put("label", "Candidatures");
+        r3.put("valeur", Math.min(total * 10, 100));
+        radarData.add(r3);
+
+        Map<String, Object> r4 = new HashMap<>();
+        r4.put("label", "Taux de succès");
+        r4.put("valeur", total > 0 ? (int)((double) acceptees / total * 100) : 0);
+        radarData.add(r4);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("radarData", radarData);
+        result.put("competences", new ArrayList<>(competences));
+        result.put("totalCompetences", competences.size());
+
+        return ResponseEntity.ok(result);
+    }
+
+    // 5 — Prédiction de succès
+    @GetMapping("/prediction-succes")
+    public ResponseEntity<Map<String, Object>> getPredictionSucces() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        long total = candidatures.size();
+        long acceptees = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count();
+
+        // Calcul intelligent de la probabilité
+        int probabilite = 40; // base
+
+        if (total > 0) probabilite += 10;
+        if (total >= 5) probabilite += 10;
+        if (acceptees > 0) probabilite += 15;
+
+        // Vérifier si le candidat a des compétences renseignées
+        boolean aDesCompetences = candidatures.stream()
+                .anyMatch(c -> c.getCompetences() != null && !c.getCompetences().isEmpty());
+        if (aDesCompetences) probabilite += 10;
+
+        // Vérifier si le candidat a une lettre de motivation
+        boolean aLettre = candidatures.stream()
+                .anyMatch(c -> c.getLettreMotivation() != null && !c.getLettreMotivation().isEmpty());
+        if (aLettre) probabilite += 10;
+
+        probabilite = Math.min(probabilite, 95);
+
+        // Points forts
+        List<String> pointsForts = new ArrayList<>();
+        if (aDesCompetences) pointsForts.add("Compétences bien renseignées");
+        if (aLettre) pointsForts.add("Lettre de motivation présente");
+        if (acceptees > 0) pointsForts.add("Historique de succès");
+        if (total >= 5) pointsForts.add("Candidature régulière");
+
+        // Points à améliorer
+        List<String> pointsAmeliorer = new ArrayList<>();
+        if (!aDesCompetences) pointsAmeliorer.add("Ajoutez vos compétences");
+        if (!aLettre) pointsAmeliorer.add("Rédigez une lettre de motivation");
+        if (total < 3) pointsAmeliorer.add("Envoyez plus de candidatures");
+        pointsAmeliorer.add("Personnalisez chaque candidature");
+
+        String[] moments = {"Mardi matin", "Mercredi matin", "Lundi après-midi", "Jeudi matin"};
+        String meilleurMoment = moments[(int)(Math.random() * moments.length)];
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("probabilite", probabilite);
+        result.put("meilleurMoment", meilleurMoment);
+        result.put("pointsForts", pointsForts);
+        result.put("pointsAmeliorer", pointsAmeliorer);
+
+        return ResponseEntity.ok(result);
+    }
+
+    // 6 — Relances intelligentes
+    @GetMapping("/relances")
+    public ResponseEntity<List<Map<String, Object>>> getRelances() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository
+                .findByCandidatIdAndStatut(candidat.getId(), "EN_ATTENTE");
+
+        List<Map<String, Object>> result = candidatures.stream().map(c -> {
+                    long joursEcoules = 0;
+                    if (c.getDateEnvoi() != null) {
+                        joursEcoules = (new Date().getTime() - c.getDateEnvoi().getTime()) / (1000 * 60 * 60 * 24);
+                    }
+
+                    String urgence = joursEcoules > 14 ? "haute" : joursEcoules > 7 ? "moyenne" : "basse";
+
+                    String messageRelance = String.format(
+                            "Bonjour,\n\nJe me permets de vous relancer concernant ma candidature " +
+                                    "pour le poste de %s envoyée le %s.\n\n" +
+                                    "Je reste très motivé(e) par cette opportunité et disponible pour tout entretien.\n\n" +
+                                    "Cordialement,\n%s",
+                            c.getOffreEmploi() != null ? c.getOffreEmploi().getTitre() : "votre offre",
+                            c.getDateEnvoi() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(c.getDateEnvoi()) : "récemment",
+                            c.getNomComplet() != null ? c.getNomComplet() : "Le candidat"
+                    );
+
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getId());
+                    m.put("offreTitre", c.getOffreEmploi() != null ? c.getOffreEmploi().getTitre() : "Candidature spontanée");
+                    m.put("dateEnvoi", c.getDateEnvoi());
+                    m.put("joursEcoules", joursEcoules);
+                    m.put("urgence", urgence);
+                    m.put("messageRelance", messageRelance);
+                    return m;
+                })
+                .sorted((a, b) -> Long.compare((long) b.get("joursEcoules"), (long) a.get("joursEcoules")))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    // 7 — Gamification
+    @GetMapping("/gamification")
+    public ResponseEntity<Map<String, Object>> getGamification() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        long total = candidatures.size();
+        long acceptees = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count();
+        long refusees = candidatures.stream().filter(c -> "REFUSEE".equals(c.getStatut())).count();
+        long enAttente = candidatures.stream().filter(c -> "EN_ATTENTE".equals(c.getStatut())).count();
+
+        // Stats mensuelles
+        Calendar cal = Calendar.getInstance();
+        int currentMonth = cal.get(Calendar.MONTH);
+        int currentYear = cal.get(Calendar.YEAR);
+
+        long candidaturesCeMois = candidatures.stream().filter(c -> {
+            if (c.getDateEnvoi() == null) return false;
+            Calendar c2 = Calendar.getInstance();
+            c2.setTime(c.getDateEnvoi());
+            return c2.get(Calendar.MONTH) == currentMonth && c2.get(Calendar.YEAR) == currentYear;
+        }).count();
+
+        long accepteesCeMois = candidatures.stream().filter(c -> {
+            if (c.getDateEnvoi() == null) return false;
+            Calendar c2 = Calendar.getInstance();
+            c2.setTime(c.getDateEnvoi());
+            return "ACCEPTEE".equals(c.getStatut()) &&
+                    c2.get(Calendar.MONTH) == currentMonth &&
+                    c2.get(Calendar.YEAR) == currentYear;
+        }).count();
+
+        // Analyse des compétences
+        Set<String> competences = new HashSet<>();
+        candidatures.forEach(c -> {
+            if (c.getCompetences() != null) {
+                Arrays.stream(c.getCompetences().split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .forEach(competences::add);
+            }
+        });
+
+        // ===== NOUVEAU CALCUL DE POINTS PLUS COMPLET =====
+        int points = 0;
+
+        // 1. Volume de candidatures (max 200 pts)
+        points += Math.min(total * 8, 200);
+
+        // 2. Succès (max 300 pts)
+        points += (int)(acceptees * 60);
+
+        // 3. Bonus pour taux de réussite (max 100 pts)
+        double tauxReussite = total > 0 ? (double) acceptees / total * 100 : 0;
+        if (tauxReussite >= 50) points += 50;
+        else if (tauxReussite >= 25) points += 25;
+        else if (tauxReussite > 0) points += 10;
+
+        // 4. Bonus régularité (max 50 pts)
+        points += Math.min(candidaturesCeMois * 10, 50);
+
+        // 5. Bonus acceptations récentes (max 100 pts)
+        points += accepteesCeMois * 30;
+
+        // 6. Bonus diversité des compétences (max 50 pts)
+        points += Math.min(competences.size() * 5, 50);
+
+        // 7. Bonus anti-abandon (points de persévérance)
+        if (refusees > 0 && acceptees > 0) points += 20;
+        if (total >= 20) points += 30;
+
+        // 8. Bonus CV/complétude
+        boolean aCV = candidatures.stream().anyMatch(c -> c.getDocument() != null);
+        boolean aLettre = candidatures.stream().anyMatch(c -> c.getLettreMotivation() != null && !c.getLettreMotivation().isEmpty());
+        if (aCV) points += 30;
+        if (aLettre) points += 20;
+
+        // ===== DÉTERMINATION DU NIVEAU =====
+        String niveau;
+        String niveauSuivant;
+        int niveauProgress;
+        int pointsPourNiveauSuivant;
+
+        if (points < 100) {
+            niveau = "🥉 Débutant";
+            niveauSuivant = "📌 Apprenti";
+            niveauProgress = (int)(points * 100 / 100);
+            pointsPourNiveauSuivant = 100 - points;
+        } else if (points < 250) {
+            niveau = "📌 Apprenti";
+            niveauSuivant = "⚡ Intermédiaire";
+            niveauProgress = (int)((points - 100) * 100 / 150);
+            pointsPourNiveauSuivant = 250 - points;
+        } else if (points < 450) {
+            niveau = "⚡ Intermédiaire";
+            niveauSuivant = "🔥 Confirmé";
+            niveauProgress = (int)((points - 250) * 100 / 200);
+            pointsPourNiveauSuivant = 450 - points;
+        } else if (points < 700) {
+            niveau = "🔥 Confirmé";
+            niveauSuivant = "🏆 Expert";
+            niveauProgress = (int)((points - 450) * 100 / 250);
+            pointsPourNiveauSuivant = 700 - points;
+        } else if (points < 1000) {
+            niveau = "🏆 Expert";
+            niveauSuivant = "👑 Légende";
+            niveauProgress = (int)((points - 700) * 100 / 300);
+            pointsPourNiveauSuivant = 1000 - points;
+        } else {
+            niveau = "👑 Légende";
+            niveauSuivant = "🏆 Maximum !";
+            niveauProgress = 100;
+            pointsPourNiveauSuivant = 0;
+        }
+
+        // ===== BADGES DYNAMIQUES =====
+        List<Map<String, Object>> badges = new ArrayList<>();
+
+        // Badges de volume
+        addBadge(badges, "🎯", "Premier pas", "Première candidature", total >= 1);
+        addBadge(badges, "📈", "Actif", "5 candidatures", total >= 5);
+        addBadge(badges, "🚀", "En mission", "10 candidatures", total >= 10);
+        addBadge(badges, "💪", "Persévérant", "20 candidatures", total >= 20);
+
+        // Badges de succès
+        addBadge(badges, "🏆", "Premier succès", "1ère acceptation", acceptees >= 1);
+        addBadge(badges, "⭐", "En demande", "3 acceptations", acceptees >= 3);
+        addBadge(badges, "👑", "Star", "5 acceptations", acceptees >= 5);
+
+        // Badges de performance
+        if (tauxReussite >= 50) {
+            addBadge(badges, "🎯", "Précis", "Taux réussite > 50%", true);
+        }
+        if (tauxReussite >= 75) {
+            addBadge(badges, "🎖️", "Elite", "Taux réussite > 75%", true);
+        }
+
+        // Badges de régularité
+        addBadge(badges, "📅", "Régulier", "3 candidatures ce mois", candidaturesCeMois >= 3);
+        addBadge(badges, "🔥", "En feu", "5 candidatures ce mois", candidaturesCeMois >= 5);
+
+        // Badges de compétences
+        if (competences.size() >= 5) {
+            addBadge(badges, "🧠", "Polyvalent", "5+ compétences", true);
+        }
+        if (competences.size() >= 10) {
+            addBadge(badges, "🎓", "Expert", "10+ compétences", true);
+        }
+
+        // Badges spéciaux
+        if (aCV && aLettre) {
+            addBadge(badges, "📄", "Prêt", "CV + Lettre", true);
+        }
+        if (accepteesCeMois >= 1) {
+            addBadge(badges, "⚡", "En forme", "Acceptation ce mois", true);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("points", points);
+        result.put("niveau", niveau);
+        result.put("niveauSuivant", niveauSuivant);
+        result.put("niveauProgress", niveauProgress);
+        result.put("pointsPourNiveauSuivant", pointsPourNiveauSuivant);
+        result.put("badges", badges);
+        result.put("candidaturesCeMois", candidaturesCeMois);
+        result.put("tauxReussite", Math.round(tauxReussite));
+        result.put("competencesCount", competences.size());
+
+        // Détail des points pour transparence
+        Map<String, Integer> details = new HashMap<>();
+        details.put("base", (int)(total * 8));
+        details.put("succes", (int)(acceptees * 60));
+        details.put("tauxReussiteBonus", tauxReussite >= 50 ? 50 : (tauxReussite >= 25 ? 25 : 0));
+        details.put("regularite", (int)Math.min(candidaturesCeMois * 10, 50));
+        details.put("competences", Math.min(competences.size() * 5, 50));
+        details.put("cv", aCV ? 30 : 0);
+        details.put("lettre", aLettre ? 20 : 0);
+        result.put("detailsPoints", details);
+
+        return ResponseEntity.ok(result);
+    }
+
+    private void addBadge(List<Map<String, Object>> badges, String icon, String nom, String desc, boolean obtenu) {
+        Map<String, Object> badge = new HashMap<>();
+        badge.put("icon", icon);
+        badge.put("nom", nom);
+        badge.put("desc", desc);
+        badge.put("obtenu", obtenu);
+        badges.add(badge);
+    }
+
+    // 8 — Career Timeline
+    @GetMapping("/timeline")
+    public ResponseEntity<List<Map<String, Object>>> getTimeline() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        List<Map<String, Object>> result = candidatures.stream()
+                .sorted((a, b) -> b.getDateEnvoi().compareTo(a.getDateEnvoi()))
+                .map(c -> {
+                    String icon = "ACCEPTEE".equals(c.getStatut()) ? "🏆" :
+                            "REFUSEE".equals(c.getStatut()) ? "❌" : "⏳";
+                    String couleur = "ACCEPTEE".equals(c.getStatut()) ? "#10b981" :
+                            "REFUSEE".equals(c.getStatut()) ? "#ef4444" : "#f59e0b";
+
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", c.getId());
+                    m.put("nomComplet", c.getNomComplet());
+                    m.put("statut", c.getStatut());
+                    m.put("dateEnvoi", c.getDateEnvoi());
+                    m.put("offreTitre", c.getOffreEmploi() != null ? c.getOffreEmploi().getTitre() : "Candidature spontanée");
+                    m.put("icon", icon);
+                    m.put("couleur", couleur);
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+
+
+
+
+
+
     // ==================== METHODE UTILITAIRE ====================
     private CandidatureDTO convertToDTO(Candidature c) {
         CandidatureDTO dto = new CandidatureDTO();

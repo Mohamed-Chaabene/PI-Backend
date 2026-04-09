@@ -36,7 +36,7 @@ public class CandidatureDTO {
     private String email;
 
     @Pattern(regexp = "^[+]?[0-9\\s-]{8,20}$|^$",
-            message = "Format de téléphone invalide. Exemples: +215 55 555 555, 55 555 555, 55555555")
+            message = "Format de téléphone invalide. Exemples: +216 55 555 555, 55 555 555, 55555555")
     private String telephone;
 
     // ==================== CHAMPS TEXTES ====================
