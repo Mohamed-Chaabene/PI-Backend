@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import t.esprit.arctic.jobmatch.entity.Participation;
 
+import java.time.LocalDate;
 import java.util.Date;
 
 @Entity
@@ -23,7 +24,7 @@ public class FeedbackEvent {
     private int note; // ex: 1 à 5
 
     @Temporal(TemporalType.DATE)
-    private Date date;
+    private LocalDate date;
 
     // ✅ Lié à une participation
     @ManyToOne

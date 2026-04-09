@@ -10,7 +10,7 @@ import t.esprit.arctic.jobmatch.entity.Participation;
 import t.esprit.arctic.jobmatch.repository.FeedbackEventRepository;
 import t.esprit.arctic.jobmatch.repository.ParticipationRepository;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,9 +62,10 @@ public class FeedbackEventService {
             throw new RuntimeException("Vous devez être confirmé pour laisser un feedback");
         }
 
-        // ← Vérifie que la date de l'événement est passée
-        Date dateEvenement = participation.getEvenement().getDate();
-        if (dateEvenement != null && dateEvenement.after(new Date())) {
+        // ✅ LocalDate.now() au lieu de new Date()
+        //    isAfter() au lieu de .after()
+        LocalDate dateEvenement = participation.getEvenement().getDate();
+        if (dateEvenement != null && dateEvenement.isAfter(LocalDate.now())) {
             throw new RuntimeException("Vous ne pouvez pas laisser un feedback avant la date de l'événement");
         }
 
@@ -76,7 +77,7 @@ public class FeedbackEventService {
         FeedbackEvent f = FeedbackEvent.builder()
                 .commentaire(request.getCommentaire())
                 .note(request.getNote())
-                .date(new Date())
+                .date(LocalDate.now())  // ✅ LocalDate.now() au lieu de new Date()
                 .participation(participation)
                 .build();
 
@@ -119,11 +120,9 @@ public class FeedbackEventService {
             String titre) {
 
         // ── Niveau 1 : réputation globale ────────────────────────────────────────
-        // On récupère tous les feedbacks de cet organisateur
         List<FeedbackEvent> tousLesFeedbacks =
                 repository.findByOrganisateurId(organisateurId);
 
-        // On calcule la moyenne avec les streams Java — plus lisible qu'une @Query AVG
         double noteMoyenneGlobale = tousLesFeedbacks.stream()
                 .mapToInt(FeedbackEvent::getNote)
                 .average()
@@ -131,11 +130,9 @@ public class FeedbackEventService {
         noteMoyenneGlobale = Math.round(noteMoyenneGlobale * 10.0) / 10.0;
         long totalFeedbacks = tousLesFeedbacks.size();
 
-        // On attribue le badge selon la note
         String badgeReputation = calculerBadge(noteMoyenneGlobale, totalFeedbacks);
 
         // ── Niveau 2 : réputation par type ───────────────────────────────────────
-        // Ex: si l'événement actuel est un WORKSHOP, on regarde tous ses workshops passés
         List<FeedbackEvent> feedbacksParType =
                 repository.findByOrganisateurIdAndType(organisateurId, type);
 
@@ -146,12 +143,9 @@ public class FeedbackEventService {
         noteMoyenneParType = Math.round(noteMoyenneParType * 10.0) / 10.0;
         long totalFeedbacksParType = feedbacksParType.size();
 
-        String badgeType = calculerBadgeType(
-                noteMoyenneParType, totalFeedbacksParType, type
-        );
+        String badgeType = calculerBadgeType(noteMoyenneParType, totalFeedbacksParType, type);
 
         // ── Niveau 3 : réputation par titre ──────────────────────────────────────
-        // Ex: si l'événement s'appelle "Job Fair Tunis", on regarde les éditions passées
         List<FeedbackEvent> feedbacksParTitre =
                 repository.findByOrganisateurIdAndTitre(organisateurId, titre);
 
@@ -179,7 +173,6 @@ public class FeedbackEventService {
         );
     }
 
-    // Badge global — basé sur la note moyenne toutes catégories confondues
     private String calculerBadge(double note, long total) {
         if (total == 0) return "NOUVEAU";
         if (note >= 4.5) return "EXCELLENT";
@@ -188,7 +181,6 @@ public class FeedbackEventService {
         return "PEU_RECOMMANDE";
     }
 
-    // Badge par type — ajoute le type au badge pour plus de précision
     private String calculerBadgeType(double note, long total, String type) {
         if (total == 0) return "PREMIER_" + type;
         if (note >= 4.5) return "EXCELLENT_" + type;
@@ -197,7 +189,6 @@ public class FeedbackEventService {
         return "MAUVAIS_" + type;
     }
 
-    // Badge par titre — indique si les éditions précédentes étaient appréciées
     private String calculerBadgeTitre(double note, long total) {
         if (total == 0) return "NOUVEAU";
         if (note >= 4.5) return "TRES_APPRECIE";
