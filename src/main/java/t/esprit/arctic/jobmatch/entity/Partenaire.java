@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
 
 @Entity
 @Data
@@ -30,4 +31,7 @@ public class Partenaire {
     @OneToMany(mappedBy = "partenaire")
     @JsonIgnore
     private List<OffrePartenaire> offres;
+
+    @Column(name = "nombre_vues", columnDefinition = "int default 0")
+    private int nombreVues = 0;
 }
