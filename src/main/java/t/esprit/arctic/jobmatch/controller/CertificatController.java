@@ -7,8 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Certificat;
 import t.esprit.arctic.jobmatch.service.CertificatService;
+import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/certificats")
@@ -16,7 +18,8 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:4200")
 public class CertificatController {
 
-    private final CertificatService certificatService;
+    private final CertificatService              certificatService;
+    private final InscriptionFormationRepository inscriptionRepo;
 
     @GetMapping
     public ResponseEntity<List<Certificat>> getAll() {
@@ -29,22 +32,48 @@ public class CertificatController {
     }
 
     @GetMapping("/candidat/{candidatId}")
-    public ResponseEntity<List<Certificat>> getByCandidat(@PathVariable Long candidatId) {
-        return ResponseEntity.ok(certificatService.getByCandidat(candidatId));
+    public ResponseEntity<List<Certificat>> getByCandidat(
+            @PathVariable Long candidatId) {
+        return ResponseEntity.ok(
+                certificatService.getByCandidat(candidatId));
     }
 
-    // ── Téléchargement PDF ────────────────────────────────────────────────────
+    // ✅ Générer certificat depuis une inscription (après quiz final réussi)
+    @PostMapping("/generer/{inscriptionId}")
+    public ResponseEntity<?> genererDepuisInscription(
+            @PathVariable Long inscriptionId) {
+        return inscriptionRepo.findById(inscriptionId)
+                .map(ins -> {
+                    try {
+                        Certificat cert =
+                                certificatService.genererAutomatiquement(ins);
+                        return ResponseEntity.ok(cert);
+                    } catch (RuntimeException e) {
+                        // Certificat déjà existant → le retourner
+                        List<Certificat> certs =
+                                certificatService.getByCandidat(
+                                        ins.getCandidat().getId());
+                        return ResponseEntity.ok(
+                                certs.stream()
+                                        .filter(c -> c.getInscription().getId()
+                                                .equals(inscriptionId))
+                                        .findFirst()
+                                        .orElseThrow()
+                        );
+                    }
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ── Téléchargement PDF ────────────────────────────────────────
     @GetMapping("/{id}/telecharger")
     public ResponseEntity<byte[]> telecharger(@PathVariable Long id) {
         byte[] pdf = certificatService.genererPdf(id);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "certificat-" + id + ".pdf");
+        headers.setContentDispositionFormData(
+                "attachment", "certificat-" + id + ".pdf");
         headers.setContentLength(pdf.length);
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(pdf);
+        return ResponseEntity.ok().headers(headers).body(pdf);
     }
 }

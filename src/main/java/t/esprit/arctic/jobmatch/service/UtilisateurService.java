@@ -19,6 +19,9 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
 
     public Utilisateur register(Utilisateur user) {
+        if (repository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Un compte avec cet email existe déjà");
+        }
         user.setMotDePasse(passwordEncoder.encode(user.getMotDePasse()));
         return repository.save(user);
     }
@@ -53,6 +56,11 @@ public class UtilisateurService {
 
     public Utilisateur update(Long id, Utilisateur updatedUser) {
         Utilisateur user = getById(id);
+        
+        if (!user.getEmail().equals(updatedUser.getEmail()) && repository.findByEmail(updatedUser.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Un compte avec cet email existe déjà");
+        }
+        
         user.setNom(updatedUser.getNom());
         user.setEmail(updatedUser.getEmail());
         if (updatedUser.getMotDePasse() != null && !updatedUser.getMotDePasse().isEmpty()) {
@@ -60,5 +68,14 @@ public class UtilisateurService {
         }
         user.setRole(updatedUser.getRole());
         return repository.save(user);
+    }
+
+    // Reset password by phone number
+    public void resetPasswordByPhone(String phoneNumber, String newPassword) {
+        Utilisateur user = repository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec le numéro: " + phoneNumber));
+        
+        user.setMotDePasse(passwordEncoder.encode(newPassword));
+        repository.save(user);
     }
 }
