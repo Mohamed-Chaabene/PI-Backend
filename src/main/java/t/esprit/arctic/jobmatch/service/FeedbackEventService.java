@@ -11,6 +11,7 @@ import t.esprit.arctic.jobmatch.repository.FeedbackEventRepository;
 import t.esprit.arctic.jobmatch.repository.ParticipationRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime; // ← ajouté
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,19 +58,15 @@ public class FeedbackEventService {
                 .findById(request.getParticipationId())
                 .orElseThrow(() -> new RuntimeException("Participation non trouvée"));
 
-        // Vérifie que la participation est CONFIRMEE
         if (!"CONFIRME".equals(participation.getStatut())) {
             throw new RuntimeException("Vous devez être confirmé pour laisser un feedback");
         }
 
-        // ✅ LocalDate.now() au lieu de new Date()
-        //    isAfter() au lieu de .after()
-        LocalDate dateEvenement = participation.getEvenement().getDate();
-        if (dateEvenement != null && dateEvenement.isAfter(LocalDate.now())) {
+        LocalDateTime dateEvenement = participation.getEvenement().getDateHeure(); // ← getDate() → getDateHeure()
+        if (dateEvenement != null && dateEvenement.isAfter(LocalDateTime.now())) { // ← LocalDate → LocalDateTime
             throw new RuntimeException("Vous ne pouvez pas laisser un feedback avant la date de l'événement");
         }
 
-        // Vérifie qu'un feedback n'existe pas déjà
         if (repository.existsByParticipationId(request.getParticipationId())) {
             throw new RuntimeException("Vous avez déjà laissé un feedback pour cet événement");
         }
@@ -77,7 +74,7 @@ public class FeedbackEventService {
         FeedbackEvent f = FeedbackEvent.builder()
                 .commentaire(request.getCommentaire())
                 .note(request.getNote())
-                .date(LocalDate.now())  // ✅ LocalDate.now() au lieu de new Date()
+                .date(LocalDate.now())   // ← reste LocalDate (c'est la date du feedback, pas de l'événement)
                 .participation(participation)
                 .build();
 
@@ -119,7 +116,6 @@ public class FeedbackEventService {
             String type,
             String titre) {
 
-        // ── Niveau 1 : réputation globale ────────────────────────────────────────
         List<FeedbackEvent> tousLesFeedbacks =
                 repository.findByOrganisateurId(organisateurId);
 
@@ -132,7 +128,6 @@ public class FeedbackEventService {
 
         String badgeReputation = calculerBadge(noteMoyenneGlobale, totalFeedbacks);
 
-        // ── Niveau 2 : réputation par type ───────────────────────────────────────
         List<FeedbackEvent> feedbacksParType =
                 repository.findByOrganisateurIdAndType(organisateurId, type);
 
@@ -145,7 +140,6 @@ public class FeedbackEventService {
 
         String badgeType = calculerBadgeType(noteMoyenneParType, totalFeedbacksParType, type);
 
-        // ── Niveau 3 : réputation par titre ──────────────────────────────────────
         List<FeedbackEvent> feedbacksParTitre =
                 repository.findByOrganisateurIdAndTitre(organisateurId, titre);
 

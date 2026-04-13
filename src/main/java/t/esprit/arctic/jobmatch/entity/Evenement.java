@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -22,9 +23,9 @@ public class Evenement {
     @Size(min = 3, max = 100, message = "Le titre doit contenir entre 3 et 100 caractères")
     private String titre;
 
-    @NotNull(message = "La date est obligatoire")
+    @NotNull(message = "La date et l'heure sont obligatoires")
     @FutureOrPresent(message = "La date ne peut pas être dans le passé")
-    private LocalDate date;
+    private LocalDateTime dateHeure; // remplace "date"
 
     @NotBlank(message = "Le lieu est obligatoire")
     @Size(min = 2, message = "Le lieu doit contenir au moins 2 caractères")
