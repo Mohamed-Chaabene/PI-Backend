@@ -154,6 +154,16 @@ public class CandidatureController {
         return ResponseEntity.ok(stats);
     }
 
+    // ==================== READ - Candidatures par offre ====================
+    @GetMapping("/offre/{offreId}")
+    public ResponseEntity<List<CandidatureDTO>> getCandidaturesByOffre(@PathVariable Long offreId) {
+        List<CandidatureDTO> candidatures = candidatureRepository.findByOffreEmploiId(offreId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(candidatures);
+    }
+
     // ==================== READ - Filtrer par statut ====================
     @GetMapping("/filtre/statut/{statut}")
     public ResponseEntity<List<CandidatureDTO>> filtrerParStatut(@PathVariable String statut) {
