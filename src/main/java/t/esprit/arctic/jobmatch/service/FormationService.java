@@ -12,21 +12,14 @@ public class FormationService {
 
     private final FormationRepository formationRepository;
 
-    // ── CRUD ─────────────────────────────────────────────────────────────────
-
     public List<Formation> getAll() {
         return formationRepository.findAll();
     }
 
-    // ✅ Liste publique — exclut les formations archivées
     public List<Formation> getAllActives() {
-        List<Formation> formations = formationRepository.findByStatutNot("Archivée");
-        System.out.println("📚 getAllActives() retourne: " + formations.size() + " formations");
-        formations.forEach(f -> System.out.println("  - " + f.getTitre() + " (statut: " + f.getStatut() + ")"));
-        return formations;
+        return formationRepository.findByStatutNot("Archivée");
     }
 
-    // ✅ Liste admin — toutes formations y compris archivées
     public List<Formation> getAllForAdmin() {
         return formationRepository.findAll();
     }
@@ -49,6 +42,8 @@ public class FormationService {
         existing.setDuree(updated.getDuree());
         existing.setNiveau(updated.getNiveau());
         existing.setCompetences(updated.getCompetences());
+        // ✅ Mise à jour du lien externe
+        existing.setLienExterne(updated.getLienExterne());
         return formationRepository.save(existing);
     }
 
@@ -57,21 +52,17 @@ public class FormationService {
         formationRepository.deleteById(id);
     }
 
-    // ✅ Archiver une formation (admin)
     public Formation archiver(Long id) {
         Formation formation = getById(id);
         formation.setStatut("Archivée");
         return formationRepository.save(formation);
     }
 
-    // ✅ Désarchiver une formation (admin) — remet en "Disponible"
     public Formation desarchiver(Long id) {
         Formation formation = getById(id);
         formation.setStatut("Disponible");
         return formationRepository.save(formation);
     }
-
-    // ── Filtres ───────────────────────────────────────────────────────────────
 
     public List<Formation> getByNiveau(String niveau) {
         return formationRepository.findByNiveau(niveau);

@@ -1,8 +1,10 @@
 package t.esprit.arctic.jobmatch.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
-import java.util.Date;
+
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -16,22 +18,31 @@ public class Evenement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Le titre est obligatoire")
+    @Size(min = 3, max = 100, message = "Le titre doit contenir entre 3 et 100 caractères")
     private String titre;
 
-    @Temporal(TemporalType.DATE)
-    private Date date;
+    @NotNull(message = "La date est obligatoire")
+    @FutureOrPresent(message = "La date ne peut pas être dans le passé")
+    private LocalDate date;
 
+    @NotBlank(message = "Le lieu est obligatoire")
+    @Size(min = 2, message = "Le lieu doit contenir au moins 2 caractères")
     private String lieu;
 
+    @NotBlank(message = "Le type est obligatoire")
+    @Pattern(
+            regexp = "JOB_FAIR|WORKSHOP|CONFERENCE|NETWORKING",
+            message = "Type invalide : JOB_FAIR, WORKSHOP, CONFERENCE ou NETWORKING"
+    )
     private String type;
 
     // Relation OneToMany avec Participation
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL)
     private List<Participation> participations;
 
-    //  Relation avec OrganisateurEvenement
+    // Relation avec OrganisateurEvenement
     @ManyToOne
     @JoinColumn(name = "organisateur_id")
     private OrganisateurEvenement organisateur;
-
 }

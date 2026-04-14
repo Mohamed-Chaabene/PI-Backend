@@ -52,7 +52,7 @@ public class CertificatService {
 
     // ── Chargement logo (priorite logo_transparent.png sans fond noir) ────────
     private byte[] loadLogo() {
-        String[] names = {"logo_transparent.png", "logo_png.png"};
+        String[] names = {"/static/logo_transparent.png", "logo_png.png"};
         String workDir = System.getProperty("user.dir");
         for (String name : names) {
             try {

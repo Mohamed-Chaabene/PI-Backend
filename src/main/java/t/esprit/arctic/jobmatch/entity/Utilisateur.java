@@ -30,6 +30,9 @@ public class Utilisateur {
 
         private boolean actif;
 
+        @Column(columnDefinition = "TEXT")
+        private String followers;
+
         // Getters explicites pour Lombok
         public String getEmail() {
                 return email;

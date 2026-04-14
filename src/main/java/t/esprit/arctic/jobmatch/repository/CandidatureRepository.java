@@ -17,4 +17,6 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
 
     // Trier par date du plus récent au plus ancien
     List<Candidature> findAllByOrderByDateEnvoiDesc();
+    List<Candidature> findByCandidatIdAndStatut(Long candidatId, String statut);
 }
+

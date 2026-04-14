@@ -3,7 +3,7 @@ package t.esprit.arctic.jobmatch.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
-import t.esprit.arctic.jobmatch.entity.freelance.UnitTransaction;
+import t.esprit.arctic.jobmatch.entity.UnitTransaction;
 import t.esprit.arctic.jobmatch.entity.UnitTransactionType;
 import t.esprit.arctic.jobmatch.repository.UnitTransactionRepository;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;

@@ -24,83 +24,120 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    //  AuthenticationManager (login)
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    //  Password encoder (OBLIGATOIRE)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    //  Configuration sécurité
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
-
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/domaines").permitAll()
-                           .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations").permitAll()
-                           .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/formations/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/questions/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/candidats/email/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/candidatures/offre/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/questions/entretien/*/ai-generate").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // ── Endpoints publics GET ─────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/domaines").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/formations").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/formations/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/candidats/email/**").permitAll()
+
+                        // ── Suggestions et proxy ──────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/proxy/**").permitAll()
+
+                        // ── Partenaires ───────────────────────────────────────
+                        .requestMatchers("/api/partenaires/**").permitAll()
+                        .requestMatchers("/api/offres-partenaires/**").permitAll()
+
+                        // ── Search / Users ────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/search/utilisateurs/nom").authenticated()
+
+                        // ── Offres emploi ─────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/candidatures/offre/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // ── Feedbacks ─────────────────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
+
+                        // ── Questions / Entretiens ────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/*/ai-generate").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // ── Rôles admin ───────────────────────────────────────
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
+                        // ── Rôles métier ──────────────────────────────────────
                         .requestMatchers("/api/candidat/**").hasAuthority("ROLE_CANDIDAT")
                         .requestMatchers("/api/recruteur/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/recruteurs/**").hasAuthority("ROLE_RECRUTEUR")
                         .requestMatchers("/api/client-freelance/**").hasAuthority("ROLE_CLIENT_FREELANCE")
-                        // evenements
+                        .requestMatchers("/api/organisateur/**").hasAuthority("ROLE_ORGANISATEUR")
+
+                        // ── Événements ────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/participations/stats/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/stats").hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR")
                         .requestMatchers(HttpMethod.DELETE, "/api/evenements/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        //  Organisateur APRÈS
+                        .requestMatchers(HttpMethod.GET, "/api/evenements/**").hasAnyAuthority("ROLE_CANDIDAT", "ROLE_ORGANISATEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
                         .requestMatchers(HttpMethod.POST, "/api/evenements").hasAuthority("ROLE_ORGANISATEUR")
                         .requestMatchers(HttpMethod.PUT, "/api/evenements/**").hasAuthority("ROLE_ORGANISATEUR")
-                        .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
-                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
-                        .requestMatchers("/api/partenaires/**").permitAll()
-                        .requestMatchers("/api/offres-partenaires/**").permitAll()
-                        .anyRequest().authenticated()
-                )
 
-                //  IMPORTANT → chain fluide
+                        // ── Participations ────────────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/participations").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.PUT, "/api/participations/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/participations/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ORGANISATEUR", "ROLE_CANDIDAT", "CANDIDAT")
+
+                        // ── Feedbacks Evenement ───────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/feedbacks-evenement").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT", "ROLE_ORGANISATEUR", "ORGANISATEUR")
+                        .requestMatchers(HttpMethod.PUT, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.DELETE, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/reputation").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+
+                        // ── Vidéo progression ─────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/video-progression/**").permitAll()
+                        .requestMatchers("/api/chatbot/**").permitAll()
+
+                        .anyRequest().authenticated()
+
+                )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    //  CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*")); // Allow localhost with any port
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost😘"));
+        configuration.setAllowedMethods(
+                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

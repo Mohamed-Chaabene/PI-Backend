@@ -33,10 +33,10 @@ public class InscriptionFormation {
     @JsonIgnoreProperties({"inscriptions", "competences"})
     private Formation formation;
 
-        // Le front formations n'utilise pas l'objet candidat ici; on l'ignore pour eviter les erreurs lazy
+    // ✅ On expose le candidat mais on masque ses relations lourdes pour éviter les erreurs "lazy" et les boucles infinies.
     @ManyToOne
     @JoinColumn(name = "candidat_id", nullable = false)
-        @JsonIgnore
+    @JsonIgnoreProperties({"inscriptions", "educations", "backgrounds", "competences", "motDePasse"})
     private Candidat candidat;
 
     // ✅ Déjà correct — on cache le certificat pour éviter la boucle certificat→inscription

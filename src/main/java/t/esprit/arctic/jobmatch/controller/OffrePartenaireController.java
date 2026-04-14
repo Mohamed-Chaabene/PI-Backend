@@ -9,6 +9,7 @@ import java.util.List;
 import t.esprit.arctic.jobmatch.entity.OffrePartenaire;
 import t.esprit.arctic.jobmatch.entity.TypeOffrePartenaire;
 import t.esprit.arctic.jobmatch.service.OffrePartenaireService;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/offres-partenaires")
@@ -52,5 +53,35 @@ public class OffrePartenaireController {
     @GetMapping("/type/{type}")
     public List<OffrePartenaire> getByType(@PathVariable TypeOffrePartenaire type) {
         return service.getByType(type);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<OffrePartenaire>> searchByKeyword(
+            @RequestParam String keyword) {
+        return ResponseEntity.ok(
+                service.searchByKeyword(keyword));
+    }
+
+    @GetMapping("/predict/{partenaireId}")
+    public ResponseEntity<String> predictNextOffreType(
+            @PathVariable Long partenaireId) {
+        return ResponseEntity.ok(
+                service.predictNextOffreType(partenaireId));
+    }
+
+
+    @PutMapping("/{id}/epingle")
+    public ResponseEntity<OffrePartenaire> toggleEpingle(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(
+                service.toggleEpingle(id));
+    }
+
+
+    @GetMapping("/partenaire/{id}/triees")
+    public ResponseEntity<List<OffrePartenaire>>
+    getByPartenaireTriees(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                service.getByPartenaireTriees(id));
     }
 }
