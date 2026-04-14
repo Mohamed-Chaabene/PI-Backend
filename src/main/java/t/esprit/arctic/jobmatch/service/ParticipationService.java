@@ -27,6 +27,7 @@ public class ParticipationService {
     private final EvenementRepository evenementRepository;
     private final CandidatRepository candidatRepository;
     private final QRCodeService qrCodeService;
+    private final ParticipationRepository participationRepository;
 
 
     public ParticipationResponse confirmer(ParticipationRequest request) {
@@ -152,6 +153,11 @@ public class ParticipationService {
         return p.getQrCode();
     }
 
+    // Filtre les participations par candidat ET par statut CONFIRME uniquement
+    public List<Participation> findConfirmedByCandidatId(Long candidatId ,String statut ) {
+        return participationRepository.findByCandidatIdAndStatut(candidatId, "CONFIRME");
+    }
+
     private ParticipationResponse toResponse(Participation p) {
         return new ParticipationResponse(
                 p.getId(),
@@ -161,7 +167,8 @@ public class ParticipationService {
                 p.getEvenement().getTitre(),
                 p.getCandidat().getId(),
                 p.getCandidat().getNom(),
-                p.getQrCode()
+                p.getQrCode(),
+                p.getEvenement().isChatOuvert()
 
         );
     }

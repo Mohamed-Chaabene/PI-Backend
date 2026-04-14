@@ -19,4 +19,5 @@ public class EvenementResponse {
     private String type;
     private Long organisateurId;
     private String nomOrganisateur;
+    private boolean chatOuvert;
 }

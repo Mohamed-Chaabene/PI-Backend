@@ -101,11 +101,12 @@ public class EvenementService {
         return new EvenementResponse(
                 e.getId(),
                 e.getTitre(),
-                e.getDateHeure(),                    // ← date → dateHeure
+                e.getDateHeure(),
                 e.getLieu(),
                 e.getType(),
                 e.getOrganisateur() != null ? e.getOrganisateur().getId() : null,
-                e.getOrganisateur() != null ? e.getOrganisateur().getNom() : null
+                e.getOrganisateur() != null ? e.getOrganisateur().getNom() : null,
+                e.isChatOuvert()
         );
     }
 

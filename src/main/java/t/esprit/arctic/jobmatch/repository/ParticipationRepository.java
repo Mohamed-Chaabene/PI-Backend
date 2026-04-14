@@ -7,6 +7,8 @@ import t.esprit.arctic.jobmatch.entity.Evenement;
 import t.esprit.arctic.jobmatch.entity.Participation;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
 
+
+
 import java.util.List;
 import java.util.Optional;
 
@@ -52,4 +54,15 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             "GROUP BY p.evenement.type " +
             "ORDER BY COUNT(p) DESC")
     List<String> findTypeFavoriByCandidat(@Param("candidatId") Long candidatId);
+
+    // Vérifie si un candidat a une participation avec un statut précis pour un événement
+    boolean existsByCandidatIdAndEvenementIdAndStatut(
+            Long candidatId,
+            Long evenementId,
+            String statut
+    );
+
+    // Spring Data JPA génère automatiquement la requête SQL depuis le nom de la méthode
+// → SELECT * FROM participation WHERE candidat_id = ? AND statut = 'CONFIRME'
+    List<Participation> findByCandidatIdAndStatut(Long candidatId, String statut);
 }

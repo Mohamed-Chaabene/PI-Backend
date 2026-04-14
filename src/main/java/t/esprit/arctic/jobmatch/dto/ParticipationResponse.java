@@ -15,4 +15,5 @@ public class ParticipationResponse {
     private Long candidatId;
     private String nomCandidat;
     private String qrCode;
+    private boolean chatOuvert;
 }

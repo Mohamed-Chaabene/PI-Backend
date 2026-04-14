@@ -7,7 +7,16 @@ import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.EvenementRequest;
 import t.esprit.arctic.jobmatch.dto.EvenementResponse;
 import t.esprit.arctic.jobmatch.dto.EvenementStatsResponse;
+import t.esprit.arctic.jobmatch.entity.Evenement;
+import t.esprit.arctic.jobmatch.entity.Participation;
 import t.esprit.arctic.jobmatch.service.EvenementService;
+import t.esprit.arctic.jobmatch.service.ParticipationService;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -17,6 +26,7 @@ import java.util.List;
 public class EvenementController {
 
     private final EvenementService service;
+    private final ParticipationService participationService;
 
     // ================= GET ALL =================
     @GetMapping
@@ -77,5 +87,49 @@ public class EvenementController {
             @RequestParam int annee,
             @RequestParam Long organisateurId) {
         return ResponseEntity.ok(service.getStats(mois, annee, organisateurId));
+    }
+
+    // Endpoint GET : exporte en .ics tous les événements confirmés d'un candidat
+    @GetMapping("/export-ics/confirmed/{candidatId}")
+    public ResponseEntity<byte[]> exportConfirmed(@PathVariable Long candidatId) {
+
+        // Récupère uniquement les participations avec statut CONFIRME depuis le service
+        List<Participation> participations = participationService.findConfirmedByCandidatId(candidatId , "CONFIRME");
+
+        // Construit l'en-tête du fichier iCalendar (un seul calendrier pour tous les événements)
+        StringBuilder ics = new StringBuilder();
+        ics.append("BEGIN:VCALENDAR\r\n")
+                .append("VERSION:2.0\r\n")
+                .append("PRODID:-//JobMatch//FR\r\n");
+
+        // Boucle sur chaque participation → ajoute un bloc VEVENT par événement confirmé
+        for (Participation p : participations) {
+            Evenement ev = p.getEvenement();
+            ics.append("BEGIN:VEVENT\r\n")
+                    .append("UID:").append(ev.getId()).append("@jobmatch\r\n")
+                    .append("SUMMARY:").append(ev.getTitre()).append("\r\n")
+                    .append("DESCRIPTION:").append(ev.getType() != null ? ev.getType() : "").append("\r\n")
+                    .append("LOCATION:").append(ev.getLieu() != null ? ev.getLieu() : "").append("\r\n")
+                    .append("DTSTART:").append(formatIcsDate(ev.getDateHeure())).append("\r\n")
+                    .append("DTEND:").append(formatIcsDate(ev.getDateHeure().plusHours(2))).append("\r\n")
+                    .append("END:VEVENT\r\n");
+        }
+
+        // Ferme le bloc calendrier
+        ics.append("END:VCALENDAR\r\n");
+
+        // Convertit en bytes UTF-8 pour supporter les accents
+        byte[] bytes = ics.toString().getBytes(StandardCharsets.UTF_8);
+
+        // Retourne la réponse avec le bon Content-Type et force le téléchargement
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"mes-evenements-confirmes.ics\"")
+                .contentType(MediaType.parseMediaType("text/calendar; charset=utf-8"))
+                .body(bytes);
+    }
+
+    // Formate LocalDateTime au format exigé par iCalendar (yyyyMMddTHHmmss)
+    private String formatIcsDate(LocalDateTime dt) {
+        return dt.format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
     }
 }
