@@ -28,7 +28,7 @@ public class AttestationService {
 
     public String generateCertificat(Participation participation) {
         try {
-            // Créer le dossier si nécessaire
+
             File dir = new File(storagePath);
             if (!dir.exists()) dir.mkdirs();
 
@@ -46,7 +46,7 @@ public class AttestationService {
                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
             String organisateur = participation.getEvenement().getOrganisateur().getNom();
 
-            // Titre
+
             document.add(new Paragraph("CERTIFICAT DE PRÉSENCE")
                     .setFontSize(24)
                     .setBold()
@@ -54,7 +54,7 @@ public class AttestationService {
                     .setFontColor(ColorConstants.DARK_GRAY)
                     .setMarginBottom(30));
 
-            // Corps
+
             document.add(new Paragraph("Nous certifions que")
                     .setFontSize(14)
                     .setTextAlignment(TextAlignment.CENTER));
@@ -74,7 +74,7 @@ public class AttestationService {
                     .setTextAlignment(TextAlignment.CENTER)
                     .setMarginBottom(40));
 
-            // Pied de page
+
             document.add(new Paragraph("Délivré automatiquement par la plateforme JobMatch")
                     .setFontSize(10)
                     .setTextAlignment(TextAlignment.CENTER)

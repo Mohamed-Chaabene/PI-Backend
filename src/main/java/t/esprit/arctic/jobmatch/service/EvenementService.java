@@ -22,7 +22,7 @@ public class EvenementService {
     private final OrganisateurEvenementRepository organisateurRepository;
     private final ParticipationRepository participationRepository;
 
-    // ================= CREATE =================
+
     public EvenementResponse publier(EvenementRequest request) {
         OrganisateurEvenement organisateur = organisateurRepository
                 .findById(request.getOrganisateurId())
@@ -30,7 +30,7 @@ public class EvenementService {
 
         Evenement e = Evenement.builder()
                 .titre(request.getTitre())
-                .dateHeure(request.getDateHeure())   // ← date → dateHeure
+                .dateHeure(request.getDateHeure())
                 .lieu(request.getLieu())
                 .type(request.getType())
                 .organisateur(organisateur)
@@ -39,7 +39,6 @@ public class EvenementService {
         return toResponse(repository.save(e));
     }
 
-    // ================= UPDATE =================
     public EvenementResponse modifier(Long id, EvenementRequest request, String email) {
         Evenement e = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Événement non trouvé : " + id));
@@ -53,7 +52,7 @@ public class EvenementService {
         }
 
         e.setTitre(request.getTitre());
-        e.setDateHeure(request.getDateHeure());      // ← date → dateHeure
+        e.setDateHeure(request.getDateHeure());
         e.setLieu(request.getLieu());
         e.setType(request.getType());
 
@@ -75,7 +74,7 @@ public class EvenementService {
         repository.delete(e);
     }
 
-    // GET ALL
+
     public List<EvenementResponse> getAll() {
         return repository.findAll()
                 .stream()
@@ -83,7 +82,7 @@ public class EvenementService {
                 .collect(Collectors.toList());
     }
 
-    // GET BY ID
+
     public EvenementResponse getById(Long id) {
         return toResponse(repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Événement non trouvé : " + id)));

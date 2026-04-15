@@ -12,8 +12,8 @@ public interface EvenementRepository extends JpaRepository<Evenement, Long> {
     List<Evenement> findByOrganisateurId(Long organisateurId);
 
     @Query("SELECT COUNT(e) FROM Evenement e " +
-            "WHERE MONTH(e.dateHeure) = :mois " +      // ← date → dateHeure
-            "AND YEAR(e.dateHeure) = :annee " +         // ← date → dateHeure
+            "WHERE MONTH(e.dateHeure) = :mois " +
+            "AND YEAR(e.dateHeure) = :annee " +
             "AND e.organisateur.id = :organisateurId")
     int countByMoisAndAnneeAndOrganisateur(
             @Param("mois") int mois,
@@ -21,8 +21,8 @@ public interface EvenementRepository extends JpaRepository<Evenement, Long> {
             @Param("organisateurId") Long organisateurId);
 
     @Query("SELECT e FROM Evenement e " +
-            "WHERE MONTH(e.dateHeure) = :mois " +       // ← date → dateHeure
-            "AND YEAR(e.dateHeure) = :annee " +          // ← date → dateHeure
+            "WHERE MONTH(e.dateHeure) = :mois " +
+            "AND YEAR(e.dateHeure) = :annee " +
             "AND e.organisateur.id = :organisateurId")
     List<Evenement> findByMoisAndAnneeAndOrganisateur(
             @Param("mois") int mois,

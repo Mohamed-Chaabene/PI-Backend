@@ -28,31 +28,27 @@ public class EvenementController {
     private final EvenementService service;
     private final ParticipationService participationService;
 
-    // ================= GET ALL =================
+
     @GetMapping
     public ResponseEntity<List<EvenementResponse>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
-    // ================= GET BY ID =================
     @GetMapping("/{id}")
     public ResponseEntity<EvenementResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
-    // GET par organisateur
     @GetMapping("/organisateur/{organisateurId}")
     public ResponseEntity<List<EvenementResponse>> getByOrganisateur(@PathVariable Long organisateurId) {
         return ResponseEntity.ok(service.getByOrganisateur(organisateurId));
     }
 
-    // ================= CREATE / PUBLISH =================
     @PostMapping
     public ResponseEntity<EvenementResponse> publier(@RequestBody EvenementRequest request) {
         return ResponseEntity.ok(service.publier(request));
     }
 
-    // ================= UPDATE / MODIFY =================
     @PutMapping("/{id}")
     public ResponseEntity<EvenementResponse> modifier(
             @PathVariable Long id,
@@ -62,7 +58,7 @@ public class EvenementController {
         return ResponseEntity.ok(service.modifier(id, request, authentication.getName()));
     }
 
-    // ================= DELETE / CANCEL =================
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> annuler(
             @PathVariable Long id,
@@ -72,15 +68,14 @@ public class EvenementController {
         return ResponseEntity.noContent().build();
     }
 
-    // DELETE /api/evenements/admin/{id} → pour l'admin
+
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<Void> annulerAdmin(@PathVariable Long id) {
         service.annulerAdmin(id);
         return ResponseEntity.noContent().build();
     }
 
-    //  GET /api/evenements/stats?mois=4&annee=2026&organisateurId=152
-// Retourne les statistiques d'un organisateur pour un mois
+
     @GetMapping("/stats")
     public ResponseEntity<EvenementStatsResponse> getStats(
             @RequestParam int mois,
@@ -89,20 +84,20 @@ public class EvenementController {
         return ResponseEntity.ok(service.getStats(mois, annee, organisateurId));
     }
 
-    // Endpoint GET : exporte en .ics tous les événements confirmés d'un candidat
+
     @GetMapping("/export-ics/confirmed/{candidatId}")
     public ResponseEntity<byte[]> exportConfirmed(@PathVariable Long candidatId) {
 
-        // Récupère uniquement les participations avec statut CONFIRME depuis le service
+
         List<Participation> participations = participationService.findConfirmedByCandidatId(candidatId , "CONFIRME");
 
-        // Construit l'en-tête du fichier iCalendar (un seul calendrier pour tous les événements)
+
         StringBuilder ics = new StringBuilder();
         ics.append("BEGIN:VCALENDAR\r\n")
                 .append("VERSION:2.0\r\n")
                 .append("PRODID:-//JobMatch//FR\r\n");
 
-        // Boucle sur chaque participation → ajoute un bloc VEVENT par événement confirmé
+
         for (Participation p : participations) {
             Evenement ev = p.getEvenement();
             ics.append("BEGIN:VEVENT\r\n")
@@ -115,20 +110,18 @@ public class EvenementController {
                     .append("END:VEVENT\r\n");
         }
 
-        // Ferme le bloc calendrier
+
         ics.append("END:VCALENDAR\r\n");
 
-        // Convertit en bytes UTF-8 pour supporter les accents
+
         byte[] bytes = ics.toString().getBytes(StandardCharsets.UTF_8);
 
-        // Retourne la réponse avec le bon Content-Type et force le téléchargement
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"mes-evenements-confirmes.ics\"")
                 .contentType(MediaType.parseMediaType("text/calendar; charset=utf-8"))
                 .body(bytes);
     }
 
-    // Formate LocalDateTime au format exigé par iCalendar (yyyyMMddTHHmmss)
     private String formatIcsDate(LocalDateTime dt) {
         return dt.format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
     }

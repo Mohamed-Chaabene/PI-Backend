@@ -75,13 +75,13 @@ public class ParticipationService {
                 .collect(Collectors.toList());
     }
 
-    // Organisateur accepte → notifie le candidat
+
     public ParticipationResponse accepter(Long id) {
         Participation p = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Participation non trouvée"));
 
         p.setStatut("CONFIRME");
-        // Contenu encodé dans le QR : info unique et vérifiable
+
         String contenu = String.format(
                 "JOBMATCH|PARTICIPATION:%d|CANDIDAT:%d|EVENEMENT:%d|DATE:%s",
                 p.getId(),
@@ -94,14 +94,14 @@ public class ParticipationService {
             String qrBase64 = qrCodeService.generateQRCode(contenu);
             p.setQrCode(qrBase64);
         } catch (Exception e) {
-            // log l'erreur, ne bloque pas l'acceptation
+
         }
 
         repository.save(p);
         return toResponse(p);
     }
 
-    // Organisateur refuse → notifie le candidat
+
     public ParticipationResponse refuser(Long id) {
         Participation p = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Participation non trouvée"));
@@ -153,7 +153,7 @@ public class ParticipationService {
         return p.getQrCode();
     }
 
-    // Filtre les participations par candidat ET par statut CONFIRME uniquement
+
     public List<Participation> findConfirmedByCandidatId(Long candidatId ,String statut ) {
         return participationRepository.findByCandidatIdAndStatut(candidatId, "CONFIRME");
     }

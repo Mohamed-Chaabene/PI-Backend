@@ -21,7 +21,7 @@ public class Participation {
 
     private String statut;
     @Column(columnDefinition = "TEXT")
-    private String qrCode; // stocke le QR en Base64
+    private String qrCode;
 
     @Column(name = "certificate_url")
     private String certificateUrl;

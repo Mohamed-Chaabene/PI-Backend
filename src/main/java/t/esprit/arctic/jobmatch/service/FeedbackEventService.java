@@ -74,7 +74,7 @@ public class FeedbackEventService {
         FeedbackEvent f = FeedbackEvent.builder()
                 .commentaire(request.getCommentaire())
                 .note(request.getNote())
-                .date(LocalDate.now())   // ← reste LocalDate (c'est la date du feedback, pas de l'événement)
+                .date(LocalDate.now())
                 .participation(participation)
                 .build();
 

@@ -22,7 +22,7 @@ public class ChatService {
     private final ParticipationRepository participationRepository;
     private final Pusher pusher;
 
-    // Envoie un message dans le chat
+
     public ChatMessageResponse envoyer(ChatMessageRequest request) {
 
         Evenement evenement = evenementRepository.findById(request.getEvenementId())
@@ -32,11 +32,11 @@ public class ChatService {
             throw new RuntimeException("Le chat n'est pas encore ouvert");
         }
 
-        // Vérifie si c'est l'organisateur
+
         boolean estOrganisateur = evenement.getOrganisateur() != null
                 && evenement.getOrganisateur().getId().equals(request.getCandidatId());
 
-        // Vérifie si c'est un candidat confirmé
+
         boolean estConfirme = participationRepository
                 .existsByCandidatIdAndEvenementIdAndStatut(
                         request.getCandidatId(),
@@ -48,15 +48,15 @@ public class ChatService {
             throw new RuntimeException("Accès refusé");
         }
 
-        // ← Récupère le nom selon le rôle
+
         String nomExpediteur;
         Candidat candidat = null;
 
         if (estOrganisateur) {
-            // C'est l'organisateur — récupère son nom
+
             nomExpediteur = evenement.getOrganisateur().getNom();
         } else {
-            // C'est un candidat — récupère depuis la table candidat
+
             candidat = candidatRepository.findById(request.getCandidatId())
                     .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
             nomExpediteur = candidat.getNom() + " " + candidat.getPrenom();
@@ -65,9 +65,9 @@ public class ChatService {
         ChatMessage message = ChatMessage.builder()
                 .contenu(request.getContenu())
                 .envoyeA(LocalDateTime.now())
-                .nomExpediteur(nomExpediteur)          // ← nom correct selon le rôle
+                .nomExpediteur(nomExpediteur)
                 .evenement(evenement)
-                .candidat(candidat)                    // ← null si organisateur, c'est OK
+                .candidat(candidat)
                 .build();
 
         ChatMessage saved = chatMessageRepository.save(message);
@@ -82,7 +82,7 @@ public class ChatService {
         return response;
     }
 
-    // Récupère l'historique des messages d'un événement
+
     public List<ChatMessageResponse> getMessages(Long evenementId, Long candidatId) {
 
         Evenement evenement = evenementRepository.findById(evenementId)
@@ -92,15 +92,15 @@ public class ChatService {
             throw new RuntimeException("Le chat n'est pas ouvert");
         }
 
-        // ← Vérifie si c'est l'organisateur de l'événement
+
         boolean estOrganisateur = evenement.getOrganisateur() != null
                 && evenement.getOrganisateur().getId().equals(candidatId);
 
-        // ← Vérifie si c'est un candidat confirmé
+
         boolean estConfirme = participationRepository
                 .existsByCandidatIdAndEvenementIdAndStatut(candidatId, evenementId, "CONFIRME");
 
-        // ← Autorise si organisateur OU candidat confirmé
+
         if (!estOrganisateur && !estConfirme) {
             throw new RuntimeException("Accès refusé");
         }
@@ -118,7 +118,7 @@ public class ChatService {
                 .orElse(false);
     }
 
-    // Mapper
+
     private ChatMessageResponse toResponse(ChatMessage m) {
         return new ChatMessageResponse(
                 m.getId(),

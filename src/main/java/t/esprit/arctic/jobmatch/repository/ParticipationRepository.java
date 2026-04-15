@@ -59,15 +59,13 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             "ORDER BY COUNT(p) DESC")
     List<String> findTypeFavoriByCandidat(@Param("candidatId") Long candidatId);
 
-    // Vérifie si un candidat a une participation avec un statut précis pour un événement
+
     boolean existsByCandidatIdAndEvenementIdAndStatut(
             Long candidatId,
             Long evenementId,
             String statut
     );
 
-    // Spring Data JPA génère automatiquement la requête SQL depuis le nom de la méthode
-// → SELECT * FROM participation WHERE candidat_id = ? AND statut = 'CONFIRME'
     List<Participation> findByCandidatIdAndStatut(Long candidatId, String statut);
 
 

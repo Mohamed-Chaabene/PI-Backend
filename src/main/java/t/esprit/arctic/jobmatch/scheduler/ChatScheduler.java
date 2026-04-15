@@ -17,7 +17,7 @@ public class ChatScheduler {
 
     private final EvenementRepository evenementRepository;
 
-    // S'exécute toutes les minutes
+
     @Scheduled(fixedRate = 60000)
     public void gererChats() {
         LocalDateTime maintenant = LocalDateTime.now();
@@ -27,10 +27,10 @@ public class ChatScheduler {
             if (e.getDateHeure() == null) continue;
 
             LocalDateTime debut = e.getDateHeure();
-            LocalDateTime ouvertureChat = debut.minusHours(24); // 24h avant
-            LocalDateTime fermetureChat = debut.plusHours(3);   // ferme 3h après le début
+            LocalDateTime ouvertureChat = debut.minusHours(24);
+            LocalDateTime fermetureChat = debut.plusHours(3);
 
-            // Ouvre le chat si on est dans la fenêtre [debut-24h, debut+3h]
+
             boolean doitEtreOuvert = maintenant.isAfter(ouvertureChat)
                     && maintenant.isBefore(fermetureChat);
 

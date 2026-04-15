@@ -28,59 +28,59 @@ public class ParticipationController {
             @RequestBody ParticipationRequest request) {
         return ResponseEntity.ok(service.confirmer(request));
     }
-    //  Organisateur accepte
+
     @PutMapping("/{id}/accepter")
     public ResponseEntity<ParticipationResponse> accepter(@PathVariable Long id) {
         return ResponseEntity.ok(service.accepter(id));
     }
 
-    //  Organisateur refuse
+
     @PutMapping("/{id}/refuser")
     public ResponseEntity<ParticipationResponse> refuser(@PathVariable Long id) {
         return ResponseEntity.ok(service.refuser(id));
     }
-    // ✅ Annuler participation
+
     @PutMapping("/{id}/annuler")
     public ResponseEntity<ParticipationResponse> annuler(@PathVariable Long id) {
         return ResponseEntity.ok(service.annuler(id));
     }
 
-    //  Demandes EN_ATTENTE par événement
+
     @GetMapping("/evenement/{evenementId}/demandes")
     public ResponseEntity<List<ParticipationResponse>> getDemandes(
             @PathVariable Long evenementId) {
         return ResponseEntity.ok(service.getDemandesByEvenement(evenementId));
     }
 
-    // Participations CONFIRMEES par événement
+
     @GetMapping("/evenement/{evenementId}/confirmees")
     public ResponseEntity<List<ParticipationResponse>> getConfirmees(
             @PathVariable Long evenementId) {
         return ResponseEntity.ok(service.getConfirmeesByEvenement(evenementId));
     }
 
-    //  Toutes demandes pour un organisateur
+
     @GetMapping("/organisateur/{organisateurId}/demandes")
     public ResponseEntity<List<ParticipationResponse>> getDemandesByOrganisateur(
             @PathVariable Long organisateurId) {
         return ResponseEntity.ok(service.getDemandesByOrganisateur(organisateurId));
     }
 
-    //  Organisateur voit les participations d'un événement
+
     @GetMapping("/evenement/{evenementId}")
     public ResponseEntity<List<ParticipationResponse>> getByEvenement(
             @PathVariable Long evenementId) {
         return ResponseEntity.ok(service.getByEvenement(evenementId));
     }
 
-    //  Candidat voit ses participations
+
     @GetMapping("/candidat/{candidatId}")
     public ResponseEntity<List<ParticipationResponse>> getByCandidat(
             @PathVariable Long candidatId) {
         return ResponseEntity.ok(service.getByCandidat(candidatId));
     }
 
-    //  GET /api/participations/stats/candidat/{candidatId}
+
     @GetMapping("/stats/candidat/{candidatId}")
     public ResponseEntity<CandidatStatsResponse> getStatsByCandidat(
             @PathVariable Long candidatId) {
@@ -103,7 +103,7 @@ public class ParticipationController {
             map.put("id", p.getId());
             map.put("statut", p.getStatut());
 
-            // On accède à evenement DANS la session Hibernate (encore ouverte ici)
+
             Evenement ev = p.getEvenement();
             Map<String, Object> evMap = new HashMap<>();
             evMap.put("id", ev.getId());
@@ -112,7 +112,7 @@ public class ParticipationController {
             evMap.put("lieu", ev.getLieu());
             evMap.put("type", ev.getType());
 
-            // On NE met PAS ev.getParticipations() → c'est là que le problème venait
+
             map.put("evenement", evMap);
 
             return map;
