@@ -60,7 +60,7 @@ public class Entretien {
 
     private boolean completed = false;
 
-    /** Null pour les entretiens de type TEST (généraux, sans barème). */
+    /** Pour les entretiens de type TEST le seuil de reussite est null  */
     @Column(nullable = true)
     private Integer seuilReussite;
 
@@ -93,7 +93,7 @@ public class Entretien {
         createdAt = LocalDateTime.now();
     }
 
-    // Getters explicites
+    // Getters
     public Long getId() {
         return id;
     }

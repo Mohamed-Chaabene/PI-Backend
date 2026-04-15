@@ -3,6 +3,8 @@ package t.esprit.arctic.jobmatch.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
 import t.esprit.arctic.jobmatch.dto.EntretienTestPublicDto;
 import t.esprit.arctic.jobmatch.service.EntretienService;
@@ -87,7 +89,10 @@ public class EntretienController {
                 commentaire = String.valueOf(scoreData.get("rapport"));
             }
 
-            EntretienDTO resultat = entretienService.updateScore(entretienId, score, commentaire);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String candidatEmail = authentication != null ? authentication.getName() : null;
+
+            EntretienDTO resultat = entretienService.updateScore(entretienId, score, commentaire, candidatEmail);
             return ResponseEntity.ok(resultat);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());

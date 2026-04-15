@@ -11,6 +11,7 @@ import t.esprit.arctic.jobmatch.repository.*;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -138,8 +139,12 @@ public class EntretienService {
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Map<Long, Entretien> merged = new LinkedHashMap<>();
-        entretienRepository.findByCandidatId(candidatId).forEach(entretien -> merged.put(entretien.getId(), entretien));
-        if (!offerIds.isEmpty()) {
+        List<Entretien> candidateEntretiens = entretienRepository.findByCandidatId(candidatId);
+        candidateEntretiens.forEach(entretien -> merged.put(entretien.getId(), entretien));
+
+        // Ne pas mélanger les entretiens d'une offre avec ceux d'autres candidats si
+        // le candidat possède déjà ses propres entretiens.
+        if (merged.isEmpty() && !offerIds.isEmpty()) {
             entretienRepository.findByOffreEmploiIdIn(offerIds).forEach(entretien -> merged.put(entretien.getId(), entretien));
         }
 
@@ -257,11 +262,16 @@ public class EntretienService {
 
     @Transactional
     public EntretienDTO updateScore(Long entretienId, Double score) {
-        return updateScore(entretienId, score, null);
+        return updateScore(entretienId, score, null, null);
     }
 
     @Transactional
     public EntretienDTO updateScore(Long entretienId, Double score, String commentaire) {
+        return updateScore(entretienId, score, commentaire, null);
+    }
+
+    @Transactional
+    public EntretienDTO updateScore(Long entretienId, Double score, String commentaire, String candidatEmail) {
         Entretien entretien = entretienRepository.findById(entretienId)
                 .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
 
@@ -282,7 +292,53 @@ public class EntretienService {
         }
 
         Entretien saved = entretienRepository.save(entretien);
+        persistScoreOnCandidature(saved, score, candidatEmail);
         return convertToDTO(saved);
+    }
+
+    private void persistScoreOnCandidature(Entretien entretien, Double score, String candidatEmail) {
+        Long candidatId = entretien.getCandidat() != null ? entretien.getCandidat().getId() : null;
+
+        if ((candidatId == null || candidatId <= 0) && candidatEmail != null && !candidatEmail.isBlank()) {
+            candidatId = candidatRepository.findByEmail(candidatEmail)
+                    .map(Candidat::getId)
+                    .orElse(null);
+        }
+
+        if (candidatId == null || candidatId <= 0) {
+            return;
+        }
+
+        Candidature target = null;
+        Long offreId = entretien.getOffreEmploi() != null ? entretien.getOffreEmploi().getId() : null;
+        if (offreId != null && offreId > 0) {
+            target = candidatureRepository.findTopByCandidatIdAndOffreEmploiIdOrderByDateEnvoiDesc(candidatId, offreId)
+                    .orElse(null);
+        }
+
+        if (target == null) {
+            List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidatId);
+            target = candidatures.stream()
+                    .filter(c -> "ACCEPTEE".equalsIgnoreCase(String.valueOf(c.getStatut())))
+                    .max(Comparator.comparing(Candidature::getDateEnvoi, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .orElseGet(() -> candidatures.stream()
+                            .max(Comparator.comparing(Candidature::getDateEnvoi, Comparator.nullsLast(Comparator.naturalOrder())))
+                            .orElse(null));
+        }
+
+        if (target == null) {
+            return;
+        }
+
+        target.setScoreEntretien(score);
+        if (entretien.getTotalQuestions() != null) {
+            target.setTotalQuestionsEntretien(entretien.getTotalQuestions());
+        }
+        if (entretien.getBonnesReponses() != null) {
+            target.setBonnesReponsesEntretien(entretien.getBonnesReponses());
+        }
+        target.setDateEvaluationEntretien(new Date());
+        candidatureRepository.save(target);
     }
 
     private EntretienDTO convertToDTO(Entretien entretien) {

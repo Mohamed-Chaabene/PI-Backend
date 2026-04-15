@@ -117,7 +117,16 @@ public class QuestionAiAssistantService {
         return switch (normalizedType) {
             case "VRAI_FAUX" -> String.format("%s: affirmation %d sur %s est-elle vraie ou fausse ?", niveau, index, theme);
             case "QCU" -> String.format("%s: quelle est l'option unique correcte concernant %s ?", niveau, theme);
-            default -> String.format("%s: quelle est la meilleure réponse concernant %s ?", niveau, theme);
+            default -> {
+                String[] templates = new String[] {
+                    String.format("%s: quelle est la meilleure réponse concernant %s ?", niveau, theme),
+                    String.format("%s: parmi les options suivantes, laquelle est correcte pour %s ?", niveau, theme),
+                    String.format("%s: sélectionnez la bonne pratique relative à %s", niveau, theme),
+                    String.format("%s: quelle est la réponse la plus appropriée sur %s ?", niveau, theme),
+                    String.format("%s: identifiez la bonne affirmation concernant %s", niveau, theme)
+                };
+                yield templates[(index - 1) % templates.length];
+            }
         };
     }
 
@@ -138,9 +147,30 @@ public class QuestionAiAssistantService {
             return choices;
         }
 
-        choices.add(new ChoixDTO(null, "Option A", true, 1));
-        choices.add(new ChoixDTO(null, "Option B", false, 2));
-        choices.add(new ChoixDTO(null, "Option C", false, 3));
+        // QCM avec variantes contextuelles basées sur Random
+        int randomIndex = (int)(Math.random() * 4);
+        switch (randomIndex) {
+            case 0:
+                choices.add(new ChoixDTO(null, "Approche standard", true, 1));
+                choices.add(new ChoixDTO(null, "Approche optimisée", false, 2));
+                choices.add(new ChoixDTO(null, "Mauvaise pratique", false, 3));
+                choices.add(new ChoixDTO(null, "Non recommandée", false, 4));
+                break;
+            case 1:
+                choices.add(new ChoixDTO(null, "Méthode A", true, 1));
+                choices.add(new ChoixDTO(null, "Méthode B", false, 2));
+                choices.add(new ChoixDTO(null, "Méthode C", false, 3));
+                break;
+            case 2:
+                choices.add(new ChoixDTO(null, "Correcte et optimale", true, 1));
+                choices.add(new ChoixDTO(null, "Correcte mais inefficace", false, 2));
+                choices.add(new ChoixDTO(null, "Incorrecte", false, 3));
+                break;
+            default:
+                choices.add(new ChoixDTO(null, "Solution 1", true, 1));
+                choices.add(new ChoixDTO(null, "Solution 2", false, 2));
+                choices.add(new ChoixDTO(null, "Solution 3", false, 3));
+        }
         return choices;
     }
 

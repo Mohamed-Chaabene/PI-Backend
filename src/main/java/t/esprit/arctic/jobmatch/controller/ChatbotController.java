@@ -26,8 +26,14 @@ public class ChatbotController {
     @Autowired
     private ChatbotHistoryRepository chatHistoryRepo;
 
-    @Value("${gemini.api.key:}")
+    @Value("${groq.api.key:}")
     private String groqApiKey;
+
+    @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
+    private String groqApiUrl;
+
+    @Value("${groq.model:mixtral-8x7b-32768}")
+    private String groqModel;
 
     private final HttpClient   http   = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -148,6 +154,14 @@ public class ChatbotController {
     public ResponseEntity<Map<String, String>> chat(
             @RequestBody Map<String, Object> body) throws Exception {
 
+        // ── Vérifier la clé GROQ API ────────────────────────────────────
+        if (groqApiKey == null || groqApiKey.trim().isEmpty()) {
+            System.err.println("CRITICAL ERROR: groq.api.key is not configured in application.properties");
+            return ResponseEntity.ok(Map.of(
+                "response", "Erreur: Cle API GROQ non configuree. Veuillez verifier application.properties"
+            ));
+        }
+
         String message   = body.getOrDefault("message", "").toString();
         String imageUrl  = body.containsKey("imageUrl") && body.get("imageUrl") != null
                 ? body.get("imageUrl").toString() : null;
@@ -265,8 +279,8 @@ public class ChatbotController {
 
         // ── Choix du modèle ──────────────────────────────────────────────
         String modelToUse = (hasImage || historyHasImage)
-                ? "meta-llama/llama-4-scout-17b-16e-instruct"
-                : "llama-3.1-8b-instant";
+            ? "meta-llama/llama-4-scout-17b-16e-instruct"
+                : groqModel;
 
         // ── Appel GROQ API ───────────────────────────────────────────────
         String requestBody = mapper.writeValueAsString(Map.of(
@@ -279,10 +293,11 @@ public class ChatbotController {
         System.out.println("=== GROQ REQUEST ===");
         System.out.println("Model: " + modelToUse);
         System.out.println("Has image: " + hasImage);
+        System.out.println("API Key present: " + (groqApiKey != null && !groqApiKey.isEmpty()));
 
         HttpResponse<String> response = http.send(
                 HttpRequest.newBuilder()
-                        .uri(URI.create("https://api.groq.com/openai/v1/chat/completions"))
+                        .uri(URI.create(groqApiUrl))
                         .header("Content-Type",  "application/json")
                         .header("Authorization", "Bearer " + groqApiKey)
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
@@ -291,8 +306,20 @@ public class ChatbotController {
         );
 
         System.out.println("=== GROQ RESPONSE STATUS: " + response.statusCode() + " ===");
+        System.out.println("GROQ Response body: " + response.body());
 
         JsonNode root = mapper.readTree(response.body());
+
+        if (response.statusCode() != 200) {
+            System.err.println("WARNING: GROQ API returned status " + response.statusCode());
+            if (root.has("error")) {
+                String errMsg = root.path("error").path("message").asText("Unknown error");
+                System.err.println("GROQ error message: " + errMsg);
+                return ResponseEntity.ok(Map.of(
+                        "response", "Désolé, je rencontre un problème technique : " + errMsg
+                ));
+            }
+        }
 
         if (root.has("error")) {
             String errMsg = root.path("error").path("message").asText();

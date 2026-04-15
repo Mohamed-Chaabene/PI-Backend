@@ -3,6 +3,7 @@ package t.esprit.arctic.jobmatch.repository;
 import t.esprit.arctic.jobmatch.entity.Candidature;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 
 public interface CandidatureRepository extends JpaRepository<Candidature, Long> {
 
@@ -18,5 +19,6 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
     // Trier par date du plus récent au plus ancien
     List<Candidature> findAllByOrderByDateEnvoiDesc();
     List<Candidature> findByCandidatIdAndStatut(Long candidatId, String statut);
+    Optional<Candidature> findTopByCandidatIdAndOffreEmploiIdOrderByDateEnvoiDesc(Long candidatId, Long offreId);
 }
 
