@@ -33,7 +33,7 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
            "r.email, " +
            "COUNT(c.id), " +
            "SUM(CASE WHEN c.statut = 'ACCEPTEE' THEN 1 ELSE 0 END), " +
-           "CAST(MAX(c.dateCreation) AS string), " +
+           "CAST(MAX(c.dateEnvoi) AS string), " +
            "o.salary, " +
            "o.typeContrat) " +
            "FROM OffreEmploi o " +
@@ -52,7 +52,7 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
            "o.id, o.titre, o.entreprise, r.nom, r.email, " +
            "COUNT(c.id), " +
            "SUM(CASE WHEN c.statut = 'ACCEPTEE' THEN 1 ELSE 0 END), " +
-           "CAST(MAX(c.dateCreation) AS string), " +
+           "CAST(MAX(c.dateEnvoi) AS string), " +
            "o.salary, o.typeContrat) " +
            "FROM OffreEmploi o " +
            "LEFT JOIN o.recruteur r " +
@@ -69,7 +69,7 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
            "o.id, o.titre, o.entreprise, r.nom, r.email, " +
            "COUNT(c.id), " +
            "SUM(CASE WHEN c.statut = 'ACCEPTEE' THEN 1 ELSE 0 END), " +
-           "CAST(MAX(c.dateCreation) AS string), " +
+           "CAST(MAX(c.dateEnvoi) AS string), " +
            "o.salary, o.typeContrat) " +
            "FROM OffreEmploi o " +
            "INNER JOIN o.recruteur r " +

@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import t.esprit.arctic.jobmatch.dto.OffreSearchDTO;
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 
 import java.util.List;
@@ -24,14 +25,14 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
      */
     @Query(
         "SELECT NEW t.esprit.arctic.jobmatch.dto.OffreSearchDTO(" +
-        "o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "o.location, o.typeContrat, CAST(o.salaire AS string), o.datePublication, " +
+        "o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "o.location, o.typeContrat, CAST(o.salary AS string), o.datePublication, " +
         "COUNT(DISTINCT c.id), " +
-        "COUNT(DISTINCT CASE WHEN c.acceptee = true THEN c.id END), " +
+        "COUNT(DISTINCT CASE WHEN c.statut = 'ACCEPTEE' THEN c.id END), " +
         "CAST(CASE " +
-        "  WHEN LOWER(o.titrOffre) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 40 " +
+        "  WHEN LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 40 " +
         "  WHEN LOWER(o.description) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 25 " +
-        "  WHEN LOWER(r.nomEntreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 20 " +
+        "  WHEN LOWER(r.entreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 20 " +
         "  WHEN LOWER(o.location) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 15 " +
         "  ELSE 0 END AS double), " +
         "'', '' " +
@@ -40,17 +41,17 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
         "JOIN o.recruteur r " +
         "LEFT JOIN o.candidatures c " +
         "WHERE " +
-        "  LOWER(o.titrOffre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "  LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "  LOWER(o.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "  LOWER(r.nomEntreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "  LOWER(r.entreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "  LOWER(o.location) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "  LOWER(o.typeContrat) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-        "GROUP BY o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "         o.location, o.typeContrat, o.salaire, o.datePublication " +
+        "GROUP BY o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "         o.location, o.typeContrat, o.salary, o.datePublication " +
         "ORDER BY CASE " +
-        "  WHEN LOWER(o.titrOffre) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 40 " +
+        "  WHEN LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 40 " +
         "  WHEN LOWER(o.description) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 25 " +
-        "  WHEN LOWER(r.nomEntreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 20 " +
+        "  WHEN LOWER(r.entreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 20 " +
         "  WHEN LOWER(o.location) LIKE LOWER(CONCAT('%', :keyword, '%')) THEN 15 " +
         "  ELSE 0 END DESC, o.datePublication DESC"
     )
@@ -68,10 +69,10 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
      */
     @Query(
         "SELECT NEW t.esprit.arctic.jobmatch.dto.OffreSearchDTO(" +
-        "o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "o.location, o.typeContrat, CAST(o.salaire AS string), o.datePublication, " +
+        "o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "o.location, o.typeContrat, CAST(o.salary AS string), o.datePublication, " +
         "COUNT(DISTINCT c.id), " +
-        "COUNT(DISTINCT CASE WHEN c.acceptee = true THEN c.id END), " +
+        "COUNT(DISTINCT CASE WHEN c.statut = 'ACCEPTEE' THEN c.id END), " +
         "0.0, '', '' " +
         ") " +
         "FROM OffreEmploi o " +
@@ -79,15 +80,15 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
         "LEFT JOIN o.candidatures c " +
         "WHERE " +
         "  (:keyword IS NULL OR " +
-        "   LOWER(o.titrOffre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "   LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "   LOWER(o.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "   LOWER(r.nomEntreprise) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+        "   LOWER(r.entreprise) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
         "  (:location IS NULL OR LOWER(o.location) = LOWER(:location)) AND " +
-        "  (:minSalaire IS NULL OR CAST(o.salaire AS int) >= :minSalaire) AND " +
-        "  (:maxSalaire IS NULL OR CAST(o.salaire AS int) <= :maxSalaire) AND " +
+        "  (:minSalaire IS NULL OR CAST(o.salary AS int) >= :minSalaire) AND " +
+        "  (:maxSalaire IS NULL OR CAST(o.salary AS int) <= :maxSalaire) AND " +
         "  (:typeContrat IS NULL OR LOWER(o.typeContrat) = LOWER(:typeContrat)) " +
-        "GROUP BY o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "         o.location, o.typeContrat, o.salaire, o.datePublication " +
+        "GROUP BY o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "         o.location, o.typeContrat, o.salary, o.datePublication " +
         "ORDER BY o.datePublication DESC"
     )
     List<OffreSearchDTO> searchWithFilters(
@@ -108,19 +109,19 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
      */
     @Query(
         "SELECT NEW t.esprit.arctic.jobmatch.dto.OffreSearchDTO(" +
-        "o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "o.location, o.typeContrat, CAST(o.salaire AS string), o.datePublication, " +
+        "o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "o.location, o.typeContrat, CAST(o.salary AS string), o.datePublication, " +
         "COUNT(DISTINCT c.id), " +
-        "COUNT(DISTINCT CASE WHEN c.acceptee = true THEN c.id END), " +
+        "COUNT(DISTINCT CASE WHEN c.statut = 'ACCEPTEE' THEN c.id END), " +
         "CAST(COUNT(DISTINCT c.id) AS double), '', '' " +
         ") " +
         "FROM OffreEmploi o " +
         "INNER JOIN o.recruteur r " +
         "LEFT JOIN o.candidatures c " +
-        "WHERE LOWER(r.nomEntreprise) = LOWER(:nomEntreprise) AND " +
-        "      (:keyword IS NULL OR LOWER(o.titrOffre) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-        "GROUP BY o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "         o.location, o.typeContrat, o.salaire, o.datePublication " +
+        "WHERE LOWER(r.entreprise) = LOWER(:nomEntreprise) AND " +
+        "      (:keyword IS NULL OR LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+        "GROUP BY o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "         o.location, o.typeContrat, o.salary, o.datePublication " +
         "ORDER BY o.datePublication DESC"
     )
     List<OffreSearchDTO> searchByCompanyName(
@@ -138,21 +139,21 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
      */
     @Query(
         "SELECT NEW t.esprit.arctic.jobmatch.dto.OffreSearchDTO(" +
-        "o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "o.location, o.typeContrat, CAST(o.salaire AS string), o.datePublication, " +
+        "o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "o.location, o.typeContrat, CAST(o.salary AS string), o.datePublication, " +
         "COUNT(DISTINCT c.id), " +
-        "COUNT(DISTINCT CASE WHEN c.acceptee = true THEN c.id END), " +
+        "COUNT(DISTINCT CASE WHEN c.statut = 'ACCEPTEE' THEN c.id END), " +
         "CAST(COUNT(DISTINCT c.id) AS double), '', '' " +
         ") " +
         "FROM OffreEmploi o " +
         "INNER JOIN o.recruteur r " +
         "LEFT JOIN o.candidatures c " +
         "WHERE :keyword IS NULL OR " +
-        "      LOWER(o.titrOffre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "      LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "      LOWER(o.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "      LOWER(r.nomEntreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-        "GROUP BY o.id, o.titrOffre, o.description, r.nomEntreprise, r.nom, r.email, " +
-        "         o.location, o.typeContrat, o.salaire, o.datePublication " +
+        "      LOWER(r.entreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+        "GROUP BY o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
+        "         o.location, o.typeContrat, o.salary, o.datePublication " +
         "HAVING COUNT(DISTINCT c.id) > 0 " +
         "ORDER BY COUNT(DISTINCT c.id) DESC"
     )

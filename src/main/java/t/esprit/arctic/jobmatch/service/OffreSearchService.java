@@ -94,7 +94,7 @@ public class OffreSearchService {
             // Tri par relevance score
             results.sort(Comparator.comparingDouble(OffreSearchDTO::getRelevanceScore)
                     .reversed()
-                    .thenComparing(OfforeSearchDTO::getDatePublication)
+                    .thenComparing(OffreSearchDTO::getDatePublication)
                     .reversed());
 
             long duration = System.currentTimeMillis() - startTime;
@@ -115,7 +115,7 @@ public class OffreSearchService {
      * @param keyword Mot-clé optionnel dans les offres
      * @return Toutes les offres de l'entreprise
      */
-    public List<OfforeSearchDTO> searchByCompany(String nomEntreprise, String keyword) {
+    public List<OffreSearchDTO> searchByCompany(String nomEntreprise, String keyword) {
         try {
             if (nomEntreprise == null || nomEntreprise.trim().isEmpty()) {
                 log.warn("Nom d'entreprise vide");
@@ -144,7 +144,7 @@ public class OffreSearchService {
      * @param limit Nombre d'offres à retourner
      * @return Top offres les plus attractives
      */
-    public List<OfforeSearchDTO> getPopularOffers(String keyword, Integer limit) {
+    public List<OffreSearchDTO> getPopularOffers(String keyword, Integer limit) {
         try {
             log.info("Récupération des offres populaires - Keyword: {}, Limit: {}", keyword, limit);
 
@@ -177,7 +177,7 @@ public class OffreSearchService {
      * @param keyword Mot-clé utilisé pour la recherche
      * @return Résultats enrichis et triés
      */
-    private List<OfforeSearchDTO> enrichSearchResults(List<OfforeSearchDTO> results, String keyword) {
+    private List<OffreSearchDTO> enrichSearchResults(List<OffreSearchDTO> results, String keyword) {
         if (keyword == null || keyword.isEmpty()) {
             return results;
         }
@@ -186,7 +186,7 @@ public class OffreSearchService {
 
         return results.stream()
                 .map(result -> enrichSingleResult(result, keywordLower))
-                .sorted(Comparator.comparingDouble(OfforeSearchDTO::getRelevanceScore).reversed())
+                .sorted(Comparator.comparingDouble(OffreSearchDTO::getRelevanceScore).reversed())
                 .collect(Collectors.toList());
     }
 
@@ -236,7 +236,7 @@ public class OffreSearchService {
      * @param keyword Mot-clé recherché
      * @return Score entre 0 et 100
      */
-    private double calculateRelevanceScore(OfforeSearchDTO result, String keyword) {
+    private double calculateRelevanceScore(OffreSearchDTO result, String keyword) {
         double score = 0;
 
         // Points pour titre (correspondance exacte = 40)
