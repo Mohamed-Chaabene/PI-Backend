@@ -63,6 +63,8 @@ public class SecurityConfig {
                         // ── Partenaires ───────────────────────────────────────
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/api/dashboard/**").permitAll()
 
                         // ── Search / Users ────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()
@@ -137,13 +139,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost😘"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost"));
         configuration.setAllowedMethods(
                 Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/ws/**", configuration);
+
         return source;
     }
 }
