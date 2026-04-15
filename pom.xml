@@ -20,7 +20,7 @@
     <description>JobMatch AI Backend</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
     </properties>
 
     <repositories>
@@ -80,6 +80,12 @@
             <artifactId>smile-core</artifactId>
             <version>2.6.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.github.haifengl</groupId>
             <artifactId>smile-math</artifactId>

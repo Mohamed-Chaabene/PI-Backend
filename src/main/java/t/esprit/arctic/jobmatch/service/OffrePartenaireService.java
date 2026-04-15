@@ -13,6 +13,8 @@ import t.esprit.arctic.jobmatch.entity.TypePartenaire;
 import t.esprit.arctic.jobmatch.entity.Partenaire;
 import t.esprit.arctic.jobmatch.repository.OffrePartenaireRepository;
 import t.esprit.arctic.jobmatch.repository.PartenaireRepository;
+import t.esprit.arctic.jobmatch.dto.ActivityEvent;        // ← NOUVEAU
+import t.esprit.arctic.jobmatch.service.WebSocketService; // ← NOUVEAU
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +22,7 @@ public class OffrePartenaireService {
 
     private final OffrePartenaireRepository offreRepo;
     private final PartenaireRepository partenaireRepo;
+    private final WebSocketService webSocketService;
 
     public List<OffrePartenaire> getAll() {
         return offreRepo.findAll();
@@ -31,10 +34,29 @@ public class OffrePartenaireService {
                         new RuntimeException("Offre non trouvée"));
     }
 
+
     public OffrePartenaire create(OffrePartenaire o) {
         o.setDatePublication(new Date());
-        return offreRepo.save(o);
+        OffrePartenaire saved = offreRepo.save(o);
+        System.out.println(" Push WebSocket : " + saved.getTitre());
+
+        Partenaire p  = saved.getPartenaire();
+        String nom    = p != null ? p.getNom() : "Partenaire";
+        String type   = saved.getType() != null
+                ? saved.getType().name() : "EMPLOI";
+
+        webSocketService.sendActivity(new ActivityEvent(
+                "NOUVELLE_OFFRE",
+                nom,
+                type,
+                nom + " a publié une offre " + type.toLowerCase(),
+                "",
+                type.equals("EMPLOI") ? "💼" : "🎓"
+        ));
+
+        return saved;
     }
+
 
     public OffrePartenaire update(Long id, OffrePartenaire o) {
         OffrePartenaire existing = offreRepo.findById(id)
@@ -50,24 +72,20 @@ public class OffrePartenaireService {
         offreRepo.deleteById(id);
     }
 
-    public List<OffrePartenaire> getByPartenaire(
-            Long partenaireId) {
+    public List<OffrePartenaire> getByPartenaire(Long partenaireId) {
         return offreRepo.findByPartenaireId(partenaireId);
     }
 
-    public List<OffrePartenaire> getByType(
-            TypeOffrePartenaire type) {
+    public List<OffrePartenaire> getByType(TypeOffrePartenaire type) {
         return offreRepo.findByType(type);
     }
 
-    public List<OffrePartenaire> searchByKeyword(
-            String keyword) {
+    public List<OffrePartenaire> searchByKeyword(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return offreRepo.findAll();
         }
         return offreRepo.searchByKeyword(keyword.trim());
     }
-
 
     @Transactional
     public String predictNextOffreType(Long partenaireId) {
@@ -75,35 +93,25 @@ public class OffrePartenaireService {
         List<OffrePartenaire> offres =
                 offreRepo.findByPartenaireId(partenaireId);
 
-        // Pas d'offres → EMPLOI par défaut
         if (offres == null || offres.isEmpty()) {
             return "EMPLOI (50%)";
         }
 
-
         long nbEmploi = offres.stream()
-                .filter(o -> o.getType()
-                        == TypeOffrePartenaire.EMPLOI)
+                .filter(o -> o.getType() == TypeOffrePartenaire.EMPLOI)
                 .count();
 
         long nbStage = offres.stream()
-                .filter(o -> o.getType()
-                        == TypeOffrePartenaire.STAGE)
+                .filter(o -> o.getType() == TypeOffrePartenaire.STAGE)
                 .count();
 
         long total = nbEmploi + nbStage;
 
-
         double probEmploi = (double) nbEmploi / total;
         double probStage  = (double) nbStage  / total;
 
-
-        int moisActuel = Calendar.getInstance()
-                .get(Calendar.MONTH) + 1;
-
-        // Juin-Septembre → période de stage
-        boolean periodStage =
-                (moisActuel >= 6 && moisActuel <= 9);
+        int moisActuel = Calendar.getInstance().get(Calendar.MONTH) + 1;
+        boolean periodStage = (moisActuel >= 6 && moisActuel <= 9);
 
         if (periodStage) {
             probStage  *= 1.5;
@@ -111,21 +119,16 @@ public class OffrePartenaireService {
             probEmploi *= 1.5;
         }
 
-
         Partenaire partenaire = partenaireRepo
                 .findById(partenaireId).orElse(null);
 
         if (partenaire != null) {
-            if (partenaire.getType()
-                    == TypePartenaire.UNIVERSITE) {
-                // Université → plus de stages
-                probStage *= 1.8;
+            if (partenaire.getType() == TypePartenaire.UNIVERSITE) {
+                probStage  *= 1.8;
             } else {
-                // Entreprise → plus d'emplois
                 probEmploi *= 1.8;
             }
         }
-
 
         List<OffrePartenaire> dernieres = offres.stream()
                 .sorted((a, b) -> {
@@ -141,24 +144,20 @@ public class OffrePartenaireService {
             if (o.getType() == TypeOffrePartenaire.EMPLOI) {
                 probEmploi *= 1.3;
             } else {
-                probStage *= 1.3;
+                probStage  *= 1.3;
             }
         }
 
-
-        double totalProb = probEmploi + probStage;
-        int confidenceEmploi =
-                (int)((probEmploi / totalProb) * 100);
-        int confidenceStage =
-                (int)((probStage / totalProb) * 100);
+        double totalProb     = probEmploi + probStage;
+        int confidenceEmploi = (int)((probEmploi / totalProb) * 100);
+        int confidenceStage  = (int)((probStage  / totalProb) * 100);
 
         if (probEmploi >= probStage) {
             return "EMPLOI (" + confidenceEmploi + "%)";
         } else {
-            return "STAGE (" + confidenceStage + "%)";
+            return "STAGE ("  + confidenceStage  + "%)";
         }
     }
-
 
     public OffrePartenaire toggleEpingle(Long offreId) {
         OffrePartenaire offre = getById(offreId);
@@ -166,14 +165,12 @@ public class OffrePartenaireService {
         return offreRepo.save(offre);
     }
 
-
-    public List<OffrePartenaire> getByPartenaireTriees(
-            Long partenaireId) {
+    public List<OffrePartenaire> getByPartenaireTriees(Long partenaireId) {
         return offreRepo.findByPartenaireId(partenaireId)
                 .stream()
                 .sorted((a, b) -> {
-                    if (a.isEpinglee() && !b.isEpinglee()) return -1;
-                    if (!a.isEpinglee() && b.isEpinglee()) return 1;
+                    if (a.isEpinglee() && !b.isEpinglee())  return -1;
+                    if (!a.isEpinglee() && b.isEpinglee())  return 1;
                     return 0;
                 })
                 .collect(java.util.stream.Collectors.toList());
