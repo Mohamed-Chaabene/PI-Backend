@@ -16,4 +16,6 @@ public class ParticipationResponse {
     private String nomCandidat;
     private String qrCode;
     private boolean chatOuvert;
+    private Boolean certificateGenerated;
+    private String certificateUrl;
 }

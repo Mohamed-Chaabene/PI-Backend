@@ -23,6 +23,12 @@ public class Participation {
     @Column(columnDefinition = "TEXT")
     private String qrCode; // stocke le QR en Base64
 
+    @Column(name = "certificate_url")
+    private String certificateUrl;
+
+    @Column(name = "certificate_generated")
+    private Boolean certificateGenerated = false;
+
     @ManyToOne
     @JoinColumn(name = "evenement_id")
     private Evenement evenement;

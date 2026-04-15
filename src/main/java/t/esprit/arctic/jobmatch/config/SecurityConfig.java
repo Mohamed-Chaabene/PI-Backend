@@ -115,6 +115,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/reputation").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         //chatroom evenements
                         .requestMatchers("/api/chat/**").hasAnyRole("CANDIDAT", "ORGANISATEUR", "ADMIN")
+                        .requestMatchers("/api/attestation/**").permitAll()
 
                         // ── Vidéo progression ─────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()

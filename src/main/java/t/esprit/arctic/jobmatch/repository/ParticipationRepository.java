@@ -6,6 +6,10 @@ import org.springframework.data.repository.query.Param;
 import t.esprit.arctic.jobmatch.entity.Evenement;
 import t.esprit.arctic.jobmatch.entity.Participation;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
+import java.time.LocalDateTime;
+import java.util.List;
+
+
 
 
 
@@ -65,4 +69,13 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     // Spring Data JPA génère automatiquement la requête SQL depuis le nom de la méthode
 // → SELECT * FROM participation WHERE candidat_id = ? AND statut = 'CONFIRME'
     List<Participation> findByCandidatIdAndStatut(Long candidatId, String statut);
+
+
+    @Query("""
+    SELECT p FROM Participation p
+    WHERE p.statut = 'CONFIRME'
+    AND (p.certificateGenerated = false OR p.certificateGenerated IS NULL)
+    AND p.evenement.dateHeure < :cutoff
+""")
+    List<Participation> findEligibleForCertificate(@Param("cutoff") LocalDateTime cutoff);
 }

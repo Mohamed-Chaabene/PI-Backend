@@ -24,8 +24,7 @@ public class Evenement {
     private String titre;
 
     @NotNull(message = "La date et l'heure sont obligatoires")
-    @FutureOrPresent(message = "La date ne peut pas être dans le passé")
-    private LocalDateTime dateHeure; // remplace "date"
+    private LocalDateTime dateHeure;
 
     @NotBlank(message = "Le lieu est obligatoire")
     @Size(min = 2, message = "Le lieu doit contenir au moins 2 caractères")

@@ -56,4 +56,19 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
             @Param("organisateurId") Long organisateurId,
             @Param("titre") String titre
     );
+
+    // À ajouter dans FeedbackEventRepository.java
+
+    // Retourne les types d'événements les mieux notés par un candidat
+// (note moyenne >= 4), triés du mieux noté au moins bien noté
+    @Query("""
+    SELECT e.type FROM FeedbackEvent f
+    JOIN f.participation p
+    JOIN p.evenement e
+    WHERE p.candidat.id = :candidatId
+    GROUP BY e.type
+    HAVING AVG(f.note) >= 4
+    ORDER BY AVG(f.note) DESC
+""")
+    List<String> findTypesFavorisParCandidat(@Param("candidatId") Long candidatId);
 }

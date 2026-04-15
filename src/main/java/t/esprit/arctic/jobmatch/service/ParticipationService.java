@@ -168,8 +168,9 @@ public class ParticipationService {
                 p.getCandidat().getId(),
                 p.getCandidat().getNom(),
                 p.getQrCode(),
-                p.getEvenement().isChatOuvert()
-
+                p.getEvenement().isChatOuvert(),
+                p.getCertificateGenerated() != null && p.getCertificateGenerated(), // ← null-safe
+                p.getCertificateUrl()
         );
     }
 }
