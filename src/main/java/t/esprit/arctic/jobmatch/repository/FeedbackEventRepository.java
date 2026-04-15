@@ -8,21 +8,21 @@ import java.util.List;
 
 public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Long> {
 
-    // Feedbacks d'une participation
+
     List<FeedbackEvent> findByParticipationId(Long participationId);
 
-    // Feedbacks d'un événement via participation
+
     @Query("SELECT f FROM FeedbackEvent f WHERE f.participation.evenement.id = :evenementId")
     List<FeedbackEvent> findByEvenementId(@Param("evenementId") Long evenementId);
 
-    // Vérifier si candidat a déjà laissé un feedback pour cette participation
+
     boolean existsByParticipationId(Long participationId);
 
-    // Note moyenne d'un événement
+
     @Query("SELECT AVG(f.note) FROM FeedbackEvent f WHERE f.participation.evenement.id = :evenementId")
     Double findNoteMoyenneByEvenementId(@Param("evenementId") Long evenementId);
 
-    // Tous les feedbacks d'un organisateur — données brutes
+
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p
@@ -31,7 +31,7 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
 """)
     List<FeedbackEvent> findByOrganisateurId(@Param("organisateurId") Long organisateurId);
 
-    // Tous les feedbacks d'un organisateur par type
+
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p
@@ -44,7 +44,7 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
             @Param("type") String type
     );
 
-    // Tous les feedbacks d'un organisateur par titre
+
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p
@@ -56,4 +56,16 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
             @Param("organisateurId") Long organisateurId,
             @Param("titre") String titre
     );
+
+
+    @Query("""
+    SELECT e.type FROM FeedbackEvent f
+    JOIN f.participation p
+    JOIN p.evenement e
+    WHERE p.candidat.id = :candidatId
+    GROUP BY e.type
+    HAVING AVG(f.note) >= 4
+    ORDER BY AVG(f.note) DESC
+""")
+    List<String> findTypesFavorisParCandidat(@Param("candidatId") Long candidatId);
 }

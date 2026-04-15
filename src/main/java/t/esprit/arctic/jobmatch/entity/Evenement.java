@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -22,9 +23,8 @@ public class Evenement {
     @Size(min = 3, max = 100, message = "Le titre doit contenir entre 3 et 100 caractères")
     private String titre;
 
-    @NotNull(message = "La date est obligatoire")
-    @FutureOrPresent(message = "La date ne peut pas être dans le passé")
-    private LocalDate date;
+    @NotNull(message = "La date et l'heure sont obligatoires")
+    private LocalDateTime dateHeure;
 
     @NotBlank(message = "Le lieu est obligatoire")
     @Size(min = 2, message = "Le lieu doit contenir au moins 2 caractères")
@@ -36,6 +36,8 @@ public class Evenement {
             message = "Type invalide : JOB_FAIR, WORKSHOP, CONFERENCE ou NETWORKING"
     )
     private String type;
+    // Dans Evenement.java — ajouter ce champ
+    private boolean chatOuvert = false;
 
     // Relation OneToMany avec Participation
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL)
