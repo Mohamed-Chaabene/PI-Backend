@@ -19,7 +19,6 @@ public class FeedbackController {
 
     private final FeedbackService feedbackService;
 
-    // ── CRUD complet ──────────────────────────────────────────────────────────
 
     @GetMapping
     public ResponseEntity<List<Feedback>> getAll() {
@@ -51,7 +50,6 @@ public class FeedbackController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Requêtes métier ───────────────────────────────────────────────────────
 
     @GetMapping("/formation/{formationId}")
     public ResponseEntity<List<Feedback>> getByFormation(@PathVariable Long formationId) {

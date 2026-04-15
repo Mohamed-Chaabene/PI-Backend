@@ -21,12 +21,12 @@ public class FeedbackEvent {
     private Long id;
 
     private String commentaire;
-    private int note; // ex: 1 à 5
+    private int note;
 
     @Temporal(TemporalType.DATE)
     private LocalDate date;
 
-    // ✅ Lié à une participation
+
     @ManyToOne
     @JoinColumn(name = "participation_id")
     private Participation participation;

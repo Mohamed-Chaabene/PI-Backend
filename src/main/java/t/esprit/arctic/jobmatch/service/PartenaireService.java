@@ -15,6 +15,7 @@ import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 import java.util.stream.Collectors;
 import t.esprit.arctic.jobmatch.dto.PartenaireTopDTO;
 import t.esprit.arctic.jobmatch.dto.ComparaisonDTO;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +54,7 @@ public class PartenaireService {
 
 
         notificationPartenaireService.notifierTousCandidats(
-                "🎉 Nouveau partenaire !",
+                " Nouveau partenaire !",
                 "'" + saved.getNom()
                         + "' vient de rejoindre JobMatch !",
                 "NOUVEAU_PARTENAIRE"
@@ -198,6 +199,41 @@ public class PartenaireService {
                         Integer.compare(b.getNombreVues(),
                                 a.getNombreVues()))
                 .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public List<Map<String, Object>> getStatsPartenairesJPQL() {
+        return partenaireRepo.findTopPartenaires()
+                .stream()
+                .limit(5)
+                .map(row -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("nom",      row[0]);
+                    m.put("nbOffres", row[1]);
+                    m.put("nbEmploi", row[2]);
+                    m.put("nbStage",  row[3]);
+                    return m;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public List<Map<String, Object>> getScoresPopularite() {
+        return partenaireRepo.findAll().stream()
+                .sorted((a, b) -> Double.compare(
+                        b.getScorePopularite(), a.getScorePopularite()))
+                .map(p -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("id", p.getId());
+                    m.put("nom", p.getNom());
+                    m.put("scorePopularite", p.getScorePopularite());
+                    m.put("statutActivite",  p.getStatutActivite());
+                    m.put("nbOffres", p.getOffres() != null ? p.getOffres().size() : 0);
+                    return m;
+                })
                 .collect(Collectors.toList());
     }
 }

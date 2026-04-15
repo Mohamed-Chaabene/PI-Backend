@@ -12,7 +12,7 @@ public class FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
 
-    // ── CRUD ─────────────────────────────────────────────────────────────────
+
 
     public List<Feedback> getAll() {
         return feedbackRepository.findAll();
@@ -24,7 +24,7 @@ public class FeedbackService {
     }
 
     public Feedback create(Feedback feedback) {
-        // Un candidat ne peut laisser qu'un seul feedback par formation
+
         if (feedbackRepository.existsByFormationIdAndCandidatId(
                 feedback.getFormation().getId(),
                 feedback.getCandidat().getId())) {
@@ -41,11 +41,10 @@ public class FeedbackService {
     }
 
     public void delete(Long id) {
-        getById(id); // vérifie l'existence
+        getById(id);
         feedbackRepository.deleteById(id);
     }
 
-    // ── Requêtes métier ───────────────────────────────────────────────────────
 
     public List<Feedback> getByFormation(Long formationId) {
         return feedbackRepository.findByFormationId(formationId);

@@ -34,4 +34,10 @@ public class Partenaire {
 
     @Column(name = "nombre_vues", columnDefinition = "int default 0")
     private int nombreVues = 0;
+
+    @Column(name = "score_popularite", columnDefinition = "double default 0.0")
+    private double scorePopularite = 0.0;
+
+    @Column(name = "statut_activite")
+    private String statutActivite = "ACTIF";
 }
