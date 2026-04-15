@@ -85,6 +85,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/questions/entretien/*/ai-generate").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
 
                         // ── Rôles admin ───────────────────────────────────────
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/*/delete-account").authenticated()
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
