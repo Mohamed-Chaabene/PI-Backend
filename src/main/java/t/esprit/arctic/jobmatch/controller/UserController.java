@@ -42,6 +42,22 @@ public class UserController {
         service.delete(id);
     }
 
+    /**
+     * Delete account endpoint - removes user, candidat, and location data
+     */
+    @DeleteMapping("/{id}/delete-account")
+    public ResponseEntity<?> deleteAccount(@PathVariable Long id) {
+        try {
+            service.deleteAccount(id);
+            return ResponseEntity.ok(new DeleteAccountResponse("Compte supprimé avec succès", true));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new DeleteAccountResponse("Erreur lors de la suppression: " + e.getMessage(), false));
+        }
+    }
+
+
+
 
     // Inner DTO for delete account response
     public static class DeleteAccountResponse {
