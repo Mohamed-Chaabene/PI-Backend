@@ -331,7 +331,7 @@ public class ChatbotController {
             historyHasImage = true;
             String fallbackImgPrompt = "Analyse cette image. ATTENTION: Si cette image n'a AUCUN rapport avec la formation, tu DOIS obligatoirement refuser l'analyse détaillée en expliquant que c'est hors-sujet.";
             String txtToSend = userMessageFull.isEmpty() ? fallbackImgPrompt : userMessageFull + "\n\n(IMPORTANT: Avant d'analyser, vérifie si l'image est hors-sujet par rapport à la formation. Si oui, refuse de répondre et signale-le obligatoirement)";
-            
+
             List<Map<String, Object>> contentParts = new ArrayList<>();
             contentParts.add(Map.of("type", "text", "text", txtToSend));
             contentParts.add(buildImageContent(imageUrl));

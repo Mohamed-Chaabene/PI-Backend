@@ -27,6 +27,9 @@ public class Entretien {
     @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     private CategorieEntretien categorie;
 
+    @Column(name = "mode", length = 32)
+    private String mode;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = true, columnDefinition = "VARCHAR(64)")
     private DomaineType domaine;
@@ -34,6 +37,10 @@ public class Entretien {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidat_id", nullable = true)
     private Candidat candidat;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "offre_id", nullable = true)
+    private OffreEmploi offreEmploi;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recruteur_id", nullable = false)
@@ -48,11 +55,17 @@ public class Entretien {
     @Column(length = 500, nullable = true)
     private String photo;
 
+    @Column(name = "meeting_link", length = 500, nullable = true)
+    private String meetingLink;
+
     private boolean completed = false;
 
-    /** Null pour les entretiens de type TEST (généraux, sans barème). */
+    /** Pour les entretiens de type TEST le seuil de reussite est null  */
     @Column(nullable = true)
     private Integer seuilReussite;
+
+    @Column(name = "duree_minutes", nullable = true)
+    private Integer dureeMinutes;
 
     @Column(nullable = true)
     private Double score;
@@ -80,7 +93,7 @@ public class Entretien {
         createdAt = LocalDateTime.now();
     }
 
-    // Getters explicites
+    // Getters
     public Long getId() {
         return id;
     }
@@ -105,6 +118,10 @@ public class Entretien {
         return candidat;
     }
 
+    public OffreEmploi getOffreEmploi() {
+        return offreEmploi;
+    }
+
     public Recruteur getRecruteur() {
         return recruteur;
     }
@@ -127,6 +144,10 @@ public class Entretien {
 
     public Integer getSeuilReussite() {
         return seuilReussite;
+    }
+
+    public Integer getDureeMinutes() {
+        return dureeMinutes;
     }
 
     public Double getScore() {
@@ -170,6 +191,10 @@ public class Entretien {
         this.candidat = candidat;
     }
 
+    public void setOffreEmploi(OffreEmploi offreEmploi) {
+        this.offreEmploi = offreEmploi;
+    }
+
     public void setRecruteur(Recruteur recruteur) {
         this.recruteur = recruteur;
     }
@@ -184,6 +209,10 @@ public class Entretien {
 
     public void setSeuilReussite(Integer seuilReussite) {
         this.seuilReussite = seuilReussite;
+    }
+
+    public void setDureeMinutes(Integer dureeMinutes) {
+        this.dureeMinutes = dureeMinutes;
     }
 
     public void setScore(Double score) {

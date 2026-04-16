@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -13,9 +14,10 @@ import java.util.Date;
 public class EvenementResponse {
     private Long id;
     private String titre;
-    private LocalDate date;
+    private LocalDateTime dateHeure;
     private String lieu;
     private String type;
     private Long organisateurId;
     private String nomOrganisateur;
+    private boolean chatOuvert;
 }

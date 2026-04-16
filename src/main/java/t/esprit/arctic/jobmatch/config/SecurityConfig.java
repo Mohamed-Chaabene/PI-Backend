@@ -63,6 +63,8 @@ public class SecurityConfig {
                         // ── Partenaires ───────────────────────────────────────
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/api/dashboard/**").permitAll()
 
                         // ── Search / Users ────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()
@@ -71,6 +73,7 @@ public class SecurityConfig {
                         // ── Offres emploi ─────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/candidatures/offre/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
@@ -81,8 +84,10 @@ public class SecurityConfig {
 
                         // ── Questions / Entretiens ────────────────────────────
                         .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/*/ai-generate").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
 
                         // ── Rôles admin ───────────────────────────────────────
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/*/delete-account").authenticated()
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
@@ -113,6 +118,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers(HttpMethod.DELETE, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/reputation").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+                        //chatroom evenements
+                        .requestMatchers("/api/chat/**").hasAnyRole("CANDIDAT", "ORGANISATEUR", "ADMIN")
+                        .requestMatchers("/api/attestation/**").permitAll()
 
                         // ── Vidéo progression ─────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()
@@ -131,13 +139,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost😘"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost"));
         configuration.setAllowedMethods(
                 Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/ws/**", configuration);
+
         return source;
     }
 }

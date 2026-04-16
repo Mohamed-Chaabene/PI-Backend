@@ -60,4 +60,17 @@ public class Candidature {
     @ManyToOne
     @JoinColumn(name = "offre_id")
     private OffreEmploi offreEmploi;
+
+    @Column(name = "score_entretien")
+    private Double scoreEntretien;
+
+    @Column(name = "total_questions_entretien")
+    private Integer totalQuestionsEntretien;
+
+    @Column(name = "bonnes_reponses_entretien")
+    private Integer bonnesReponsesEntretien;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "date_evaluation_entretien")
+    private Date dateEvaluationEntretien;
 }

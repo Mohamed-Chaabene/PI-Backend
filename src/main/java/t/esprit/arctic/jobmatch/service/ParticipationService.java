@@ -27,6 +27,7 @@ public class ParticipationService {
     private final EvenementRepository evenementRepository;
     private final CandidatRepository candidatRepository;
     private final QRCodeService qrCodeService;
+    private final ParticipationRepository participationRepository;
 
 
     public ParticipationResponse confirmer(ParticipationRequest request) {
@@ -74,13 +75,13 @@ public class ParticipationService {
                 .collect(Collectors.toList());
     }
 
-    // Organisateur accepte → notifie le candidat
+
     public ParticipationResponse accepter(Long id) {
         Participation p = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Participation non trouvée"));
 
         p.setStatut("CONFIRME");
-        // Contenu encodé dans le QR : info unique et vérifiable
+
         String contenu = String.format(
                 "JOBMATCH|PARTICIPATION:%d|CANDIDAT:%d|EVENEMENT:%d|DATE:%s",
                 p.getId(),
@@ -93,14 +94,14 @@ public class ParticipationService {
             String qrBase64 = qrCodeService.generateQRCode(contenu);
             p.setQrCode(qrBase64);
         } catch (Exception e) {
-            // log l'erreur, ne bloque pas l'acceptation
+
         }
 
         repository.save(p);
         return toResponse(p);
     }
 
-    // Organisateur refuse → notifie le candidat
+
     public ParticipationResponse refuser(Long id) {
         Participation p = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Participation non trouvée"));
@@ -152,6 +153,11 @@ public class ParticipationService {
         return p.getQrCode();
     }
 
+
+    public List<Participation> findConfirmedByCandidatId(Long candidatId ,String statut ) {
+        return participationRepository.findByCandidatIdAndStatut(candidatId, "CONFIRME");
+    }
+
     private ParticipationResponse toResponse(Participation p) {
         return new ParticipationResponse(
                 p.getId(),
@@ -161,8 +167,10 @@ public class ParticipationService {
                 p.getEvenement().getTitre(),
                 p.getCandidat().getId(),
                 p.getCandidat().getNom(),
-                p.getQrCode()
-
+                p.getQrCode(),
+                p.getEvenement().isChatOuvert(),
+                p.getCertificateGenerated() != null && p.getCertificateGenerated(), // ← null-safe
+                p.getCertificateUrl()
         );
     }
 }
