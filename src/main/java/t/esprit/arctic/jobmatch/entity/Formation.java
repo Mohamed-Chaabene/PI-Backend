@@ -16,6 +16,7 @@ public class Formation {
     private Long id;
 
     private String titre;
+<<<<<<< HEAD
 
     private String categorie;
 
@@ -47,6 +48,30 @@ public class Formation {
 
     @Column(length = 500)
     private String writtenUrl;     // Documentation écrite (W3Schools, MDN...)
+=======
+    private String categorie;
+    private String plateforme;
+    private String statut;
+    private String duree;
+    private String niveau;
+
+    @Column(length = 500)
+    private String lienExterne;
+
+    @Column(length = 100)
+    private String playlistId;
+
+    @Column(length = 100)
+    private String youtubeId;
+
+    private Boolean hasEditor;
+
+    @Column(length = 500)
+    private String stackBlitzUrl;
+
+    @Column(length = 500)
+    private String writtenUrl;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     @Column(length = 1000)
     private String description;
@@ -54,18 +79,46 @@ public class Formation {
     @Column(length = 500)
     private String imageUrl;
 
+<<<<<<< HEAD
     // ── Relations ─────────────────────────────────────────────────────────────
 
     @ManyToMany(fetch = FetchType.EAGER)
+=======
+    @ManyToMany(fetch = FetchType.LAZY)
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @JoinTable(
             name = "formation_competence",
             joinColumns = @JoinColumn(name = "formation_id"),
             inverseJoinColumns = @JoinColumn(name = "competence_id")
     )
+<<<<<<< HEAD
     @JsonIgnoreProperties({"formations"})
     private List<Competence> competences;
 
     @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<InscriptionFormation> inscriptions;
+=======
+    @JsonIgnore
+    private List<Competence> competences;
+
+    @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<InscriptionFormation> inscriptions;
+
+    @Column(name = "score_popularite")
+    private Double scorePopularite = 0.0;
+
+    @Column(name = "badge", length = 50)
+    private String badge;
+
+    @Column(name = "total_inscrits")
+    private Integer totalInscrits = 0;
+
+    @Column(name = "note_moyenne")
+    private Double noteMoyenne = 0.0;
+
+    @Column(name = "taux_completion")
+    private Double tauxCompletion = 0.0;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

@@ -1,6 +1,10 @@
 package t.esprit.arctic.jobmatch.controller;
 
 import lombok.RequiredArgsConstructor;
+<<<<<<< HEAD
+=======
+import org.springframework.dao.DataIntegrityViolationException;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,7 +19,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.entity.Recruteur;
+=======
+import t.esprit.arctic.jobmatch.entity.Entretien;
+import t.esprit.arctic.jobmatch.entity.Recruteur;
+import t.esprit.arctic.jobmatch.repository.EntretienRepository;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
 import t.esprit.arctic.jobmatch.repository.RecruteurRepository;
 import t.esprit.arctic.jobmatch.service.NotificationService;
@@ -32,6 +42,10 @@ import java.util.Map;
 public class OffreEmploiController {
 
     private final OffreEmploiRepository offreEmploiRepository;
+<<<<<<< HEAD
+=======
+    private final EntretienRepository entretienRepository;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private final RecruteurRepository recruteurRepository;
     private final NotificationService notificationService;
 
@@ -149,8 +163,30 @@ public class OffreEmploiController {
                     .body(Map.of("error", "Vous ne pouvez supprimer que vos propres offres"));
         }
 
+<<<<<<< HEAD
         offreEmploiRepository.delete(offre);
         return ResponseEntity.noContent().build();
+=======
+        try {
+            // Prevent FK violations: interviews keep history but no longer reference deleted offer.
+            List<Entretien> linkedEntretiens = entretienRepository.findByOffreEmploiId(id);
+            if (!linkedEntretiens.isEmpty()) {
+                linkedEntretiens.forEach(entretien -> entretien.setOffreEmploi(null));
+                entretienRepository.saveAll(linkedEntretiens);
+            }
+
+            offreEmploiRepository.delete(offre);
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException ex) {
+            // Last-resort fallback: mark offer inactive instead of crashing with 500.
+            offre.setStatut("INACTIVE");
+            offreEmploiRepository.save(offre);
+            return ResponseEntity.ok(Map.of(
+                    "archived", true,
+                    "message", "Offre archivée car des références existent"
+            ));
+        }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     }
 
     private Recruteur getCurrentRecruteur() {

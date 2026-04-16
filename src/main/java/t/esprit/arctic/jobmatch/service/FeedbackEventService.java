@@ -11,6 +11,10 @@ import t.esprit.arctic.jobmatch.repository.FeedbackEventRepository;
 import t.esprit.arctic.jobmatch.repository.ParticipationRepository;
 
 import java.time.LocalDate;
+<<<<<<< HEAD
+=======
+import java.time.LocalDateTime; // ← ajouté
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,11 +61,15 @@ public class FeedbackEventService {
                 .findById(request.getParticipationId())
                 .orElseThrow(() -> new RuntimeException("Participation non trouvée"));
 
+<<<<<<< HEAD
         // Vérifie que la participation est CONFIRMEE
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         if (!"CONFIRME".equals(participation.getStatut())) {
             throw new RuntimeException("Vous devez être confirmé pour laisser un feedback");
         }
 
+<<<<<<< HEAD
         // ✅ LocalDate.now() au lieu de new Date()
         //    isAfter() au lieu de .after()
         LocalDate dateEvenement = participation.getEvenement().getDate();
@@ -70,6 +78,13 @@ public class FeedbackEventService {
         }
 
         // Vérifie qu'un feedback n'existe pas déjà
+=======
+        LocalDateTime dateEvenement = participation.getEvenement().getDateHeure(); // ← getDate() → getDateHeure()
+        if (dateEvenement != null && dateEvenement.isAfter(LocalDateTime.now())) { // ← LocalDate → LocalDateTime
+            throw new RuntimeException("Vous ne pouvez pas laisser un feedback avant la date de l'événement");
+        }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         if (repository.existsByParticipationId(request.getParticipationId())) {
             throw new RuntimeException("Vous avez déjà laissé un feedback pour cet événement");
         }
@@ -77,7 +92,11 @@ public class FeedbackEventService {
         FeedbackEvent f = FeedbackEvent.builder()
                 .commentaire(request.getCommentaire())
                 .note(request.getNote())
+<<<<<<< HEAD
                 .date(LocalDate.now())  // ✅ LocalDate.now() au lieu de new Date()
+=======
+                .date(LocalDate.now())
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                 .participation(participation)
                 .build();
 
@@ -119,7 +138,10 @@ public class FeedbackEventService {
             String type,
             String titre) {
 
+<<<<<<< HEAD
         // ── Niveau 1 : réputation globale ────────────────────────────────────────
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         List<FeedbackEvent> tousLesFeedbacks =
                 repository.findByOrganisateurId(organisateurId);
 
@@ -132,7 +154,10 @@ public class FeedbackEventService {
 
         String badgeReputation = calculerBadge(noteMoyenneGlobale, totalFeedbacks);
 
+<<<<<<< HEAD
         // ── Niveau 2 : réputation par type ───────────────────────────────────────
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         List<FeedbackEvent> feedbacksParType =
                 repository.findByOrganisateurIdAndType(organisateurId, type);
 
@@ -145,7 +170,10 @@ public class FeedbackEventService {
 
         String badgeType = calculerBadgeType(noteMoyenneParType, totalFeedbacksParType, type);
 
+<<<<<<< HEAD
         // ── Niveau 3 : réputation par titre ──────────────────────────────────────
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         List<FeedbackEvent> feedbacksParTitre =
                 repository.findByOrganisateurIdAndTitre(organisateurId, titre);
 

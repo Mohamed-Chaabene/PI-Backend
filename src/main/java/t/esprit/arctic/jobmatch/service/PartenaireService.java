@@ -15,6 +15,10 @@ import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 import java.util.stream.Collectors;
 import t.esprit.arctic.jobmatch.dto.PartenaireTopDTO;
 import t.esprit.arctic.jobmatch.dto.ComparaisonDTO;
+<<<<<<< HEAD
+=======
+import java.util.Map;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +57,11 @@ public class PartenaireService {
 
 
         notificationPartenaireService.notifierTousCandidats(
+<<<<<<< HEAD
                 "🎉 Nouveau partenaire !",
+=======
+                " Nouveau partenaire !",
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                 "'" + saved.getNom()
                         + "' vient de rejoindre JobMatch !",
                 "NOUVEAU_PARTENAIRE"
@@ -200,4 +208,42 @@ public class PartenaireService {
                 .limit(limit)
                 .collect(Collectors.toList());
     }
+<<<<<<< HEAD
+=======
+
+
+    @Transactional
+    public List<Map<String, Object>> getStatsPartenairesJPQL() {
+        return partenaireRepo.findTopPartenaires()
+                .stream()
+                .limit(5)
+                .map(row -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("nom",      row[0]);
+                    m.put("nbOffres", row[1]);
+                    m.put("nbEmploi", row[2]);
+                    m.put("nbStage",  row[3]);
+                    return m;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public List<Map<String, Object>> getScoresPopularite() {
+        return partenaireRepo.findAll().stream()
+                .sorted((a, b) -> Double.compare(
+                        b.getScorePopularite(), a.getScorePopularite()))
+                .map(p -> {
+                    Map<String, Object> m = new java.util.LinkedHashMap<>();
+                    m.put("id", p.getId());
+                    m.put("nom", p.getNom());
+                    m.put("scorePopularite", p.getScorePopularite());
+                    m.put("statutActivite",  p.getStatutActivite());
+                    m.put("nbOffres", p.getOffres() != null ? p.getOffres().size() : 0);
+                    return m;
+                })
+                .collect(Collectors.toList());
+    }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

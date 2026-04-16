@@ -4,7 +4,10 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.dto.EntretienCreateDTO;
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
 import t.esprit.arctic.jobmatch.service.EntretienService;
 
@@ -19,7 +22,11 @@ public class RecruteurEntretienController {
     @PostMapping("/{recruteurId}/entretiens")
     public ResponseEntity<?> createEntretienForRecruteur(
             @PathVariable Long recruteurId,
+<<<<<<< HEAD
             @Valid @RequestBody EntretienCreateDTO dto,
+=======
+            @Valid @RequestBody EntretienDTO dto,
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             @RequestHeader(value = "Recruteur-ID", required = false) Long recruteurIdHeader) {
         try {
             Long targetRecruteurId = recruteurIdHeader != null ? recruteurIdHeader : recruteurId;

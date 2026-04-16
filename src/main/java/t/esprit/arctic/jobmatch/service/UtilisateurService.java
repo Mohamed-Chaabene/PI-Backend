@@ -3,8 +3,18 @@ package t.esprit.arctic.jobmatch.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
+=======
+import org.springframework.transaction.annotation.Transactional;
+import t.esprit.arctic.jobmatch.entity.Candidat;
+import t.esprit.arctic.jobmatch.entity.Utilisateur;
+import t.esprit.arctic.jobmatch.repository.CandidatRepository;
+import t.esprit.arctic.jobmatch.repository.RechercheHistoriqueRepository;
+import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
+import jakarta.persistence.EntityManager;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +26,12 @@ import t.esprit.arctic.jobmatch.dto.UtilisateurSearchDto;
 public class UtilisateurService {
 
     private final UtilisateurRepository repository;
+<<<<<<< HEAD
+=======
+    private final CandidatRepository candidatRepository;
+    private final RechercheHistoriqueRepository rechercheHistoriqueRepository;
+    private final EntityManager entityManager;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private final PasswordEncoder passwordEncoder;
 
     public Utilisateur register(Utilisateur user) {
@@ -78,4 +94,9 @@ public class UtilisateurService {
         user.setMotDePasse(passwordEncoder.encode(newPassword));
         repository.save(user);
     }
+<<<<<<< HEAD
+=======
+
+    
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

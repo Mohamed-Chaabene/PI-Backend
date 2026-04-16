@@ -4,6 +4,10 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+<<<<<<< HEAD
+=======
+import java.time.LocalDateTime;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 @Data
 public class EvenementRequest {
@@ -12,10 +16,16 @@ public class EvenementRequest {
     @Size(min = 3, max = 100, message = "Le titre doit contenir entre 3 et 100 caractères")
     private String titre;
 
+<<<<<<< HEAD
     // ✅ LocalDate au lieu de Date — compatible @FutureOrPresent et avec le builder Evenement
     @NotNull(message = "La date est obligatoire")
     @FutureOrPresent(message = "La date ne peut pas être dans le passé")
     private LocalDate date;
+=======
+    @NotNull(message = "La date et l'heure sont obligatoires")
+    @FutureOrPresent
+    private LocalDateTime dateHeure;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     @NotBlank(message = "Le lieu est obligatoire")
     @Size(min = 2, message = "Le lieu doit contenir au moins 2 caractères")

@@ -3,8 +3,14 @@ package t.esprit.arctic.jobmatch.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
 import t.esprit.arctic.jobmatch.dto.EntretienCreateDTO;
+=======
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import t.esprit.arctic.jobmatch.dto.EntretienDTO;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.dto.EntretienTestPublicDto;
 import t.esprit.arctic.jobmatch.service.EntretienService;
 import jakarta.validation.Valid;
@@ -21,7 +27,11 @@ public class EntretienController {
 
     @PostMapping
     public ResponseEntity<?> createEntretien(
+<<<<<<< HEAD
             @Valid @RequestBody EntretienCreateDTO dto,
+=======
+            @Valid @RequestBody EntretienDTO dto,
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             @RequestHeader("Recruteur-ID") Long recruteurId) {
         try {
             EntretienDTO created = entretienService.createEntretien(dto, recruteurId);
@@ -83,7 +93,19 @@ public class EntretienController {
                 return ResponseEntity.badRequest().body("Le score est obligatoire");
             }
 
+<<<<<<< HEAD
             EntretienDTO resultat = entretienService.updateScore(entretienId, score);
+=======
+            String commentaire = null;
+            if (scoreData.containsKey("rapport") && scoreData.get("rapport") != null) {
+                commentaire = String.valueOf(scoreData.get("rapport"));
+            }
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String candidatEmail = authentication != null ? authentication.getName() : null;
+
+            EntretienDTO resultat = entretienService.updateScore(entretienId, score, commentaire, candidatEmail);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             return ResponseEntity.ok(resultat);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -110,7 +132,11 @@ public class EntretienController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateEntretien(
             @PathVariable Long id,
+<<<<<<< HEAD
             @Valid @RequestBody EntretienCreateDTO dto,
+=======
+            @Valid @RequestBody EntretienDTO dto,
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             @RequestHeader("Recruteur-ID") Long recruteurId) {
         try {
             EntretienDTO updated = entretienService.updateEntretien(id, dto, recruteurId);

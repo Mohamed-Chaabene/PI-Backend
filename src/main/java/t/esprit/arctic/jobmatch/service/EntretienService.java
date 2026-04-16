@@ -4,14 +4,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.dto.EntretienDTO;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.dto.EntretienCreateDTO;
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.dto.EntretienTestPublicDto;
 import t.esprit.arctic.jobmatch.entity.*;
 import t.esprit.arctic.jobmatch.repository.*;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+<<<<<<< HEAD
 import java.util.List;
+=======
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.util.stream.Collectors;
 
 @Service
@@ -30,8 +43,19 @@ public class EntretienService {
     @Autowired
     private QuestionRepository questionRepository;
 
+<<<<<<< HEAD
     @Transactional
     public EntretienDTO createEntretien(EntretienCreateDTO dto, Long recruteurId) {
+=======
+    @Autowired
+    private OffreEmploiRepository offreEmploiRepository;
+
+    @Autowired
+    private CandidatureRepository candidatureRepository;
+
+    @Transactional
+    public EntretienDTO createEntretien(EntretienDTO dto, Long recruteurId) {
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         // Validation métier
         validateEntretienData(dto, recruteurId);
 
@@ -46,6 +70,12 @@ public class EntretienService {
         entretien.setRecruteur(recruteur);
         entretien.setDescription(dto.getDescription());
         entretien.setPhoto(dto.getPhoto());
+<<<<<<< HEAD
+=======
+        entretien.setMode(normalizeMode(dto.getMode()));
+        entretien.setMeetingLink(normalizeMeetingLink(dto.getMeetingLink()));
+        entretien.setDureeMinutes(normalizeDurationMinutes(dto.getDureeMinutes()));
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
         boolean isTestType = "TEST".equalsIgnoreCase(dto.getType()) || "TEST".equalsIgnoreCase(dto.getCategorie());
         if (isTestType) {
@@ -54,15 +84,33 @@ public class EntretienService {
             entretien.setSeuilReussite(dto.getSeuilReussite() != null ? dto.getSeuilReussite() : 70);
         }
 
+<<<<<<< HEAD
         if (!isTestType) {
             if (dto.getCandidatId() == null) {
                 throw new IllegalArgumentException("Pour un entretien non TEST, un candidat doit être sélectionné.");
+=======
+        if (dto.getOffreId() != null) {
+            OffreEmploi offre = offreEmploiRepository.findById(dto.getOffreId())
+                    .orElseThrow(() -> new IllegalArgumentException("Offre non trouvée : " + dto.getOffreId()));
+            entretien.setOffreEmploi(offre);
+            entretien.setCandidat(null);
+        } else if (!isTestType) {
+            if (dto.getCandidatId() == null) {
+                throw new IllegalArgumentException("Pour un entretien non TEST, un candidat ou une offre doit être sélectionné.");
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             }
             Candidat candidat = candidatRepository.findById(dto.getCandidatId())
                     .orElseThrow(() -> new IllegalArgumentException("Candidat non trouvé : " + dto.getCandidatId()));
             entretien.setCandidat(candidat);
+<<<<<<< HEAD
         } else {
             entretien.setCandidat(null);
+=======
+            entretien.setOffreEmploi(null);
+        } else {
+            entretien.setCandidat(null);
+            entretien.setOffreEmploi(null);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         }
 
         if (dto.getDomaine() == null || dto.getDomaine().trim().isEmpty()) {
@@ -111,8 +159,29 @@ public class EntretienService {
     }
 
     public List<EntretienDTO> getEntretiensByCandidat(Long candidatId) {
+<<<<<<< HEAD
         // Return empty list when candidate id is unknown instead of throwing 500 upstream.
         return entretienRepository.findByCandidatId(candidatId).stream()
+=======
+        Set<Long> offerIds = candidatureRepository.findByCandidatId(candidatId).stream()
+            .map(Candidature::getOffreEmploi)
+            .filter(java.util.Objects::nonNull)
+            .map(OffreEmploi::getId)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, Entretien> merged = new LinkedHashMap<>();
+        List<Entretien> candidateEntretiens = entretienRepository.findByCandidatId(candidatId);
+        candidateEntretiens.forEach(entretien -> merged.put(entretien.getId(), entretien));
+
+        // Ne pas mélanger les entretiens d'une offre avec ceux d'autres candidats si
+        // le candidat possède déjà ses propres entretiens.
+        if (merged.isEmpty() && !offerIds.isEmpty()) {
+            entretienRepository.findByOffreEmploiIdIn(offerIds).forEach(entretien -> merged.put(entretien.getId(), entretien));
+        }
+
+        return merged.values().stream()
+            .sorted(Comparator.comparing(Entretien::getDateEntretien, Comparator.nullsLast(Comparator.naturalOrder())))
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -132,7 +201,11 @@ public class EntretienService {
     }
 
     @Transactional
+<<<<<<< HEAD
     public EntretienDTO updateEntretien(Long id, EntretienCreateDTO dto, Long recruteurId) {
+=======
+    public EntretienDTO updateEntretien(Long id, EntretienDTO dto, Long recruteurId) {
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
 
@@ -167,6 +240,21 @@ public class EntretienService {
             entretien.setPhoto(dto.getPhoto());
         }
 
+<<<<<<< HEAD
+=======
+        if (dto.getMode() != null && !dto.getMode().trim().isEmpty()) {
+            entretien.setMode(normalizeMode(dto.getMode()));
+        }
+
+        if (dto.getMeetingLink() != null) {
+            entretien.setMeetingLink(normalizeMeetingLink(dto.getMeetingLink()));
+        }
+
+        if (dto.getDureeMinutes() != null) {
+            entretien.setDureeMinutes(normalizeDurationMinutes(dto.getDureeMinutes()));
+        }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         boolean isTestType = "TEST".equalsIgnoreCase(dto.getType()) || "TEST".equalsIgnoreCase(dto.getCategorie());
         if (isTestType) {
             entretien.setSeuilReussite(null);
@@ -213,6 +301,19 @@ public class EntretienService {
 
     @Transactional
     public EntretienDTO updateScore(Long entretienId, Double score) {
+<<<<<<< HEAD
+=======
+        return updateScore(entretienId, score, null, null);
+    }
+
+    @Transactional
+    public EntretienDTO updateScore(Long entretienId, Double score, String commentaire) {
+        return updateScore(entretienId, score, commentaire, null);
+    }
+
+    @Transactional
+    public EntretienDTO updateScore(Long entretienId, Double score, String commentaire, String candidatEmail) {
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         Entretien entretien = entretienRepository.findById(entretienId)
                 .orElseThrow(() -> new RuntimeException("Entretien non trouvé"));
 
@@ -228,17 +329,75 @@ public class EntretienService {
             entretien.setDecision(score >= seuil ? "accepté" : "refusé");
         }
         entretien.setEvaluatedAt(LocalDateTime.now());
+<<<<<<< HEAD
 
         Entretien saved = entretienRepository.save(entretien);
         return convertToDTO(saved);
     }
 
+=======
+        if (commentaire != null && !commentaire.isBlank()) {
+            entretien.setCommentaire(commentaire);
+        }
+
+        Entretien saved = entretienRepository.save(entretien);
+        persistScoreOnCandidature(saved, score, candidatEmail);
+        return convertToDTO(saved);
+    }
+
+    private void persistScoreOnCandidature(Entretien entretien, Double score, String candidatEmail) {
+        Long candidatId = entretien.getCandidat() != null ? entretien.getCandidat().getId() : null;
+
+        if ((candidatId == null || candidatId <= 0) && candidatEmail != null && !candidatEmail.isBlank()) {
+            candidatId = candidatRepository.findByEmail(candidatEmail)
+                    .map(Candidat::getId)
+                    .orElse(null);
+        }
+
+        if (candidatId == null || candidatId <= 0) {
+            return;
+        }
+
+        Candidature target = null;
+        Long offreId = entretien.getOffreEmploi() != null ? entretien.getOffreEmploi().getId() : null;
+        if (offreId != null && offreId > 0) {
+            target = candidatureRepository.findTopByCandidatIdAndOffreEmploiIdOrderByDateEnvoiDesc(candidatId, offreId)
+                    .orElse(null);
+        }
+
+        if (target == null) {
+            List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidatId);
+            target = candidatures.stream()
+                    .filter(c -> "ACCEPTEE".equalsIgnoreCase(String.valueOf(c.getStatut())))
+                    .max(Comparator.comparing(Candidature::getDateEnvoi, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .orElseGet(() -> candidatures.stream()
+                            .max(Comparator.comparing(Candidature::getDateEnvoi, Comparator.nullsLast(Comparator.naturalOrder())))
+                            .orElse(null));
+        }
+
+        if (target == null) {
+            return;
+        }
+
+        target.setScoreEntretien(score);
+        if (entretien.getTotalQuestions() != null) {
+            target.setTotalQuestionsEntretien(entretien.getTotalQuestions());
+        }
+        if (entretien.getBonnesReponses() != null) {
+            target.setBonnesReponsesEntretien(entretien.getBonnesReponses());
+        }
+        target.setDateEvaluationEntretien(new Date());
+        candidatureRepository.save(target);
+    }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private EntretienDTO convertToDTO(Entretien entretien) {
         EntretienDTO dto = new EntretienDTO();
         dto.setId(entretien.getId());
         dto.setTitre(entretien.getTitre());
         dto.setDateEntretien(entretien.getDateEntretien());
         dto.setType(entretien.getCategorie().toString());
+<<<<<<< HEAD
         dto.setDescription(entretien.getDescription());
         dto.setPhoto(entretien.getPhoto());
         dto.setDomaine(entretien.getDomaine() != null ? entretien.getDomaine().name() : null);
@@ -247,6 +406,21 @@ public class EntretienService {
         dto.setCreatedAt(entretien.getCreatedAt());
         dto.setRecruteurId(entretien.getRecruteur().getId());
         dto.setCandidatId(entretien.getCandidat() != null ? entretien.getCandidat().getId() : null);
+=======
+        dto.setMode(entretien.getMode());
+        dto.setDescription(entretien.getDescription());
+        dto.setPhoto(entretien.getPhoto());
+        dto.setMeetingLink(entretien.getMeetingLink());
+        dto.setDomaine(entretien.getDomaine() != null ? entretien.getDomaine().name() : null);
+        dto.setCompleted(entretien.isCompleted());
+        dto.setSeuilReussite(entretien.getSeuilReussite());
+        dto.setDureeMinutes(entretien.getDureeMinutes());
+        dto.setCreatedAt(entretien.getCreatedAt());
+        dto.setRecruteurId(entretien.getRecruteur().getId());
+        dto.setCandidatId(entretien.getCandidat() != null ? entretien.getCandidat().getId() : null);
+        dto.setOffreId(entretien.getOffreEmploi() != null ? entretien.getOffreEmploi().getId() : null);
+        dto.setOffreTitre(entretien.getOffreEmploi() != null ? entretien.getOffreEmploi().getTitre() : null);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         dto.setScore(entretien.getScore());
         dto.setTotalQuestions(entretien.getTotalQuestions());
         dto.setBonnesReponses(entretien.getBonnesReponses());
@@ -257,15 +431,26 @@ public class EntretienService {
         return dto;
     }
 
+<<<<<<< HEAD
     private void validateEntretienData(EntretienCreateDTO dto, Long recruteurId) {
+=======
+    private void validateEntretienData(EntretienDTO dto, Long recruteurId) {
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         // Vérifier que le recruteur existe
         Recruteur recruteur = recruteurRepository.findById(recruteurId)
                 .orElseThrow(() -> new RuntimeException("Recruteur non trouvé"));
 
+<<<<<<< HEAD
         // Vérifier que la date est dans le futur (au moins 1 heure)
         if (dto.getDateEntretien() != null &&
             dto.getDateEntretien().isBefore(java.time.LocalDateTime.now().plusHours(1))) {
             throw new IllegalArgumentException("La date de l'entretien doit être au moins 1 heure dans le futur");
+=======
+        // Vérifier que la date est dans le futur
+        if (dto.getDateEntretien() != null &&
+            dto.getDateEntretien().isBefore(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("La date de l'entretien doit être dans le futur");
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         }
 
         // Vérifier la longueur du titre
@@ -280,6 +465,7 @@ public class EntretienService {
 
         // Validation spécifique selon le type
         String type = dto.getType() != null ? dto.getType() : dto.getCategorie();
+<<<<<<< HEAD
         if (type != null && !"TEST".equalsIgnoreCase(type)) {
             if (dto.getCandidatId() == null) {
                 throw new IllegalArgumentException("Un candidat doit être sélectionné pour un entretien de type " + type);
@@ -287,13 +473,76 @@ public class EntretienService {
             // Vérifier que le candidat existe
             candidatRepository.findById(dto.getCandidatId())
                     .orElseThrow(() -> new IllegalArgumentException("Candidat non trouvé : " + dto.getCandidatId()));
+=======
+        String mode = normalizeMode(dto.getMode());
+
+        if ("VIDEO".equals(mode)) {
+            String link = normalizeMeetingLink(dto.getMeetingLink());
+            if (link == null || link.isBlank()) {
+                throw new IllegalArgumentException("Le lien de réunion est obligatoire pour un entretien vidéo");
+            }
+            if (!link.toLowerCase().startsWith("http://") && !link.toLowerCase().startsWith("https://")) {
+                throw new IllegalArgumentException("Le lien de réunion doit commencer par http:// ou https://");
+            }
+        }
+
+        if (type != null && !"TEST".equalsIgnoreCase(type)) {
+            if (dto.getCandidatId() == null && dto.getOffreId() == null) {
+                throw new IllegalArgumentException("Un candidat ou une offre doit être sélectionné pour un entretien de type " + type);
+            }
+            if (dto.getCandidatId() != null) {
+                // Vérifier que le candidat existe
+                candidatRepository.findById(dto.getCandidatId())
+                        .orElseThrow(() -> new IllegalArgumentException("Candidat non trouvé : " + dto.getCandidatId()));
+            }
+            if (dto.getOffreId() != null) {
+                offreEmploiRepository.findById(dto.getOffreId())
+                        .orElseThrow(() -> new IllegalArgumentException("Offre non trouvée : " + dto.getOffreId()));
+            }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             if (dto.getSeuilReussite() == null) {
                 throw new IllegalArgumentException("Le seuil de réussite est obligatoire pour ce type d'entretien");
             }
         }
 
+<<<<<<< HEAD
 
     }
 
 
     }
+=======
+        if (dto.getDureeMinutes() != null && (dto.getDureeMinutes() < 1 || dto.getDureeMinutes() > 300)) {
+            throw new IllegalArgumentException("La duree de l'entretien doit etre comprise entre 1 et 300 minutes");
+        }
+
+
+    }
+
+    private String normalizeMode(String mode) {
+        String normalized = mode == null ? "QUESTIONS" : mode.trim().toUpperCase();
+        if (!"VIDEO".equals(normalized) && !"QUESTIONS".equals(normalized)) {
+            return "QUESTIONS";
+        }
+        return normalized;
+    }
+
+    private String normalizeMeetingLink(String link) {
+        if (link == null) {
+            return null;
+        }
+        String trimmed = link.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Integer normalizeDurationMinutes(Integer duration) {
+        if (duration == null) {
+            return 30;
+        }
+        if (duration < 1 || duration > 300) {
+            throw new IllegalArgumentException("La duree de l'entretien doit etre comprise entre 1 et 300 minutes");
+        }
+        return duration;
+    }
+}
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0

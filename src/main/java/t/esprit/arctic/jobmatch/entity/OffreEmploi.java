@@ -47,7 +47,11 @@ public class OffreEmploi {
     @OneToMany(mappedBy = "offreEmploi", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Candidature> candidatures;
 
+<<<<<<< HEAD
     // Constructors
+=======
+    // les constructeurs
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     public OffreEmploi() {}
 
     public OffreEmploi(String titre, String description, String entreprise, String location) {

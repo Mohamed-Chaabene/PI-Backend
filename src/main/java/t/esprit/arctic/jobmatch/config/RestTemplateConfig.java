@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // src/main/java/t/esprit/arctic/jobmatch/config/RestTemplateConfig.java
+=======
+// Fichier: config/RestTemplateConfig.java
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 package t.esprit.arctic.jobmatch.config;
 
 import org.springframework.context.annotation.Bean;

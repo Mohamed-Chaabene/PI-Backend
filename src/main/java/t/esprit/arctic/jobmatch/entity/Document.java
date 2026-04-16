@@ -29,6 +29,7 @@ public class Document {
     private String profil;
 
     @Column(columnDefinition = "TEXT")
+<<<<<<< HEAD
     private String competences; // JSON string
 
     @Column(columnDefinition = "TEXT")
@@ -42,12 +43,31 @@ public class Document {
 
     @Column(columnDefinition = "TEXT")
     private String formations; // JSON string
+=======
+    private String competences;
+
+    @Column(columnDefinition = "TEXT")
+    private String langues;
+
+    @Column(name = "centres_interet", columnDefinition = "TEXT")
+    private String centresInteret;
+
+    @Column(columnDefinition = "TEXT")
+    private String experiences;
+
+    @Column(columnDefinition = "TEXT")
+    private String formations;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     @Column(name = "photo_name")
     private String photoName;
 
     @Column(name = "photo_data", columnDefinition = "LONGTEXT")
+<<<<<<< HEAD
     private String photoData; // Base64
+=======
+    private String photoData;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     @Enumerated(EnumType.STRING)
     private TypeDocument type;
@@ -66,11 +86,41 @@ public class Document {
     @Column(name = "date_creation")
     private LocalDateTime dateCreation;
 
+<<<<<<< HEAD
     @PrePersist
     protected void onCreate() {
         dateCreation = LocalDateTime.now();
     }
 
+=======
+    @Column(name = "archive", nullable = false)
+    private Boolean archive = false;
+
+    @PrePersist
+    protected void onCreate() {
+        dateCreation = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (scoreATS == null) scoreATS = 0;
+        if (archive == null) archive = false;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "score_ats")
+    private Integer scoreATS;
+
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @JsonIgnore
     @OneToOne(mappedBy = "document")
     private Candidature candidature;

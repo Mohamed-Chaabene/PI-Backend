@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+<<<<<<< HEAD
+=======
+import java.time.LocalDateTime;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.util.Date;
 
 @Entity
@@ -60,4 +64,42 @@ public class Candidature {
     @ManyToOne
     @JoinColumn(name = "offre_id")
     private OffreEmploi offreEmploi;
+<<<<<<< HEAD
+=======
+
+    // ============ CHAMPS POUR LES SCHEDULERS ============
+
+    @Column(name = "nb_relances")
+    private Integer nbRelances = 0;
+
+    @Column(name = "derniere_relance")
+    private LocalDateTime derniereRelance;
+
+    @Column(name = "dernier_rappel")
+    private LocalDateTime dernierRappel;
+
+    @Column(name = "necessite_attention")
+    private Boolean necessiteAttention = false;
+
+    @Column(name = "date_reponse")
+    private LocalDateTime dateReponse;
+
+    @Column(name = "archive")
+    private Boolean archive = false;
+
+    @Column(name = "archive_date")
+    private LocalDateTime archiveDate;
+    @Column(name = "score_entretien")
+    private Double scoreEntretien;
+
+    @Column(name = "total_questions_entretien")
+    private Integer totalQuestionsEntretien;
+
+    @Column(name = "bonnes_reponses_entretien")
+    private Integer bonnesReponsesEntretien;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "date_evaluation_entretien")
+    private Date dateEvaluationEntretien;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

@@ -15,6 +15,10 @@ import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
 import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
+<<<<<<< HEAD
+=======
+import t.esprit.arctic.jobmatch.service.EmailService;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +33,12 @@ public class CandidatureController {
     private final CandidatRepository candidatRepository;
     private final OffreEmploiRepository offreEmploiRepository;
 
+<<<<<<< HEAD
+=======
+    private String statutLabel;
+    private String statutClass;
+    private final EmailService emailService;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     @GetMapping("/admin/toutes")
     public ResponseEntity<List<CandidatureDTO>> getAllCandidaturesForAdmin() {
@@ -55,6 +65,7 @@ public class CandidatureController {
     // ==================== CREATE ====================
     @PostMapping
     public ResponseEntity<?> creerCandidature(@Valid @RequestBody CandidatureDTO dto, BindingResult result) {
+<<<<<<< HEAD
         if (result.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
             result.getFieldErrors().forEach(error ->
@@ -66,6 +77,22 @@ public class CandidatureController {
             return ResponseEntity.badRequest().body(Map.of("error", "Vous devez accepter les conditions RGPD"));
         }
 
+=======
+        System.out.println("=== REQUETE RECUE ===");
+        System.out.println("DTO: " + dto);
+        System.out.println("Has errors: " + result.hasErrors());
+
+        if (result.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            result.getFieldErrors().forEach(error -> {
+                System.out.println("Erreur field: " + error.getField() + " -> " + error.getDefaultMessage());
+                errors.put(error.getField(), error.getDefaultMessage());
+            });
+            System.out.println("Erreurs retournées: " + errors);
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
@@ -100,6 +127,25 @@ public class CandidatureController {
         candidature.setAcceptRGPD(dto.isAcceptRGPD());
 
         Candidature saved = candidatureRepository.save(candidature);
+<<<<<<< HEAD
+=======
+
+        try {
+            String emailCandidat = candidat.getEmail();
+            String candidatNom = (candidat.getPrenom() != null ? candidat.getPrenom() : "") + " " + (candidat.getNom() != null ? candidat.getNom() : "");
+            String posteNom = (saved.getOffreEmploi() != null && saved.getOffreEmploi().getTitre() != null)
+                    ? saved.getOffreEmploi().getTitre()
+                    : "l'offre";
+
+            emailService.envoyerConfirmationCandidature(emailCandidat, candidatNom.trim(), posteNom);
+            System.out.println(" Email de confirmation envoyé à: " + emailCandidat);
+
+        } catch (Exception e) {
+            System.out.println(" Erreur envoi email: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         return new ResponseEntity<>(convertToDTO(saved), HttpStatus.CREATED);
     }
 
@@ -120,24 +166,70 @@ public class CandidatureController {
 
     // ==================== READ - Statistiques ====================
     @GetMapping("/stats")
+<<<<<<< HEAD
     public ResponseEntity<Map<String, Long>> getStats() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
+=======
+    public ResponseEntity<Map<String, Object>> getStats() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         Candidat candidat = candidatRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
 
         List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
 
+<<<<<<< HEAD
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", (long) candidatures.size());
         stats.put("enAttente", candidatures.stream().filter(c -> "EN_ATTENTE".equals(c.getStatut())).count());
         stats.put("acceptees", candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count());
         stats.put("refusees", candidatures.stream().filter(c -> "REFUSEE".equals(c.getStatut())).count());
+=======
+        Calendar now = Calendar.getInstance();
+        int currentMonth = now.get(Calendar.MONTH);
+        int currentYear = now.get(Calendar.YEAR);
+
+        long total = candidatures.size();
+        long enAttente = candidatures.stream().filter(c -> "EN_ATTENTE".equals(c.getStatut())).count();
+        long acceptees = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count();
+        long refusees = candidatures.stream().filter(c -> "REFUSEE".equals(c.getStatut())).count();
+        long entretiens = candidatures.stream().filter(c -> "ENTRETIEN".equals(c.getStatut())).count();
+
+        long candidaturesCeMois = candidatures.stream().filter(c -> {
+            if (c.getDateEnvoi() == null) return false;
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(c.getDateEnvoi());
+            return cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear;
+        }).count();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("enAttente", enAttente);
+        stats.put("acceptees", acceptees);
+        stats.put("refusees", refusees);
+        stats.put("entretiens", entretiens);
+        stats.put("candidaturesCeMois", candidaturesCeMois);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
         return ResponseEntity.ok(stats);
     }
 
+<<<<<<< HEAD
+=======
+    // ==================== READ - Candidatures par offre ====================
+    @GetMapping("/offre/{offreId}")
+    public ResponseEntity<List<CandidatureDTO>> getCandidaturesByOffre(@PathVariable Long offreId) {
+        List<CandidatureDTO> candidatures = candidatureRepository.findByOffreEmploiId(offreId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(candidatures);
+    }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     // ==================== READ - Filtrer par statut ====================
     @GetMapping("/filtre/statut/{statut}")
     public ResponseEntity<List<CandidatureDTO>> filtrerParStatut(@PathVariable String statut) {
@@ -185,7 +277,11 @@ public class CandidatureController {
         return ResponseEntity.ok(resultats);
     }
 
+<<<<<<< HEAD
     // ==================== READ - Par ID ====================
+=======
+    // ==================== READ - parID ====================
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/{id}")
     public ResponseEntity<CandidatureDTO> getCandidatureById(@PathVariable Long id) {
         Candidature candidature = candidatureRepository.findById(id)
@@ -363,8 +459,137 @@ public class CandidatureController {
     }
 
 
+<<<<<<< HEAD
 
 
+=======
+//Alertess
+@GetMapping("/alertes")
+public ResponseEntity<List<Map<String, Object>>> getAlertes() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String email = authentication.getName();
+    Candidat candidat = candidatRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+    List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+    long total = candidatures.size();
+    long enAttente = candidatures.stream().filter(c -> "EN_ATTENTE".equals(c.getStatut())).count();
+    long acceptees = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatut())).count();
+    long refusees = candidatures.stream().filter(c -> "REFUSEE".equals(c.getStatut())).count();
+
+    List<Map<String, Object>> alertes = new ArrayList<>();
+
+    if (enAttente > 5) {
+        Map<String, Object> a = new HashMap<>();
+        a.put("type", "warning");
+        a.put("icon", "ri-alert-line");
+        a.put("titre", "Candidatures en attente");
+        a.put("message", "Vous avez " + enAttente + " candidatures en attente de réponse.");
+        a.put("bouton", "Voir conseils");
+        a.put("action", "relancer");
+        alertes.add(a);
+    }
+
+    if (acceptees > 0) {
+        Map<String, Object> a = new HashMap<>();
+        a.put("type", "success");
+        a.put("icon", "ri-checkbox-circle-line");
+        a.put("titre", "Félicitations !");
+        a.put("message", "Vous avez " + acceptees + " candidature(s) acceptée(s).");
+        a.put("bouton", "Préparer entretien");
+        a.put("action", "entretien");
+        alertes.add(a);
+    }
+
+    if (total == 0) {
+        Map<String, Object> a = new HashMap<>();
+        a.put("type", "info");
+        a.put("icon", "ri-lightbulb-line");
+        a.put("titre", "Commencez votre recherche");
+        a.put("message", "Découvrez les offres qui correspondent à vos compétences.");
+        a.put("bouton", "Voir les offres");
+        a.put("action", "offres");
+        alertes.add(a);
+    }
+
+    if (refusees > 2) {
+        Map<String, Object> a = new HashMap<>();
+        a.put("type", "info");
+        a.put("icon", "ri-question-line");
+        a.put("titre", "Besoin d'aide ?");
+        a.put("message", "Plusieurs candidatures refusées. Conseils pour améliorer votre CV.");
+        a.put("bouton", "Améliorer mon CV");
+        a.put("action", "cv");
+        alertes.add(a);
+    }
+
+    return ResponseEntity.ok(alertes);
+}
+
+    @GetMapping("/doublons")
+    public ResponseEntity<List<List<CandidatureDTO>>> getDoublons() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        Map<String, List<Candidature>> emailCount = new HashMap<>();
+        candidatures.forEach(c -> {
+            if (c.getEmail() != null && !c.getEmail().isEmpty()) {
+                String emailKey = c.getEmail().toLowerCase().trim();
+                emailCount.computeIfAbsent(emailKey, k -> new ArrayList<>()).add(c);
+            }
+        });
+
+        List<List<CandidatureDTO>> doublons = emailCount.values().stream()
+                .filter(group -> group.size() > 1)
+                .map(group -> group.stream().map(this::convertToDTO).collect(Collectors.toList()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(doublons);
+    }
+
+
+    @GetMapping("/analyse-profil")
+    public ResponseEntity<Map<String, Object>> getAnalyseProfil() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Candidat candidat = candidatRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
+
+        boolean aCompetences = candidatures.stream()
+                .anyMatch(c -> c.getCompetences() != null && !c.getCompetences().isEmpty());
+        boolean aExperience = candidatures.stream()
+                .anyMatch(c -> c.getExperience() != null && !c.getExperience().isEmpty());
+        boolean aCV = candidatures.stream().anyMatch(c -> c.getDocument() != null);
+
+        int score = 0;
+        List<String> conseils = new ArrayList<>();
+
+        if (aCompetences) score += 35;
+        else conseils.add("Ajoutez vos compétences clés");
+
+        if (aExperience) score += 35;
+        else conseils.add("Renseignez votre expérience professionnelle");
+
+        if (aCV) score += 30;
+        else conseils.add("Téléchargez votre CV");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("scoreProfil", score);
+        result.put("conseils", conseils);
+        result.put("profilCompetences", aCompetences);
+        result.put("profilExperience", aExperience);
+        result.put("profilCV", aCV);
+
+        return ResponseEntity.ok(result);
+    }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     // ==================== FONCTIONNALITÉS AVANCÉES ====================
 
@@ -599,7 +824,11 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
+<<<<<<< HEAD
     // 6 — Relances intelligentes
+=======
+    //  Relances intelligentes
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/relances")
     public ResponseEntity<List<Map<String, Object>>> getRelances() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -627,6 +856,12 @@ public class CandidatureController {
                             c.getDateEnvoi() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(c.getDateEnvoi()) : "récemment",
                             c.getNomComplet() != null ? c.getNomComplet() : "Le candidat"
                     );
+<<<<<<< HEAD
+=======
+                    String niveauRappel = joursEcoules > 21 ? "critique" : joursEcoules > 14 ? "urgent" : "normal";
+                    String couleurRappel = joursEcoules > 21 ? "#ef4444" : joursEcoules > 14 ? "#f59e0b" : "#3b82f6";
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", c.getId());
@@ -635,6 +870,11 @@ public class CandidatureController {
                     m.put("joursEcoules", joursEcoules);
                     m.put("urgence", urgence);
                     m.put("messageRelance", messageRelance);
+<<<<<<< HEAD
+=======
+                    m.put("niveauRappel", niveauRappel);
+                    m.put("couleurRappel", couleurRappel);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                     return m;
                 })
                 .sorted((a, b) -> Long.compare((long) b.get("joursEcoules"), (long) a.get("joursEcoules")))
@@ -643,7 +883,11 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
+<<<<<<< HEAD
     // 7 — Gamification
+=======
+    // Gamification
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/gamification")
     public ResponseEntity<Map<String, Object>> getGamification() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -690,6 +934,7 @@ public class CandidatureController {
             }
         });
 
+<<<<<<< HEAD
         // ===== NOUVEAU CALCUL DE POINTS PLUS COMPLET =====
         int points = 0;
 
@@ -700,11 +945,23 @@ public class CandidatureController {
         points += (int)(acceptees * 60);
 
         // 3. Bonus pour taux de réussite (max 100 pts)
+=======
+        int points = 0;
+
+        // volume de candidatures (max 200 pts)
+        points += Math.min(total * 8, 200);
+
+        //  Succès (max 300 pts)
+        points += (int)(acceptees * 60);
+
+        // Bonus pour taux de réussite (max 100 pts)
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         double tauxReussite = total > 0 ? (double) acceptees / total * 100 : 0;
         if (tauxReussite >= 50) points += 50;
         else if (tauxReussite >= 25) points += 25;
         else if (tauxReussite > 0) points += 10;
 
+<<<<<<< HEAD
         // 4. Bonus régularité (max 50 pts)
         points += Math.min(candidaturesCeMois * 10, 50);
 
@@ -719,6 +976,22 @@ public class CandidatureController {
         if (total >= 20) points += 30;
 
         // 8. Bonus CV/complétude
+=======
+        // Bonus régularité (max 50 pts)
+        points += Math.min(candidaturesCeMois * 10, 50);
+
+        // Bonus acceptations récentes (max 100 pts)
+        points += accepteesCeMois * 30;
+
+        // Bonus diversité des compétences (max 50 pts)
+        points += Math.min(competences.size() * 5, 50);
+
+        // Bonus anti-abandon (points de persévérance)
+        if (refusees > 0 && acceptees > 0) points += 20;
+        if (total >= 20) points += 30;
+
+        //  Bonus CV/complétude
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         boolean aCV = candidatures.stream().anyMatch(c -> c.getDocument() != null);
         boolean aLettre = candidatures.stream().anyMatch(c -> c.getLettreMotivation() != null && !c.getLettreMotivation().isEmpty());
         if (aCV) points += 30;
@@ -731,6 +1004,7 @@ public class CandidatureController {
         int pointsPourNiveauSuivant;
 
         if (points < 100) {
+<<<<<<< HEAD
             niveau = "🥉 Débutant";
             niveauSuivant = "📌 Apprenti";
             niveauProgress = (int)(points * 100 / 100);
@@ -758,6 +1032,35 @@ public class CandidatureController {
         } else {
             niveau = "👑 Légende";
             niveauSuivant = "🏆 Maximum !";
+=======
+            niveau = " Débutant";
+            niveauSuivant = " Apprenti";
+            niveauProgress = (int)(points * 100 / 100);
+            pointsPourNiveauSuivant = 100 - points;
+        } else if (points < 250) {
+            niveau = "Apprenti";
+            niveauSuivant = " Intermédiaire";
+            niveauProgress = (int)((points - 100) * 100 / 150);
+            pointsPourNiveauSuivant = 250 - points;
+        } else if (points < 450) {
+            niveau = "Intermédiaire";
+            niveauSuivant = " Confirmé";
+            niveauProgress = (int)((points - 250) * 100 / 200);
+            pointsPourNiveauSuivant = 450 - points;
+        } else if (points < 700) {
+            niveau = " Confirmé";
+            niveauSuivant = " Expert";
+            niveauProgress = (int)((points - 450) * 100 / 250);
+            pointsPourNiveauSuivant = 700 - points;
+        } else if (points < 1000) {
+            niveau = " Expert";
+            niveauSuivant = " Légende";
+            niveauProgress = (int)((points - 700) * 100 / 300);
+            pointsPourNiveauSuivant = 1000 - points;
+        } else {
+            niveau = " Légende";
+            niveauSuivant = " Maximum !";
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             niveauProgress = 100;
             pointsPourNiveauSuivant = 0;
         }
@@ -766,6 +1069,7 @@ public class CandidatureController {
         List<Map<String, Object>> badges = new ArrayList<>();
 
         // Badges de volume
+<<<<<<< HEAD
         addBadge(badges, "🎯", "Premier pas", "Première candidature", total >= 1);
         addBadge(badges, "📈", "Actif", "5 candidatures", total >= 5);
         addBadge(badges, "🚀", "En mission", "10 candidatures", total >= 10);
@@ -794,14 +1098,51 @@ public class CandidatureController {
         }
         if (competences.size() >= 10) {
             addBadge(badges, "🎓", "Expert", "10+ compétences", true);
+=======
+        addBadge(badges, "", "Premier pas", "Première candidature", total >= 1);
+        addBadge(badges, "", "Actif", "5 candidatures", total >= 5);
+        addBadge(badges, "", "En mission", "10 candidatures", total >= 10);
+        addBadge(badges, "", "Persévérant", "20 candidatures", total >= 20);
+
+        // Badges de succès
+        addBadge(badges, "", "Premier succès", "1ère acceptation", acceptees >= 1);
+        addBadge(badges, "", "En demande", "3 acceptations", acceptees >= 3);
+        addBadge(badges, "", "Star", "5 acceptations", acceptees >= 5);
+
+        // Badges de performance
+        if (tauxReussite >= 50) {
+            addBadge(badges, "", "Précis", "Taux réussite > 50%", true);
+        }
+        if (tauxReussite >= 75) {
+            addBadge(badges, "️", "Elite", "Taux réussite > 75%", true);
+        }
+
+        // Badges de régularité
+        addBadge(badges, "", "Régulier", "3 candidatures ce mois", candidaturesCeMois >= 3);
+        addBadge(badges, "", "En feu", "5 candidatures ce mois", candidaturesCeMois >= 5);
+
+        // Badges de compétences
+        if (competences.size() >= 5) {
+            addBadge(badges, "", "Polyvalent", "5+ compétences", true);
+        }
+        if (competences.size() >= 10) {
+            addBadge(badges, "", "Expert", "10+ compétences", true);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         }
 
         // Badges spéciaux
         if (aCV && aLettre) {
+<<<<<<< HEAD
             addBadge(badges, "📄", "Prêt", "CV + Lettre", true);
         }
         if (accepteesCeMois >= 1) {
             addBadge(badges, "⚡", "En forme", "Acceptation ce mois", true);
+=======
+            addBadge(badges, "", "Prêt", "CV + Lettre", true);
+        }
+        if (accepteesCeMois >= 1) {
+            addBadge(badges, "", "En forme", "Acceptation ce mois", true);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -838,7 +1179,11 @@ public class CandidatureController {
         badges.add(badge);
     }
 
+<<<<<<< HEAD
     // 8 — Career Timeline
+=======
+    // Career Timeline
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/timeline")
     public ResponseEntity<List<Map<String, Object>>> getTimeline() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -871,12 +1216,15 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
+<<<<<<< HEAD
 
 
 
 
 
 
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     // ==================== METHODE UTILITAIRE ====================
     private CandidatureDTO convertToDTO(Candidature c) {
         CandidatureDTO dto = new CandidatureDTO();
@@ -896,6 +1244,30 @@ public class CandidatureController {
         dto.setPreavis(c.getPreavis());
         dto.setAcceptContact(c.getAcceptContact());
         dto.setAcceptRGPD(c.getAcceptRGPD());
+<<<<<<< HEAD
+=======
+        dto.setScoreEntretien(c.getScoreEntretien());
+        dto.setTotalQuestionsEntretien(c.getTotalQuestionsEntretien());
+        dto.setBonnesReponsesEntretien(c.getBonnesReponsesEntretien());
+        dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
+
+        String statutLabel = switch (c.getStatut()) {
+            case "EN_ATTENTE" -> "En attente";
+            case "ACCEPTEE" -> "Acceptée";
+            case "REFUSEE" -> "Refusée";
+            default -> c.getStatut();
+        };
+
+        String statutClass = switch (c.getStatut()) {
+            case "EN_ATTENTE" -> "pending";
+            case "ACCEPTEE" -> "accepted";
+            case "REFUSEE" -> "rejected";
+            default -> "";
+        };
+
+        dto.setStatutLabel(statutLabel);
+        dto.setStatutClass(statutClass);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
         if (c.getCandidat() != null) {
             dto.setCandidatId(c.getCandidat().getId());
@@ -914,6 +1286,14 @@ public class CandidatureController {
             dto.setPoste(c.getOffreEmploi().getTitre());
         }
 
+<<<<<<< HEAD
         return dto;
     }
+=======
+
+
+        return dto;
+    }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

@@ -1,7 +1,14 @@
 package t.esprit.arctic.jobmatch.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+=======
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 import java.util.List;
 import java.util.Optional;

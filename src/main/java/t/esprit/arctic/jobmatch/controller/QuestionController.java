@@ -3,7 +3,13 @@ package t.esprit.arctic.jobmatch.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+<<<<<<< HEAD
 import t.esprit.arctic.jobmatch.dto.QuestionDTO;
+=======
+import t.esprit.arctic.jobmatch.dto.AiQuestionGenerateRequestDTO;
+import t.esprit.arctic.jobmatch.dto.QuestionDTO;
+import t.esprit.arctic.jobmatch.service.QuestionAiAssistantService;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.service.QuestionService;
 import jakarta.validation.Valid;
 
@@ -17,6 +23,12 @@ public class QuestionController {
     @Autowired
     private QuestionService questionService;
 
+<<<<<<< HEAD
+=======
+    @Autowired
+    private QuestionAiAssistantService questionAiAssistantService;
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @PostMapping("/entretien/{entretienId}")
     public ResponseEntity<?> createQuestion(
             @PathVariable Long entretienId,
@@ -37,6 +49,25 @@ public class QuestionController {
         return ResponseEntity.ok(questionService.getQuestionsByEntretien(entretienId));
     }
 
+<<<<<<< HEAD
+=======
+    @PostMapping("/entretien/{entretienId}/ai-generate")
+    public ResponseEntity<?> generateQuestionsWithAi(
+            @PathVariable Long entretienId,
+            @RequestBody(required = false) AiQuestionGenerateRequestDTO request) {
+        try {
+            AiQuestionGenerateRequestDTO safeRequest = request != null ? request : new AiQuestionGenerateRequestDTO();
+            List<QuestionDTO> generated = questionAiAssistantService.generateSuggestions(entretienId, safeRequest);
+            return ResponseEntity.ok(generated);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(500).body("Erreur interne lors de la génération IA des questions");
+        }
+    }
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/entretien/{entretienId}/domaine/{domaineName}")
     public ResponseEntity<List<QuestionDTO>> getQuestionsByDomaine(
             @PathVariable Long entretienId,

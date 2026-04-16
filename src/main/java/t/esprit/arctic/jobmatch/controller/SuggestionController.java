@@ -32,9 +32,13 @@ public class SuggestionController {
     private final HttpClient  http   = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
+<<<<<<< HEAD
     // ══════════════════════════════════════════════════════════════════
     // 1. PLAYLISTS YOUTUBE
     // ══════════════════════════════════════════════════════════════════
+=======
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/formations")
     public ResponseEntity<List<FormationSuggestion>> suggest(
             @RequestParam String titre) throws Exception {
@@ -81,9 +85,13 @@ public class SuggestionController {
         return ResponseEntity.ok(suggestions);
     }
 
+<<<<<<< HEAD
     // ══════════════════════════════════════════════════════════════════
     // 2. VIDEOS D'UNE PLAYLIST
     // ══════════════════════════════════════════════════════════════════
+=======
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/playlist-videos/{playlistId}")
     public ResponseEntity<List<JsonNode>> getPlaylistVideos(
             @PathVariable String playlistId) throws Exception {
@@ -128,9 +136,12 @@ public class SuggestionController {
         return ResponseEntity.ok(videos);
     }
 
+<<<<<<< HEAD
     // ══════════════════════════════════════════════════════════════════
     // 3. DOCUMENTATION AUTOMATIQUE — Google Search
     // ══════════════════════════════════════════════════════════════════
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/docs/auto")
     public ResponseEntity<Map<String, Object>> findDocAuto(
             @RequestParam String titre) throws Exception {
@@ -138,7 +149,10 @@ public class SuggestionController {
         List<Map<String, String>> results = new ArrayList<>();
 
         try {
+<<<<<<< HEAD
             // ── DuckDuckGo Instant Answer API — gratuit, sans clé ─────
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             String query = URLEncoder.encode(
                 titre + " documentation tutorial",
                 StandardCharsets.UTF_8
@@ -157,7 +171,10 @@ public class SuggestionController {
 
             JsonNode ddg = mapper.readTree(ddgResp.body());
 
+<<<<<<< HEAD
             // Résultats DuckDuckGo
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             JsonNode relatedTopics = ddg.path("RelatedTopics");
             if (relatedTopics.isArray()) {
                 for (JsonNode topic : relatedTopics) {
@@ -177,7 +194,10 @@ public class SuggestionController {
                 }
             }
 
+<<<<<<< HEAD
             // ── Fallback : URLs directes selon le titre ────────────────
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             if (results.isEmpty()) {
                 results.addAll(buildDirectUrls(titre));
             }
@@ -193,12 +213,18 @@ public class SuggestionController {
         return ResponseEntity.ok(result);
     }
 
+<<<<<<< HEAD
     // ── URLs directes selon mots-clés du titre ──────────────────────
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private List<Map<String, String>> buildDirectUrls(String titre) {
         List<Map<String, String>> results = new ArrayList<>();
         String t = titre.toLowerCase();
 
+<<<<<<< HEAD
         // Mapping titre → URL documentation officielle directe
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         String url  = null;
         String name = null;
 
@@ -263,7 +289,10 @@ public class SuggestionController {
         else if (t.contains("linux") || t.contains("bash")) {
             url = "https://www.gnu.org/software/bash/manual/"; name = "gnu.org"; }
         else {
+<<<<<<< HEAD
             // Fallback absolu : MDN
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             url  = "https://developer.mozilla.org/fr/docs/Learn";
             name = "MDN Web Docs";
         }
@@ -279,9 +308,13 @@ public class SuggestionController {
         return results;
     }
 
+<<<<<<< HEAD
     // ══════════════════════════════════════════════════════════════════
     // UTILITAIRES PRIVÉS
     // ══════════════════════════════════════════════════════════════════
+=======
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private int getPlaylistVideoCount(String playlistId) {
         try {
             String url = "https://www.googleapis.com/youtube/v3/playlists"
