@@ -38,7 +38,6 @@ public class CertificatController {
                 certificatService.getByCandidat(candidatId));
     }
 
-    // ✅ Générer certificat depuis une inscription (après quiz final réussi)
     @PostMapping("/generer/{inscriptionId}")
     public ResponseEntity<?> genererDepuisInscription(
             @PathVariable Long inscriptionId) {
@@ -65,7 +64,6 @@ public class CertificatController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ── Téléchargement PDF ────────────────────────────────────────
     @GetMapping("/{id}/telecharger")
     public ResponseEntity<byte[]> telecharger(@PathVariable Long id) {
         byte[] pdf = certificatService.genererPdf(id);

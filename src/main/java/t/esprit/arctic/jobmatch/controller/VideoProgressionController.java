@@ -35,9 +35,6 @@ public class VideoProgressionController {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    // ══════════════════════════════════════════════════════════════
-    // 1. Marquer une vidéo comme vue
-    // ══════════════════════════════════════════════════════════════
     @PostMapping("/video-vue")
     public ResponseEntity<Map<String, Object>> marquerVideoVue(
             @RequestBody Map<String, Object> body) {
@@ -76,9 +73,6 @@ public class VideoProgressionController {
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // 2. Récupérer la progression
-    // ══════════════════════════════════════════════════════════════
     @GetMapping("/inscription/{inscriptionId}")
     public ResponseEntity<Map<String, Object>> getProgression(
             @PathVariable Long inscriptionId,
@@ -98,9 +92,6 @@ public class VideoProgressionController {
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // 3. Générer le quiz FINAL de la formation entière
-    // ══════════════════════════════════════════════════════════════
     @PostMapping("/quiz-final/generer")
     public ResponseEntity<Map<String, Object>> genererQuizFinal(
             @RequestBody Map<String, Object> body) throws Exception {
@@ -110,8 +101,6 @@ public class VideoProgressionController {
         String categorie     = body.getOrDefault("categorie", "").toString();
         String playlistId    = body.getOrDefault("playlistId", "").toString();
 
-        // Vérifier que la formation est bien terminée à 100%
-        // (récupérer totalVideos depuis body)
         int totalVideos = Integer.parseInt(
                 body.getOrDefault("totalVideos", "1").toString());
         int progression = calculerProgression(inscriptionId, totalVideos);
@@ -123,7 +112,6 @@ public class VideoProgressionController {
             return ResponseEntity.badRequest().body(err);
         }
 
-        // Récupérer les titres des vidéos vues
         List<VideoProgression> vps =
                 videoProgressionRepo.findByInscriptionId(inscriptionId);
         List<String> videoIds = vps.stream()
@@ -132,10 +120,8 @@ public class VideoProgressionController {
                 .limit(10) // max 10 vidéos pour le contexte
                 .toList();
 
-        // Récupérer les infos YouTube des vidéos
         List<String> videoTitles = getVideoTitles(videoIds);
 
-        // Générer le quiz final avec Claude
         List<Map<String, Object>> questions =
                 genererQuizFinal(titreFomation, categorie, videoTitles);
 
@@ -146,9 +132,7 @@ public class VideoProgressionController {
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // 4. Soumettre le quiz final et générer le certificat si réussi
-    // ══════════════════════════════════════════════════════════════
+
     @PostMapping("/quiz-final/soumettre")
     public ResponseEntity<Map<String, Object>> soumettreQuizFinal(
             @RequestBody Map<String, Object> body) {
@@ -162,10 +146,8 @@ public class VideoProgressionController {
         result.put("reussi", reussi);
 
         if (reussi) {
-            // Générer le certificat via le service
             try {
                 inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
-                    // Marquer comme certifié
                     ins.setStatut("Terminé");
                     inscriptionRepo.save(ins);
                 });
@@ -186,9 +168,7 @@ public class VideoProgressionController {
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // GÉNÉRATION QUIZ FINAL — Claude AI
-    // ══════════════════════════════════════════════════════════════
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> genererQuizFinal(
             String titreFormation,
@@ -236,7 +216,6 @@ public class VideoProgressionController {
                 ]
                 """.formatted(categorie, titreFormation, listeVideos);
 
-            // Structure OpenAI-compatible pour l'API gratuite GROQ (Llama 3.1)
             String requestBody = mapper.writeValueAsString(Map.of(
                     "model", "llama-3.1-8b-instant", // Modèle courant gratuit et ultra-rapide
                     "messages", List.of(Map.of(
@@ -266,7 +245,6 @@ public class VideoProgressionController {
                 return getQuizFinalFallback(titreFormation);
             }
 
-            // Path OpenAI/Groq: choices[0].message.content
             String text = root.path("choices").get(0)
                     .path("message").path("content").asText("[]").trim()
                     .replaceAll("(?s)```json\\s*", "")
@@ -291,7 +269,6 @@ public class VideoProgressionController {
         }
     }
 
-    // ── Récupérer les titres des vidéos YouTube ───────────────────
     private List<String> getVideoTitles(List<String> videoIds) {
         if (videoIds.isEmpty()) return new ArrayList<>();
         try {
@@ -324,7 +301,6 @@ public class VideoProgressionController {
         }
     }
 
-    // ── Quiz fallback si Claude indisponible ──────────────────────
     private List<Map<String, Object>> getQuizFinalFallback(
             String titreFormation) {
         List<Map<String, Object>> questions = new ArrayList<>();
@@ -362,9 +338,6 @@ public class VideoProgressionController {
         return questions;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // UTILITAIRES
-    // ══════════════════════════════════════════════════════════════
     private int calculerProgression(Long inscriptionId, int totalVideos) {
         if (totalVideos == 0) return 0;
         long videosVues = videoProgressionRepo
@@ -379,8 +352,6 @@ public class VideoProgressionController {
             if (progression > 0 && progression < 100) {
                 ins.setStatut("EnCours");
             }
-            // Ne pas mettre "Terminé" automatiquement —
-            // seulement après quiz final réussi
             inscriptionRepo.save(ins);
         });
     }

@@ -21,21 +21,17 @@ public class FormationController {
 
     private final FormationService formationService;
 
-    // ── Endpoints admin (routes statiques AVANT routes dynamiques) ────────────
 
-    // ✅ Liste complète pour admin (avec archivées)
     @GetMapping("/admin/all")
     public ResponseEntity<List<Formation>> getAllForAdmin() {
         return ResponseEntity.ok(formationService.getAllForAdmin());
     }
 
-    // ✅ Liste des archivées uniquement
     @GetMapping("/admin/archivees")
     public ResponseEntity<List<Formation>> getArchivees() {
         return ResponseEntity.ok(formationService.getArchivees());
     }
 
-    // ── Endpoints publics filtrage (routes statiques AVANT routes dynamiques) ─
 
     @GetMapping("/niveau/{niveau}")
     public ResponseEntity<List<Formation>> getByNiveau(@PathVariable String niveau) {
@@ -47,9 +43,7 @@ public class FormationController {
         return ResponseEntity.ok(formationService.getByCategorie(categorie));
     }
 
-    // ── Endpoints publics génériques (routes génériques en dernier! ───────────
 
-    // ✅ Liste publique — exclut les archivées (sans paramètres = doit être après les routes spécifiques)
     @GetMapping
     public ResponseEntity<List<Formation>> getAll() {
         return ResponseEntity.ok(formationService.getAllActives());
@@ -80,15 +74,52 @@ public class FormationController {
         return ResponseEntity.noContent().build();
     }
 
-    // ✅ Archiver une formation
     @PutMapping("/{id}/archiver")
     public ResponseEntity<Formation> archiver(@PathVariable Long id) {
         return ResponseEntity.ok(formationService.archiver(id));
     }
 
-    // ✅ Désarchiver une formation
     @PutMapping("/{id}/desarchiver")
     public ResponseEntity<Formation> desarchiver(@PathVariable Long id) {
         return ResponseEntity.ok(formationService.desarchiver(id));
+    }
+
+
+    @GetMapping("/stats")
+    public ResponseEntity<List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO>> getAllStats() {
+        return ResponseEntity.ok(
+            formationService.getFormationsAvecStatistiques());
+    }
+
+    @GetMapping("/stats/categorie/{categorie}")
+    public ResponseEntity<List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO>> getStatsByCategorie(
+            @PathVariable String categorie) {
+        return ResponseEntity.ok(
+            formationService.getStatsParCategorie(categorie));
+    }
+
+    @GetMapping("/top")
+    public ResponseEntity<List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO>> getTop() {
+        return ResponseEntity.ok(formationService.getTopFormations());
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<java.util.Map<String, Integer>> refreshBadgesAndScores() {
+        return ResponseEntity.ok(formationService.refreshScoresEtBadges());
+    }
+
+
+    @GetMapping("/badge/{badge}")
+    public ResponseEntity<List<Formation>> getByBadge(
+            @PathVariable String badge) {
+        return ResponseEntity.ok(
+            formationService.getFormationsParBadge(badge));
+    }
+
+    @GetMapping("/populaires")
+    public ResponseEntity<List<Formation>> getPopulaires(
+            @RequestParam(defaultValue = "50") Double scoreMin) {
+        return ResponseEntity.ok(
+            formationService.getFormationsPopulaires(scoreMin));
     }
 }
