@@ -16,6 +16,7 @@ public class InscriptionFormationService {
     private final t.esprit.arctic.jobmatch.repository.CandidatRepository candidatRepository;
     private final t.esprit.arctic.jobmatch.repository.FormationRepository formationRepository;
     private final CertificatService certificatService;
+    private final NotificationService notificationService;
 
     private static final double SEUIL_CERTIFICAT = 70.0;
 
@@ -42,7 +43,19 @@ public class InscriptionFormationService {
         inscription.setDateInscription(new Date());
         inscription.setStatut("EnCours");
         inscription.setProgression(0.0);
-        return inscriptionRepository.save(inscription);
+        InscriptionFormation saved = inscriptionRepository.save(inscription);
+        
+        try {
+            notificationService.notifyFollowersOfFormationEnrollment(
+                candidat.getId(),
+                candidat.getNom(),
+                formation.getTitre()
+            );
+        } catch (Exception e) {
+            System.err.println("Error notifying followers of formation enrollment: " + e.getMessage());
+        }
+        
+        return saved;
     }
 
     @Transactional
