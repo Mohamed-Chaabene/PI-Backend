@@ -12,4 +12,10 @@ public class ParticipationResponse {
     private String statut;
     private Long evenementId;
     private String titreEvenement;
+    private Long candidatId;
+    private String nomCandidat;
+    private String qrCode;
+    private boolean chatOuvert;
+    private Boolean certificateGenerated;
+    private String certificateUrl;
 }

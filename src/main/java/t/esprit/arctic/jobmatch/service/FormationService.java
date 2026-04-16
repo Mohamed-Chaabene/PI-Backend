@@ -2,9 +2,12 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Formation;
+import t.esprit.arctic.jobmatch.dto.FormationStatsDTO;
 import t.esprit.arctic.jobmatch.repository.FormationRepository;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -74,5 +77,112 @@ public class FormationService {
 
     public List<Formation> getArchivees() {
         return formationRepository.findByStatut("Archivée");
+    }
+
+
+    // JPQL global
+    public List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO> getFormationsAvecStatistiques() {
+        List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO> list = formationRepository.findAllAvecStatistiques();
+        list.sort((a, b) -> Double.compare(
+            b.getScorePopularite() != null ? b.getScorePopularite() : 0.0,
+            a.getScorePopularite() != null ? a.getScorePopularite() : 0.0
+        ));
+        return list;
+    }
+
+    // JPQL par catégorie
+    public List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO> getStatsParCategorie(String categorie) {
+        List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO> list = formationRepository.findStatsParCategorie(categorie);
+        list.sort((a, b) -> Double.compare(
+            b.getScorePopularite() != null ? b.getScorePopularite() : 0.0,
+            a.getScorePopularite() != null ? a.getScorePopularite() : 0.0
+        ));
+        return list;
+    }
+
+    // JPQL top 3
+    public List<t.esprit.arctic.jobmatch.dto.FormationStatsDTO> getTopFormations() {
+        return formationRepository.findAllDisponiblesAvecStatistiques()
+            .stream()
+            .sorted((a, b) -> Double.compare(
+                b.getScorePopularite() != null ? b.getScorePopularite() : 0.0,
+                a.getScorePopularite() != null ? a.getScorePopularite() : 0.0
+            ))
+            .limit(3)
+            .toList();
+    }
+
+    public List<Formation> getFormationsParBadge(String badge) {
+        return formationRepository.findByStatutAndBadge("Disponible", badge);
+    }
+
+    public List<Formation> getFormationsPopulaires(Double scoreMin) {
+        return formationRepository
+            .findByStatutAndScorePopulariteGreaterThanOrderByScorePopulariteDesc(
+                "Disponible", scoreMin);
+    }
+
+    public List<Formation> getFormationsParCategorieNiveauBadge(
+            String categorie, String niveau) {
+        return formationRepository
+            .findByStatutAndNiveauAndBadgeIsNotNull("Disponible", niveau);
+    }
+
+    @Transactional
+    public Map<String, Integer> refreshScoresEtBadges() {
+        List<FormationStatsDTO> stats = formationRepository.findAllAvecStatistiques();
+        int miseAJour = 0;
+        int archives = 0;
+
+        for (FormationStatsDTO stat : stats) {
+            String badge = calculerBadge(stat);
+
+            if ("Disponible".equals(stat.getStatut())
+                    && (stat.getTotalInscrits() == null || stat.getTotalInscrits() == 0L)) {
+                Formation f = formationRepository.findById(stat.getFormationId()).orElse(null);
+                if (f != null) {
+                    f.setStatut("Archivée");
+                    formationRepository.save(f);
+                    archives++;
+                }
+                continue;
+            }
+
+            formationRepository.updateScoreEtBadge(
+                    stat.getFormationId(),
+                    stat.getScorePopularite(),
+                    badge,
+                    stat.getTotalInscrits() != null ? stat.getTotalInscrits().intValue() : 0,
+                    stat.getNoteMoyenne(),
+                    stat.getTauxCompletion()
+            );
+            miseAJour++;
+        }
+
+        return Map.of(
+                "miseAJour", miseAJour,
+                "archives", archives,
+                "total", stats.size()
+        );
+    }
+
+    private String calculerBadge(FormationStatsDTO stat) {
+        long inscrits = stat.getTotalInscrits() != null ? stat.getTotalInscrits() : 0L;
+        double note = stat.getNoteMoyenne() != null ? stat.getNoteMoyenne() : 0.0;
+        double score = stat.getScorePopularite() != null ? stat.getScorePopularite() : 0.0;
+
+        if (note >= 4.5 && inscrits >= 3)
+            return "Top noté";
+
+        if (score >= 55.0)
+            return "Tendance";
+
+        if (inscrits >= 30)
+            return "Populaire";
+
+        if (note >= 4.0 && inscrits >= 1)
+            return "Bien noté";
+
+        return null;
     }
 }

@@ -41,7 +41,6 @@ public class ProxyController {
                 return ResponseEntity.ok("<p>Contenu non disponible</p>");
             }
 
-            // Injecter base href
             if (html.toLowerCase().contains("<head>")) {
                 html = html.replaceFirst("(?i)<head>",
                         "<head><base href=\"" + baseUrl + "\">");

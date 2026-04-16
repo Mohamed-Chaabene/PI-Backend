@@ -1,5 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ public class Utilisateur {
         @Enumerated(EnumType.STRING)
         private Role role;
 
+        @JsonIgnore
         private LocalDateTime dateCreation;
 
         private boolean actif;

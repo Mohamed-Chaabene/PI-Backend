@@ -69,5 +69,14 @@ public class CandidatureDTO {
 
     private String statutLabel;
     private String statutClass;
+    private Double scoreEntretien;
+    private Integer totalQuestionsEntretien;
+    private Integer bonnesReponsesEntretien;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date dateEvaluationEntretien;
 }
+
+
+
 

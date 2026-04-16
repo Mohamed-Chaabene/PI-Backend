@@ -1,14 +1,14 @@
 package t.esprit.arctic.jobmatch.dto;
 
 public class FormationSuggestion {
-    private String playlistId;      // ✅ ID de la playlist (remplace youtubeId)
+    private String playlistId;
     private String titre;
     private String thumbnail;
     private String chaineYoutube;
     private String writtenUrl;
     private String categorie;
     private String niveau;
-    private int    nbVideos;        // ✅ Nombre de vidéos dans la playlist
+    private int    nbVideos;
 
     public FormationSuggestion(String playlistId, String titre, String thumbnail,
                                String chaineYoutube, String writtenUrl,

@@ -47,7 +47,7 @@ public class OffreEmploi {
     @OneToMany(mappedBy = "offreEmploi", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Candidature> candidatures;
 
-    // Constructors
+    // les constructeurs
     public OffreEmploi() {}
 
     public OffreEmploi(String titre, String description, String entreprise, String location) {

@@ -27,20 +27,24 @@ public class InscriptionFormation {
     @Max(value = 100, message = "La progression ne peut pas dépasser 100")
     private Double progression;
 
-    // ✅ On expose la formation SANS sa liste d'inscriptions (évite la boucle)
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "formation_id", nullable = false)
-    @JsonIgnoreProperties({"inscriptions", "competences"})
+    @JsonIgnoreProperties({
+            "inscriptions", "competences",
+            "hibernateLazyInitializer", "handler"
+    })
     private Formation formation;
 
-    // ✅ On expose le candidat mais on masque ses relations lourdes pour éviter les erreurs "lazy" et les boucles infinies.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidat_id", nullable = false)
-    @JsonIgnoreProperties({"inscriptions", "educations", "backgrounds", "competences", "motDePasse"})
+    @JsonIgnoreProperties({
+            "inscriptions", "educations", "backgrounds",
+            "competences", "motDePasse", "candidatures",
+            "hibernateLazyInitializer", "handler"
+    })
     private Candidat candidat;
 
-    // ✅ Déjà correct — on cache le certificat pour éviter la boucle certificat→inscription
-    @OneToOne(mappedBy = "inscription", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "inscription", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private Certificat certificat;
 }

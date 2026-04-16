@@ -179,6 +179,16 @@ public class CandidatureController {
         return ResponseEntity.ok(stats);
     }
 
+    // ==================== READ - Candidatures par offre ====================
+    @GetMapping("/offre/{offreId}")
+    public ResponseEntity<List<CandidatureDTO>> getCandidaturesByOffre(@PathVariable Long offreId) {
+        List<CandidatureDTO> candidatures = candidatureRepository.findByOffreEmploiId(offreId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(candidatures);
+    }
+
     // ==================== READ - Filtrer par statut ====================
     @GetMapping("/filtre/statut/{statut}")
     public ResponseEntity<List<CandidatureDTO>> filtrerParStatut(@PathVariable String statut) {
@@ -1059,6 +1069,10 @@ public ResponseEntity<List<Map<String, Object>>> getAlertes() {
         dto.setPreavis(c.getPreavis());
         dto.setAcceptContact(c.getAcceptContact());
         dto.setAcceptRGPD(c.getAcceptRGPD());
+        dto.setScoreEntretien(c.getScoreEntretien());
+        dto.setTotalQuestionsEntretien(c.getTotalQuestionsEntretien());
+        dto.setBonnesReponsesEntretien(c.getBonnesReponsesEntretien());
+        dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
 
         String statutLabel = switch (c.getStatut()) {
             case "EN_ATTENTE" -> "En attente";

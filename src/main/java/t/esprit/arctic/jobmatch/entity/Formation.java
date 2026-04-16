@@ -16,37 +16,28 @@ public class Formation {
     private Long id;
 
     private String titre;
-
     private String categorie;
-
     private String plateforme;
-
     private String statut;
-
     private String duree;
-
     private String niveau;
 
-    // ── Champs contenus enrichis ──────────────────────────────────────────────
-
     @Column(length = 500)
-    private String lienExterne;    // Lien Udemy/Coursera
+    private String lienExterne;
 
-    // ✅ Playlist YouTube (remplace youtubeId pour les nouvelles formations)
     @Column(length = 100)
-    private String playlistId;     // ID playlist YouTube (ex: PLblA84xge2_z...)
+    private String playlistId;
 
-    // Gardé pour compatibilité avec les anciennes formations (vidéo simple)
     @Column(length = 100)
     private String youtubeId;
 
-    private Boolean hasEditor;     // Activer l'éditeur StackBlitz
+    private Boolean hasEditor;
 
     @Column(length = 500)
-    private String stackBlitzUrl;  // Template éditeur
+    private String stackBlitzUrl;
 
     @Column(length = 500)
-    private String writtenUrl;     // Documentation écrite (W3Schools, MDN...)
+    private String writtenUrl;
 
     @Column(length = 1000)
     private String description;
@@ -54,18 +45,31 @@ public class Formation {
     @Column(length = 500)
     private String imageUrl;
 
-    // ── Relations ─────────────────────────────────────────────────────────────
-
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "formation_competence",
             joinColumns = @JoinColumn(name = "formation_id"),
             inverseJoinColumns = @JoinColumn(name = "competence_id")
     )
-    @JsonIgnoreProperties({"formations"})
+    @JsonIgnore
     private List<Competence> competences;
 
-    @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<InscriptionFormation> inscriptions;
+
+    @Column(name = "score_popularite")
+    private Double scorePopularite = 0.0;
+
+    @Column(name = "badge", length = 50)
+    private String badge;
+
+    @Column(name = "total_inscrits")
+    private Integer totalInscrits = 0;
+
+    @Column(name = "note_moyenne")
+    private Double noteMoyenne = 0.0;
+
+    @Column(name = "taux_completion")
+    private Double tauxCompletion = 0.0;
 }
