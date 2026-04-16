@@ -10,11 +10,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * Service de recherche avancée pour les offres d'emploi
- * Gère les recherches complexes par mots-clés, localisation, salaire, et type de contrat
- * Utilise plusieurs jointures pour agréger les données des offres, recruteurs et candidatures
- */
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
