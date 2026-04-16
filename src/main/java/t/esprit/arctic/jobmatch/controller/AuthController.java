@@ -14,6 +14,10 @@ import t.esprit.arctic.jobmatch.dto.PasswordResetRequest;
 import t.esprit.arctic.jobmatch.dto.VerifyOtpRequest;
 import t.esprit.arctic.jobmatch.dto.PasswordResetResponse;
 import t.esprit.arctic.jobmatch.entity.*;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.freelance.entity.ClientFreelance;
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.security.JwtService;
 import t.esprit.arctic.jobmatch.service.UtilisateurService;
 import t.esprit.arctic.jobmatch.service.TwilioService;

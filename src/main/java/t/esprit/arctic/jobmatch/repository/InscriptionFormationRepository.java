@@ -1,6 +1,15 @@
 package t.esprit.arctic.jobmatch.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.entity.InscriptionFormation;
+import java.util.List;
+
+public interface InscriptionFormationRepository extends JpaRepository<InscriptionFormation, Long> {
+    List<InscriptionFormation> findByCandidatId(Long candidatId);
+    List<InscriptionFormation> findByFormationId(Long formationId);
+    List<InscriptionFormation> findByStatut(String statut);
+=======
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import t.esprit.arctic.jobmatch.entity.InscriptionFormation;
@@ -39,4 +48,5 @@ public interface InscriptionFormationRepository
     Optional<InscriptionFormation> findByCandidatIdAndFormationId(
             @Param("candidatId") Long candidatId,
             @Param("formationId") Long formationId);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

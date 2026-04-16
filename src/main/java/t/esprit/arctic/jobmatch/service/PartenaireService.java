@@ -15,7 +15,10 @@ import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 import java.util.stream.Collectors;
 import t.esprit.arctic.jobmatch.dto.PartenaireTopDTO;
 import t.esprit.arctic.jobmatch.dto.ComparaisonDTO;
+<<<<<<< HEAD
+=======
 import java.util.Map;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +57,11 @@ public class PartenaireService {
 
 
         notificationPartenaireService.notifierTousCandidats(
+<<<<<<< HEAD
+                "🎉 Nouveau partenaire !",
+=======
                 " Nouveau partenaire !",
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                 "'" + saved.getNom()
                         + "' vient de rejoindre JobMatch !",
                 "NOUVEAU_PARTENAIRE"
@@ -201,6 +208,8 @@ public class PartenaireService {
                 .limit(limit)
                 .collect(Collectors.toList());
     }
+<<<<<<< HEAD
+=======
 
 
     @Transactional
@@ -236,4 +245,5 @@ public class PartenaireService {
                 })
                 .collect(Collectors.toList());
     }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

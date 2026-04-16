@@ -3,6 +3,11 @@ package t.esprit.arctic.jobmatch.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+<<<<<<< HEAD
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+=======
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
@@ -11,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Document;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
@@ -19,10 +25,13 @@ import t.esprit.arctic.jobmatch.repository.DocumentRepository;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 
 import java.util.List;
+<<<<<<< HEAD
+=======
 import java.util.Base64;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 @RestController
 @RequestMapping("/api/documents")
@@ -34,15 +43,31 @@ public class DocumentController {
     private final CandidatRepository candidatRepository;
     private final UtilisateurRepository utilisateurRepository;
 
+<<<<<<< HEAD
+    // ✅ Récupérer le candidat connecté par son ID
+=======
     private final String ML_API_URL = "http://localhost:8000";
     private final RestTemplate restTemplate = new RestTemplate();
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private Candidat getCandidatConnecte() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new RuntimeException("Non authentifié");
         }
 
+<<<<<<< HEAD
+        // auth.getName() = email (mis par ton JwtFilter)
+        String email = auth.getName();
+
+        // Trouver l'utilisateur par email → récupérer son ID
+        Utilisateur user = utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé : " + email));
+
+        System.out.println("✅ Utilisateur connecté - ID: " + user.getId() + " | Email: " + email);
+
+        // Trouver le candidat par ID
+=======
         String email = auth.getName();
 
         Utilisateur user = utilisateurRepository.findByEmail(email)
@@ -50,6 +75,7 @@ public class DocumentController {
 
         System.out.println("Utilisateur connecté - ID: " + user.getId() + " | Email: " + email);
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         return candidatRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé pour ID: " + user.getId()));
     }
@@ -60,24 +86,42 @@ public class DocumentController {
         try {
             Candidat candidat = getCandidatConnecte();
             document.setCandidat(candidat);
+<<<<<<< HEAD
+            System.out.println("✅ Document lié au candidat ID: " + candidat.getId());
+        } catch (Exception e) {
+            System.out.println("⚠️ Liaison candidat échouée: " + e.getMessage());
+=======
             System.out.println(" Document lié au candidat ID: " + candidat.getId());
         } catch (Exception e) {
             System.out.println(" Liaison candidat échouée: " + e.getMessage());
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         }
         Document saved = documentRepository.save(document);
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 
+<<<<<<< HEAD
+    // READ ALL — uniquement les documents du candidat connecté
+=======
     // READ ALL
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping
     public ResponseEntity<List<Document>> getAll() {
         try {
             Candidat candidat = getCandidatConnecte();
+<<<<<<< HEAD
+            System.out.println("📄 Documents pour candidat ID: " + candidat.getId());
+            List<Document> docs = documentRepository.findByCandidatId(candidat.getId());
+            return ResponseEntity.ok(docs);
+        } catch (Exception e) {
+            System.out.println("⚠️ Fallback getAll: " + e.getMessage());
+=======
             System.out.println(" Documents pour candidat ID: " + candidat.getId());
             List<Document> docs = documentRepository.findByCandidatId(candidat.getId());
             return ResponseEntity.ok(docs);
         } catch (Exception e) {
             System.out.println(" Fallback getAll: " + e.getMessage());
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
             return ResponseEntity.ok(documentRepository.findAll());
         }
     }
@@ -136,6 +180,8 @@ public class DocumentController {
         documentRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+<<<<<<< HEAD
+=======
 
     // ============ SPRING DATA JPA KEYWORDS ============
 
@@ -674,4 +720,5 @@ public class DocumentController {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
         }
     }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

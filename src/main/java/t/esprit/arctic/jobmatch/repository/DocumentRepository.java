@@ -2,6 +2,12 @@ package t.esprit.arctic.jobmatch.repository;
 
 import t.esprit.arctic.jobmatch.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
+import java.util.List;
+
+public interface DocumentRepository extends JpaRepository<Document, Long> {
+    List<Document> findByCandidatId(Long candidatId);
+=======
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -72,4 +78,5 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findByNomStartingWithIgnoreCase(String prefix);
     List<Document> findByNomEndingWithIgnoreCase(String suffix);
     List<Document> findByCandidatIdAndTypeOrderByCreatedAtDesc(Long candidatId, String type);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

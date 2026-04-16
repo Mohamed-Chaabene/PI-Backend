@@ -27,9 +27,12 @@ public class Entretien {
     @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     private CategorieEntretien categorie;
 
+<<<<<<< HEAD
+=======
     @Column(name = "mode", length = 32)
     private String mode;
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @Enumerated(EnumType.STRING)
     @Column(nullable = true, columnDefinition = "VARCHAR(64)")
     private DomaineType domaine;
@@ -39,10 +42,13 @@ public class Entretien {
     private Candidat candidat;
 
     @ManyToOne(fetch = FetchType.LAZY)
+<<<<<<< HEAD
+=======
     @JoinColumn(name = "offre_id", nullable = true)
     private OffreEmploi offreEmploi;
 
     @ManyToOne(fetch = FetchType.LAZY)
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @JoinColumn(name = "recruteur_id", nullable = false)
     private Recruteur recruteur;
 
@@ -55,6 +61,14 @@ public class Entretien {
     @Column(length = 500, nullable = true)
     private String photo;
 
+<<<<<<< HEAD
+    private boolean completed = false;
+
+    /** Null pour les entretiens de type TEST (généraux, sans barème). */
+    @Column(nullable = true)
+    private Integer seuilReussite;
+
+=======
     @Column(name = "meeting_link", length = 500, nullable = true)
     private String meetingLink;
 
@@ -67,6 +81,7 @@ public class Entretien {
     @Column(name = "duree_minutes", nullable = true)
     private Integer dureeMinutes;
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @Column(nullable = true)
     private Double score;
 
@@ -93,7 +108,11 @@ public class Entretien {
         createdAt = LocalDateTime.now();
     }
 
+<<<<<<< HEAD
+    // Getters explicites
+=======
     // Getters
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     public Long getId() {
         return id;
     }
@@ -118,10 +137,13 @@ public class Entretien {
         return candidat;
     }
 
+<<<<<<< HEAD
+=======
     public OffreEmploi getOffreEmploi() {
         return offreEmploi;
     }
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     public Recruteur getRecruteur() {
         return recruteur;
     }
@@ -146,10 +168,13 @@ public class Entretien {
         return seuilReussite;
     }
 
+<<<<<<< HEAD
+=======
     public Integer getDureeMinutes() {
         return dureeMinutes;
     }
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     public Double getScore() {
         return score;
     }
@@ -191,10 +216,13 @@ public class Entretien {
         this.candidat = candidat;
     }
 
+<<<<<<< HEAD
+=======
     public void setOffreEmploi(OffreEmploi offreEmploi) {
         this.offreEmploi = offreEmploi;
     }
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     public void setRecruteur(Recruteur recruteur) {
         this.recruteur = recruteur;
     }
@@ -211,10 +239,13 @@ public class Entretien {
         this.seuilReussite = seuilReussite;
     }
 
+<<<<<<< HEAD
+=======
     public void setDureeMinutes(Integer dureeMinutes) {
         this.dureeMinutes = dureeMinutes;
     }
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     public void setScore(Double score) {
         this.score = score;
     }

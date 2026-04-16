@@ -63,8 +63,11 @@ public class SecurityConfig {
                         // ── Partenaires ───────────────────────────────────────
                         .requestMatchers("/api/partenaires/**").permitAll()
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
+<<<<<<< HEAD
+=======
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
                         // ── Search / Users ────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()
@@ -73,13 +76,24 @@ public class SecurityConfig {
                         // ── Offres emploi ─────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+<<<<<<< HEAD
+=======
                         .requestMatchers(HttpMethod.GET, "/api/candidatures/offre/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                         .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
 
                         // ── Feedbacks ─────────────────────────────────────────
                         .requestMatchers(HttpMethod.POST, "/api/feedbacks").hasAuthority("ROLE_CANDIDAT")
+<<<<<<< HEAD
+                        .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT")
+
+                        // ── Questions / Entretiens ────────────────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/questions/entretien/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+
+                        // ── Rôles admin ───────────────────────────────────────
+=======
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks/**").hasAnyAuthority("ROLE_ORGANISATEUR", "ROLE_CANDIDAT", "ROLE_ADMIN")
 
                         // ── Questions / Entretiens ────────────────────────────
@@ -88,6 +102,7 @@ public class SecurityConfig {
 
                         // ── Rôles admin ───────────────────────────────────────
                         .requestMatchers(HttpMethod.DELETE, "/api/users/*/delete-account").authenticated()
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                         .requestMatchers("/api/users/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
@@ -118,17 +133,61 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers(HttpMethod.DELETE, "/api/feedbacks-evenement/**").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
                         .requestMatchers(HttpMethod.GET, "/api/feedbacks-evenement/reputation").hasAnyAuthority("ROLE_CANDIDAT", "CANDIDAT")
+<<<<<<< HEAD
+
+                        // ── Vidéo progression & Chatbot ───────────────────────
+=======
                         //chatroom evenements
                         .requestMatchers("/api/chat/**").hasAnyRole("CANDIDAT", "ORGANISATEUR", "ADMIN")
                         .requestMatchers("/api/attestation/**").permitAll()
 
                         // ── Vidéo progression ─────────────────────────────────
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                         .requestMatchers(HttpMethod.GET, "/api/video-progression/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/video-progression/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
 
+<<<<<<< HEAD
+                        // ── Freelance Module ──────────────────────────────────────────────────
+                        // Specific paths MUST come before wildcards (Spring matches top-to-bottom)
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/missions/mes-missions")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/missions/*/candidatures")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.POST, "/api/freelance/missions")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.PUT, "/api/freelance/missions/*")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.DELETE, "/api/freelance/missions/*")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.POST, "/api/freelance/missions/*/postuler")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.PUT, "/api/freelance/candidatures/*/accepter")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.PUT, "/api/freelance/candidatures/*/rejeter")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        // Generic wildcard rules (after specific ones)
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/missions").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/missions/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/candidatures/**").authenticated()
+
+                        // ── AI Matching & Analytics ──────────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/ai/match-missions")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/ai/match-talents/*")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/ai/stats/freelancer")
+                        .hasAnyAuthority("ROLE_CANDIDAT", "ROLE_CLIENT_FREELANCE")
+                        .requestMatchers(HttpMethod.GET, "/api/freelance/ai/stats/client")
+                        .hasAuthority("ROLE_CLIENT_FREELANCE")
+                        // ── Fin Freelance Module ──────────────────────────────────────────────
+
+                        // This must ALWAYS be the LAST rule
+                        .anyRequest().authenticated()
+=======
                         .anyRequest().authenticated()
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -139,15 +198,22 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
+<<<<<<< HEAD
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*"));
+=======
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost"));
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         configuration.setAllowedMethods(
                 Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+<<<<<<< HEAD
+=======
         source.registerCorsConfiguration("/ws/**", configuration);
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         return source;
     }
 }

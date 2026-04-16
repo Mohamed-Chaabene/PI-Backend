@@ -2,6 +2,21 @@ package t.esprit.arctic.jobmatch.repository;
 
 import t.esprit.arctic.jobmatch.entity.Candidature;
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
+import java.util.List;
+
+public interface CandidatureRepository extends JpaRepository<Candidature, Long> {
+
+    // Trouver les candidatures d'un candidat
+    List<Candidature> findByCandidatId(Long candidatId);
+
+    // Trouver les candidatures par statut
+    List<Candidature> findByStatut(String statut);
+
+    // Trier par date du plus récent au plus ancien
+    List<Candidature> findAllByOrderByDateEnvoiDesc();
+    List<Candidature> findByCandidatIdAndStatut(Long candidatId, String statut);
+=======
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -68,5 +83,6 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
 
     List<Candidature> findByDateEnvoiBeforeAndArchiveFalse(LocalDateTime date);
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }
 

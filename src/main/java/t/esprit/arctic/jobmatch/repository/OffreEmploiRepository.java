@@ -1,11 +1,15 @@
 package t.esprit.arctic.jobmatch.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.entity.OffreEmploi;
+=======
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import t.esprit.arctic.jobmatch.dto.OffreStatistiquesDTO;
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 import java.util.Date;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.util.List;
 
 public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> {
@@ -15,6 +19,8 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
     List<OffreEmploi> findByRecruteurIdOrderByDatePublicationDesc(Long recruteurId);
     List<OffreEmploi> findByRecruteurEmailIgnoreCaseOrderByDatePublicationDesc(String email);
     List<OffreEmploi> findByEntrepriseIgnoreCaseOrderByDatePublicationDesc(String entreprise);
+<<<<<<< HEAD
+=======
 
     /**
      * JPQL COMPLEXE : Récupère les offres avec stats de candidatures
@@ -83,4 +89,5 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
             @Param("salaryMin") int salaryMin,
             @Param("salaryMax") int salaryMax,
             @Param("minCandidatures") long minCandidatures);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

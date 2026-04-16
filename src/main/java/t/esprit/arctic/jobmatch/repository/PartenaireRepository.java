@@ -1,5 +1,20 @@
 package t.esprit.arctic.jobmatch.repository;
 
+<<<<<<< HEAD
+import  org.springframework.data.jpa.repository.JpaRepository;
+import t.esprit.arctic.jobmatch.entity.Partenaire;
+import org.springframework.data.jpa.repository.Query;
+import java.util.List;
+
+
+import t.esprit.arctic.jobmatch.entity.TypePartenaire;
+
+public interface PartenaireRepository extends JpaRepository<Partenaire, Long>{
+    List<Partenaire> findByType(TypePartenaire type);
+    @Query("SELECT p FROM Partenaire p LEFT JOIN p.offres o GROUP BY p ORDER BY COUNT(o) DESC")
+    List<Partenaire> findTopByOffres();
+}
+=======
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import t.esprit.arctic.jobmatch.entity.Partenaire;
@@ -38,3 +53,4 @@ public interface PartenaireRepository extends JpaRepository<Partenaire, Long> {
             String statutActivite
     );
 }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0

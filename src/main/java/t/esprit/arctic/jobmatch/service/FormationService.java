@@ -2,12 +2,18 @@ package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.entity.Formation;
+import t.esprit.arctic.jobmatch.repository.FormationRepository;
+import java.util.List;
+=======
 import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Formation;
 import t.esprit.arctic.jobmatch.dto.FormationStatsDTO;
 import t.esprit.arctic.jobmatch.repository.FormationRepository;
 import java.util.List;
 import java.util.Map;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 @Service
 @RequiredArgsConstructor
@@ -78,6 +84,8 @@ public class FormationService {
     public List<Formation> getArchivees() {
         return formationRepository.findByStatut("Archivée");
     }
+<<<<<<< HEAD
+=======
 
 
     // JPQL global
@@ -185,4 +193,5 @@ public class FormationService {
 
         return null;
     }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

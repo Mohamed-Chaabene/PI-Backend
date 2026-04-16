@@ -3,7 +3,10 @@ package t.esprit.arctic.jobmatch.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+<<<<<<< HEAD
+=======
 import jakarta.validation.constraints.*;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,6 +15,18 @@ import java.util.List;
 @AllArgsConstructor
 public class EntretienDTO {
     private Long id;
+<<<<<<< HEAD
+    private String titre;
+    private LocalDateTime dateEntretien;
+    private String type;
+    private Long recruteurId;
+    private Long candidatId;
+    private String description;
+    private String photo;
+    private String domaine;
+    private boolean completed;
+    private Integer seuilReussite;
+=======
 
     @Size(max = 255, message = "Le titre ne peut pas depasser 255 caracteres")
     private String titre;
@@ -62,6 +77,7 @@ public class EntretienDTO {
              message = "La categorie doit etre : TECHNIQUE, RH, MANAGERIAL, FINAL, PRESELECTION ou TEST")
     private String categorie;
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     private LocalDateTime createdAt;
     private List<QuestionDTO> questions;
     private Double score;

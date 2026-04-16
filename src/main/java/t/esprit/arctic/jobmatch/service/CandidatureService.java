@@ -5,20 +5,57 @@ import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.dto.CandidatureDTO;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Candidature;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.repository.CandidatRepository;
+import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
+=======
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
 import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+<<<<<<< HEAD
+
+import java.util.*;
+import java.util.stream.Collectors;
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 @Service
 @RequiredArgsConstructor
 public class CandidatureService implements ICandidatureService {
 
     private final CandidatureRepository candidatureRepository;
     private final CandidatRepository candidatRepository;
+<<<<<<< HEAD
+
+    @Override
+    public CandidatureDTO creerCandidature(CandidatureDTO dto) {
+        Candidat candidat = candidatRepository.findById(dto.getCandidatId())
+                .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+
+        Candidature candidature = new Candidature();
+        candidature.setDateEnvoi(new Date());
+        candidature.setStatut("EN_ATTENTE");
+        candidature.setCandidat(candidat);
+        candidature.setNomComplet(dto.getNomComplet());
+        candidature.setEmail(dto.getEmail());
+        candidature.setTelephone(dto.getTelephone());
+        candidature.setDescription(dto.getDescription());
+        candidature.setFormation(dto.getFormation());
+        candidature.setExperience(dto.getExperience());
+        candidature.setCompetences(dto.getCompetences());
+        candidature.setLettreMotivation(dto.getLettreMotivation());
+        candidature.setDateDisponibilite(dto.getDateDisponibilite());
+        candidature.setPreavis(dto.getPreavis());
+        candidature.setAcceptContact(dto.getAcceptContact());
+        candidature.setAcceptRGPD(dto.isAcceptRGPD());
+
+        return convertToDTO(candidatureRepository.save(candidature));
+=======
     private final OffreEmploiRepository offreEmploiRepository;
 
     // ==================== CRUD ====================
@@ -48,11 +85,17 @@ public class CandidatureService implements ICandidatureService {
         }
 
         return convertToDTO(candidatureRepository.save(c));
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     }
 
     @Override
     public CandidatureDTO getCandidatureById(Long id) {
+<<<<<<< HEAD
+        return convertToDTO(candidatureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Candidature non trouvée")));
+=======
         return convertToDTO(findOrThrow(id));
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     }
 
     @Override
@@ -63,6 +106,12 @@ public class CandidatureService implements ICandidatureService {
 
     @Override
     public CandidatureDTO modifierStatut(Long id, String statut) {
+<<<<<<< HEAD
+        Candidature candidature = candidatureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
+        candidature.setStatut(statut);
+        return convertToDTO(candidatureRepository.save(candidature));
+=======
         if (!statut.equals("ACCEPTEE") && !statut.equals("REFUSEE")) {
             throw new RuntimeException("Statut invalide");
         }
@@ -70,6 +119,7 @@ public class CandidatureService implements ICandidatureService {
         Candidature c = findOrThrow(id);
         c.setStatut(statut);
         return convertToDTO(candidatureRepository.save(c));
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     }
 
     @Override
@@ -79,6 +129,9 @@ public class CandidatureService implements ICandidatureService {
 
     @Override
     public List<CandidatureDTO> rechercherParEntreprise(String entreprise) {
+<<<<<<< HEAD
+        return new ArrayList<>();
+=======
         return candidatureRepository.findAll()
                 .stream()
                 .filter(c -> c.getOffreEmploi() != null &&
@@ -86,6 +139,7 @@ public class CandidatureService implements ICandidatureService {
                         c.getOffreEmploi().getEntreprise().toLowerCase().contains(entreprise.toLowerCase()))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     }
 
     @Override
@@ -102,6 +156,25 @@ public class CandidatureService implements ICandidatureService {
 
     @Override
     public CandidatureDTO modifierCandidature(Long id, CandidatureDTO dto) {
+<<<<<<< HEAD
+        Candidature candidature = candidatureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
+
+        if (dto.getNomComplet() != null) candidature.setNomComplet(dto.getNomComplet());
+        if (dto.getEmail() != null) candidature.setEmail(dto.getEmail());
+        if (dto.getTelephone() != null) candidature.setTelephone(dto.getTelephone());
+        if (dto.getFormation() != null) candidature.setFormation(dto.getFormation());
+        if (dto.getExperience() != null) candidature.setExperience(dto.getExperience());
+        if (dto.getCompetences() != null) candidature.setCompetences(dto.getCompetences());
+        if (dto.getLettreMotivation() != null) candidature.setLettreMotivation(dto.getLettreMotivation());
+        if (dto.getDateDisponibilite() != null) candidature.setDateDisponibilite(dto.getDateDisponibilite());
+        if (dto.getPreavis() != null) candidature.setPreavis(dto.getPreavis());
+        if (dto.getDescription() != null) candidature.setDescription(dto.getDescription());
+        if (dto.getAcceptContact() != null) candidature.setAcceptContact(dto.getAcceptContact());
+        candidature.setAcceptRGPD(dto.isAcceptRGPD());
+
+        return convertToDTO(candidatureRepository.save(candidature));
+=======
         Candidature c = findOrThrow(id);
         mapDtoToEntity(dto, c);
         return convertToDTO(candidatureRepository.save(c));
@@ -202,14 +275,22 @@ public class CandidatureService implements ICandidatureService {
         if (dto.getAcceptContact() != null) c.setAcceptContact(dto.getAcceptContact());
 
         c.setAcceptRGPD(dto.isAcceptRGPD());
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     }
 
     private CandidatureDTO convertToDTO(Candidature c) {
         CandidatureDTO dto = new CandidatureDTO();
+<<<<<<< HEAD
+        dto.setId(c.getId());
+        dto.setDateEnvoi(c.getDateEnvoi());
+        dto.setStatut(c.getStatut());
+        dto.setLettreGeneree(c.getLettreGeneree());
+=======
 
         dto.setId(c.getId());
         dto.setDateEnvoi(c.getDateEnvoi());
         dto.setStatut(c.getStatut());
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         dto.setNomComplet(c.getNomComplet());
         dto.setEmail(c.getEmail());
         dto.setTelephone(c.getTelephone());
@@ -218,21 +299,30 @@ public class CandidatureService implements ICandidatureService {
         dto.setExperience(c.getExperience());
         dto.setCompetences(c.getCompetences());
         dto.setLettreMotivation(c.getLettreMotivation());
+<<<<<<< HEAD
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         dto.setDateDisponibilite(c.getDateDisponibilite());
         dto.setPreavis(c.getPreavis());
         dto.setAcceptContact(c.getAcceptContact());
         dto.setAcceptRGPD(c.getAcceptRGPD());
+<<<<<<< HEAD
+=======
         dto.setScoreEntretien(c.getScoreEntretien());
         dto.setTotalQuestionsEntretien(c.getTotalQuestionsEntretien());
         dto.setBonnesReponsesEntretien(c.getBonnesReponsesEntretien());
         dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
         if (c.getCandidat() != null) {
             dto.setCandidatId(c.getCandidat().getId());
             dto.setCandidatNom(c.getCandidat().getNom());
         }
+<<<<<<< HEAD
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
         return dto;
     }
 }

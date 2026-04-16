@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.dto.EvenementRequest;
 import t.esprit.arctic.jobmatch.dto.EvenementResponse;
 import t.esprit.arctic.jobmatch.dto.EvenementStatsResponse;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.service.EvenementService;
+=======
 import t.esprit.arctic.jobmatch.entity.Evenement;
 import t.esprit.arctic.jobmatch.entity.Participation;
 import t.esprit.arctic.jobmatch.service.EvenementService;
@@ -17,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 import java.util.List;
 
@@ -26,29 +30,50 @@ import java.util.List;
 public class EvenementController {
 
     private final EvenementService service;
+<<<<<<< HEAD
+
+    // ================= GET ALL =================
+=======
     private final ParticipationService participationService;
 
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping
     public ResponseEntity<List<EvenementResponse>> getAll() {
         return ResponseEntity.ok(service.getAll());
     }
 
+<<<<<<< HEAD
+    // ================= GET BY ID =================
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/{id}")
     public ResponseEntity<EvenementResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
+<<<<<<< HEAD
+    // GET par organisateur
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/organisateur/{organisateurId}")
     public ResponseEntity<List<EvenementResponse>> getByOrganisateur(@PathVariable Long organisateurId) {
         return ResponseEntity.ok(service.getByOrganisateur(organisateurId));
     }
 
+<<<<<<< HEAD
+    // ================= CREATE / PUBLISH =================
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @PostMapping
     public ResponseEntity<EvenementResponse> publier(@RequestBody EvenementRequest request) {
         return ResponseEntity.ok(service.publier(request));
     }
 
+<<<<<<< HEAD
+    // ================= UPDATE / MODIFY =================
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @PutMapping("/{id}")
     public ResponseEntity<EvenementResponse> modifier(
             @PathVariable Long id,
@@ -58,7 +83,11 @@ public class EvenementController {
         return ResponseEntity.ok(service.modifier(id, request, authentication.getName()));
     }
 
+<<<<<<< HEAD
+    // ================= DELETE / CANCEL =================
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> annuler(
             @PathVariable Long id,
@@ -68,14 +97,23 @@ public class EvenementController {
         return ResponseEntity.noContent().build();
     }
 
+<<<<<<< HEAD
+    // DELETE /api/evenements/admin/{id} → pour l'admin
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<Void> annulerAdmin(@PathVariable Long id) {
         service.annulerAdmin(id);
         return ResponseEntity.noContent().build();
     }
 
+<<<<<<< HEAD
+    //  GET /api/evenements/stats?mois=4&annee=2026&organisateurId=152
+// Retourne les statistiques d'un organisateur pour un mois
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/stats")
     public ResponseEntity<EvenementStatsResponse> getStats(
             @RequestParam int mois,
@@ -83,6 +121,8 @@ public class EvenementController {
             @RequestParam Long organisateurId) {
         return ResponseEntity.ok(service.getStats(mois, annee, organisateurId));
     }
+<<<<<<< HEAD
+=======
 
 
     @GetMapping("/export-ics/confirmed/{candidatId}")
@@ -125,4 +165,5 @@ public class EvenementController {
     private String formatIcsDate(LocalDateTime dt) {
         return dt.format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
     }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+<<<<<<< HEAD
+=======
 import java.time.LocalDateTime;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.util.Date;
 
 @Entity
@@ -61,6 +64,8 @@ public class Candidature {
     @ManyToOne
     @JoinColumn(name = "offre_id")
     private OffreEmploi offreEmploi;
+<<<<<<< HEAD
+=======
 
     // ============ CHAMPS POUR LES SCHEDULERS ============
 
@@ -96,4 +101,5 @@ public class Candidature {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "date_evaluation_entretien")
     private Date dateEvaluationEntretien;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

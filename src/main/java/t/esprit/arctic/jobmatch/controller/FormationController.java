@@ -21,17 +21,31 @@ public class FormationController {
 
     private final FormationService formationService;
 
+<<<<<<< HEAD
+    // ── Endpoints admin (routes statiques AVANT routes dynamiques) ────────────
 
+    // ✅ Liste complète pour admin (avec archivées)
+=======
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/admin/all")
     public ResponseEntity<List<Formation>> getAllForAdmin() {
         return ResponseEntity.ok(formationService.getAllForAdmin());
     }
 
+<<<<<<< HEAD
+    // ✅ Liste des archivées uniquement
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping("/admin/archivees")
     public ResponseEntity<List<Formation>> getArchivees() {
         return ResponseEntity.ok(formationService.getArchivees());
     }
 
+<<<<<<< HEAD
+    // ── Endpoints publics filtrage (routes statiques AVANT routes dynamiques) ─
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
     @GetMapping("/niveau/{niveau}")
     public ResponseEntity<List<Formation>> getByNiveau(@PathVariable String niveau) {
@@ -43,7 +57,13 @@ public class FormationController {
         return ResponseEntity.ok(formationService.getByCategorie(categorie));
     }
 
+<<<<<<< HEAD
+    // ── Endpoints publics génériques (routes génériques en dernier! ───────────
 
+    // ✅ Liste publique — exclut les archivées (sans paramètres = doit être après les routes spécifiques)
+=======
+
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @GetMapping
     public ResponseEntity<List<Formation>> getAll() {
         return ResponseEntity.ok(formationService.getAllActives());
@@ -74,15 +94,25 @@ public class FormationController {
         return ResponseEntity.noContent().build();
     }
 
+<<<<<<< HEAD
+    // ✅ Archiver une formation
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @PutMapping("/{id}/archiver")
     public ResponseEntity<Formation> archiver(@PathVariable Long id) {
         return ResponseEntity.ok(formationService.archiver(id));
     }
 
+<<<<<<< HEAD
+    // ✅ Désarchiver une formation
+=======
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @PutMapping("/{id}/desarchiver")
     public ResponseEntity<Formation> desarchiver(@PathVariable Long id) {
         return ResponseEntity.ok(formationService.desarchiver(id));
     }
+<<<<<<< HEAD
+=======
 
 
     @GetMapping("/stats")
@@ -122,4 +152,5 @@ public class FormationController {
         return ResponseEntity.ok(
             formationService.getFormationsPopulaires(scoreMin));
     }
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

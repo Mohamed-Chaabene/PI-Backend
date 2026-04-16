@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+package t.esprit.arctic.jobmatch.controller;
+=======
 /*package t.esprit.arctic.jobmatch.controller;
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,4 +42,8 @@ public class EmailController {
                     .body("❌ Erreur : " + e.getMessage());
         }
     }
+<<<<<<< HEAD
+}
+=======
 }*/
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0

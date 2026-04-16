@@ -1,17 +1,28 @@
 package t.esprit.arctic.jobmatch.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
+import t.esprit.arctic.jobmatch.entity.Formation;
+=======
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import t.esprit.arctic.jobmatch.dto.FormationStatsDTO;
 import t.esprit.arctic.jobmatch.entity.Formation;
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 import java.util.List;
 
 public interface FormationRepository extends JpaRepository<Formation, Long> {
 
     List<Formation> findByNiveau(String niveau);
+<<<<<<< HEAD
+    List<Formation> findByCategorie(String categorie);
+    List<Formation> findByStatut(String statut);
+
+    // ✅ Toutes les formations SAUF celles avec ce statut
+    List<Formation> findByStatutNot(String statut);
+=======
 
     List<Formation> findByCategorie(String categorie);
 
@@ -132,4 +143,5 @@ public interface FormationRepository extends JpaRepository<Formation, Long> {
     long countByStatutAndBadge(String statut, String badge);
 
     List<Formation> findByStatutAndBadgeIsNotNull(String statut);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }

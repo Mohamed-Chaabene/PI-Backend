@@ -8,6 +8,23 @@ import java.util.List;
 
 public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Long> {
 
+<<<<<<< HEAD
+    // Feedbacks d'une participation
+    List<FeedbackEvent> findByParticipationId(Long participationId);
+
+    // Feedbacks d'un événement via participation
+    @Query("SELECT f FROM FeedbackEvent f WHERE f.participation.evenement.id = :evenementId")
+    List<FeedbackEvent> findByEvenementId(@Param("evenementId") Long evenementId);
+
+    // Vérifier si candidat a déjà laissé un feedback pour cette participation
+    boolean existsByParticipationId(Long participationId);
+
+    // Note moyenne d'un événement
+    @Query("SELECT AVG(f.note) FROM FeedbackEvent f WHERE f.participation.evenement.id = :evenementId")
+    Double findNoteMoyenneByEvenementId(@Param("evenementId") Long evenementId);
+
+    // Tous les feedbacks d'un organisateur — données brutes
+=======
 
     List<FeedbackEvent> findByParticipationId(Long participationId);
 
@@ -23,6 +40,7 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
     Double findNoteMoyenneByEvenementId(@Param("evenementId") Long evenementId);
 
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p
@@ -31,7 +49,11 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
 """)
     List<FeedbackEvent> findByOrganisateurId(@Param("organisateurId") Long organisateurId);
 
+<<<<<<< HEAD
+    // Tous les feedbacks d'un organisateur par type
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p
@@ -44,7 +66,11 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
             @Param("type") String type
     );
 
+<<<<<<< HEAD
+    // Tous les feedbacks d'un organisateur par titre
+=======
 
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p
@@ -56,6 +82,8 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
             @Param("organisateurId") Long organisateurId,
             @Param("titre") String titre
     );
+<<<<<<< HEAD
+=======
 
 
     @Query("""
@@ -68,4 +96,5 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
     ORDER BY AVG(f.note) DESC
 """)
     List<String> findTypesFavorisParCandidat(@Param("candidatId") Long candidatId);
+>>>>>>> a46eeda7bd9a43913441aa8fcae79c5a5f2e16e0
 }
