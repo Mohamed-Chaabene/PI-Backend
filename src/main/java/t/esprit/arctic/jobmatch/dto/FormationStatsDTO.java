@@ -19,6 +19,14 @@ public class FormationStatsDTO {
             Long formationId, String titre, String categorie,
             String niveau, String statut, String badge,
             Long totalInscrits, Double noteMoyenne,
+            Long totalCertifies, int totalTermines) {
+        this(formationId, titre, categorie, niveau, statut, badge, totalInscrits, noteMoyenne, totalCertifies, (long) totalTermines);
+    }
+
+    public FormationStatsDTO(
+            Long formationId, String titre, String categorie,
+            String niveau, String statut, String badge,
+            Long totalInscrits, Double noteMoyenne,
             Long totalCertifies, Long totalTermines) {
 
         this.formationId   = formationId;
