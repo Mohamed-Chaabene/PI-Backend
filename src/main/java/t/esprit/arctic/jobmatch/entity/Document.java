@@ -29,25 +29,25 @@ public class Document {
     private String profil;
 
     @Column(columnDefinition = "TEXT")
-    private String competences; // JSON string
+    private String competences;
 
     @Column(columnDefinition = "TEXT")
-    private String langues; // JSON string
+    private String langues;
 
     @Column(name = "centres_interet", columnDefinition = "TEXT")
-    private String centresInteret; // JSON string
+    private String centresInteret;
 
     @Column(columnDefinition = "TEXT")
-    private String experiences; // JSON string
+    private String experiences;
 
     @Column(columnDefinition = "TEXT")
-    private String formations; // JSON string
+    private String formations;
 
     @Column(name = "photo_name")
     private String photoName;
 
     @Column(name = "photo_data", columnDefinition = "LONGTEXT")
-    private String photoData; // Base64
+    private String photoData;
 
     @Enumerated(EnumType.STRING)
     private TypeDocument type;
@@ -66,10 +66,32 @@ public class Document {
     @Column(name = "date_creation")
     private LocalDateTime dateCreation;
 
+    @Column(name = "archive", nullable = false)
+    private Boolean archive = false;
+
     @PrePersist
     protected void onCreate() {
         dateCreation = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (scoreATS == null) scoreATS = 0;
+        if (archive == null) archive = false;
     }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "score_ats")
+    private Integer scoreATS;
+
 
     @JsonIgnore
     @OneToOne(mappedBy = "document")

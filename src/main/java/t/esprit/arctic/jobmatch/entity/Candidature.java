@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -60,4 +61,27 @@ public class Candidature {
     @ManyToOne
     @JoinColumn(name = "offre_id")
     private OffreEmploi offreEmploi;
+
+    // ============ CHAMPS POUR LES SCHEDULERS ============
+
+    @Column(name = "nb_relances")
+    private Integer nbRelances = 0;
+
+    @Column(name = "derniere_relance")
+    private LocalDateTime derniereRelance;
+
+    @Column(name = "dernier_rappel")
+    private LocalDateTime dernierRappel;
+
+    @Column(name = "necessite_attention")
+    private Boolean necessiteAttention = false;
+
+    @Column(name = "date_reponse")
+    private LocalDateTime dateReponse;
+
+    @Column(name = "archive")
+    private Boolean archive = false;
+
+    @Column(name = "archive_date")
+    private LocalDateTime archiveDate;
 }
