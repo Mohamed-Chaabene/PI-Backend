@@ -25,6 +25,9 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import java.io.ByteArrayInputStream;
 import java.util.Base64;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api/chatbot")
 @CrossOrigin(origins = "http://localhost:4200", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
