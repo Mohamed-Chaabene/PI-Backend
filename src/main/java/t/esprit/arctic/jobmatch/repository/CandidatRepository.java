@@ -16,7 +16,6 @@ public interface CandidatRepository extends JpaRepository<Candidat, Long> {
     Optional<Candidat> findByEmail(String email);
     List<Candidat> findByLocalisation(Localisation localisation);
 
-    // JPQL to delete candidat by user ID (handles cascade)
     @Modifying
     @Transactional
     @Query("DELETE FROM Candidat c WHERE c.id = ?1")

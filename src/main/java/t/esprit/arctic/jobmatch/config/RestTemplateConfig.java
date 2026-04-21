@@ -1,4 +1,4 @@
-// src/main/java/t/esprit/arctic/jobmatch/config/RestTemplateConfig.java
+// Fichier: config/RestTemplateConfig.java
 package t.esprit.arctic.jobmatch.config;
 
 import org.springframework.context.annotation.Bean;

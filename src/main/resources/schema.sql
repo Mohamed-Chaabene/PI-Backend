@@ -7,18 +7,6 @@ ALTER TABLE entretiens MODIFY COLUMN seuil_reussite INT NULL;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS receiver_email VARCHAR(255) NULL;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS receiver_name VARCHAR(255) NULL;
 
--- Notifications table for real-time notifications
-CREATE TABLE IF NOT EXISTS notifications (
-    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    sender_id BIGINT NOT NULL,
-    type VARCHAR(50) NOT NULL,
-    message VARCHAR(500) NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES utilisateur(id),
-    FOREIGN KEY (sender_id) REFERENCES utilisateur(id),
-    INDEX idx_user_id (user_id),
-    INDEX idx_created_at (created_at)
-);
+-- Allow NULL sender_id for system notifications (profile incomplete, etc.)
+ALTER TABLE notifications MODIFY COLUMN sender_id BIGINT NULL;
 
