@@ -127,6 +127,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/video-progression/**").permitAll()
                         .requestMatchers("/api/chatbot/**").permitAll()
 
+                        // ── Parcours Multi-Niveaux ───────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/parcours/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/parcours/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/parcours/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/parcours/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/parcours/**").permitAll()
+                        .requestMatchers("/api/inscription-parcours/**").permitAll()
+                        .requestMatchers("/api/quiz-niveau/**").permitAll()
+
                         .anyRequest().authenticated()
 
                 )
@@ -141,7 +150,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost"));
         configuration.setAllowedMethods(
-                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

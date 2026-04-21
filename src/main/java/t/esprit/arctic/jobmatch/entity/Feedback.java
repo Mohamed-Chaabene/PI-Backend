@@ -30,12 +30,16 @@ public class Feedback {
 
     @ManyToOne
     @JoinColumn(name = "formation_id", nullable = false)
-    @JsonIgnoreProperties({"inscriptions", "competences"})
+    @JsonIgnoreProperties({"inscriptions", "competences", "hibernateLazyInitializer", "handler"})
     private Formation formation;
 
     @ManyToOne
     @JoinColumn(name = "candidat_id", nullable = false)
-    @JsonIgnoreProperties({"motDePasse", "inscriptions", "candidatures", "competences", "educations", "backgrounds"})
+    @JsonIgnoreProperties({
+            "motDePasse", "inscriptions", "candidatures",
+            "competences", "educations", "backgrounds",
+            "hibernateLazyInitializer", "handler"
+    })
     private Candidat candidat;
 
     @ManyToOne

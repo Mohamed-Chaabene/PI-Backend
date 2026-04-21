@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Feedback;
 import t.esprit.arctic.jobmatch.dto.FeedbackDTO;
 import org.springframework.beans.BeanUtils;
+import t.esprit.arctic.jobmatch.dto.FeedbackMacroDTO;
+import t.esprit.arctic.jobmatch.dto.FeedbackMicroDTO;
 import t.esprit.arctic.jobmatch.service.FeedbackService;
 import java.util.List;
 import java.util.Map;
@@ -68,10 +70,27 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbackService.getByCandidatAndFormation(candidatId, formationId));
     }
 
+    @GetMapping("/parcours/{parcoursId}")
+    public ResponseEntity<List<Feedback>> getByParcours(@PathVariable Long parcoursId) {
+        return ResponseEntity.ok(feedbackService.getByParcours(parcoursId));
+    }
+
     @GetMapping("/formation/{formationId}/moyenne")
     public ResponseEntity<Map<String, Object>> getNoteMoyenne(@PathVariable Long formationId) {
         Double moyenne = feedbackService.getNoteMoyenne(formationId);
         int total = feedbackService.getByFormation(formationId).size();
         return ResponseEntity.ok(Map.of("moyenne", moyenne, "total", total));
+    }
+
+    @PostMapping("/micro")
+    public ResponseEntity<Void> saveMicro(@Valid @RequestBody FeedbackMicroDTO dto) {
+        feedbackService.saveMicro(dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/macro")
+    public ResponseEntity<Void> saveMacro(@Valid @RequestBody FeedbackMacroDTO dto) {
+        feedbackService.saveMacro(dto);
+        return ResponseEntity.ok().build();
     }
 }

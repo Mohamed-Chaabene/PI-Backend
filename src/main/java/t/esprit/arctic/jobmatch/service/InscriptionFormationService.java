@@ -83,6 +83,46 @@ public class InscriptionFormationService {
         return existing;
     }
 
+    @Transactional
+    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation) {
+        if (formation == null) return null;
+
+        // Vérifier si déjà inscrit
+        return inscriptionRepository.findByCandidatIdAndFormationId(candidat.getId(), formation.getId())
+                .orElseGet(() -> {
+                    InscriptionFormation newIns = new InscriptionFormation();
+                    newIns.setCandidat(candidat);
+                    newIns.setFormation(formation);
+                    newIns.setDateInscription(new Date());
+                    newIns.setStatut("EnCours");
+                    newIns.setProgression(0.0);
+                    return inscriptionRepository.save(newIns);
+                });
+    }
+
+    /**
+     * Force la progression d'une formation à 100% (utilisé lors de la validation d'un niveau dans un parcours).
+     */
+    @Transactional
+    public void marquerCommeTerminee(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation) {
+        if (candidat == null || formation == null) return;
+
+        InscriptionFormation ins = inscriptionRepository.findByCandidatIdAndFormationId(candidat.getId(), formation.getId())
+                .orElseGet(() -> {
+                    InscriptionFormation newIns = new InscriptionFormation();
+                    newIns.setCandidat(candidat);
+                    newIns.setFormation(formation);
+                    newIns.setDateInscription(new Date());
+                    return newIns;
+                });
+
+        ins.setProgression(100.0);
+        ins.setStatut("Terminé");
+        inscriptionRepository.save(ins);
+        System.out.println("✅ Formation synchronisée à 100% pour " + candidat.getNom() + " sur " + formation.getTitre());
+    }
+
+
     public void delete(Long id) {
         getById(id);
         inscriptionRepository.deleteById(id);

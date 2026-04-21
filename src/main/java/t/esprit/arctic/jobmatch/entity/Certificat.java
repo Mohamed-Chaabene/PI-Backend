@@ -24,4 +24,9 @@ public class Certificat {
     @OneToOne
     @JoinColumn(name = "inscription_id", nullable = false)
     private InscriptionFormation inscription;
+
+    /** Optionnel — lié à un parcours si le certificat est généré via le quiz Expert */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parcours_id")
+    private ParcoursFormation parcours;
 }

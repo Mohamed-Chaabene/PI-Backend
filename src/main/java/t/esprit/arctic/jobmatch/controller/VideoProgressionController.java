@@ -25,6 +25,8 @@ public class VideoProgressionController {
 
     private final VideoProgressionRepository     videoProgressionRepo;
     private final InscriptionFormationRepository inscriptionRepo;
+    private final t.esprit.arctic.jobmatch.repository.InscriptionParcoursRepository inscriptionParcoursRepo;
+
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient   http   = HttpClient.newHttpClient();
@@ -96,13 +98,13 @@ public class VideoProgressionController {
     public ResponseEntity<Map<String, Object>> genererQuizFinal(
             @RequestBody Map<String, Object> body) throws Exception {
 
-        Long   inscriptionId = Long.valueOf(body.get("inscriptionId").toString());
-        String titreFomation = body.getOrDefault("titreFormation", "").toString();
-        String categorie     = body.getOrDefault("categorie", "").toString();
-        String playlistId    = body.getOrDefault("playlistId", "").toString();
+        Long   inscriptionId = body.get("inscriptionId") != null ? Long.valueOf(body.get("inscriptionId").toString()) : 0L;
+        String titreFormation = Objects.toString(body.get("titreFormation"), "");
+        String categorie     = Objects.toString(body.get("categorie"), "");
+        String playlistId    = Objects.toString(body.get("playlistId"), "");
+        String niveau        = Objects.toString(body.get("niveau"), "");
 
-        int totalVideos = Integer.parseInt(
-                body.getOrDefault("totalVideos", "1").toString());
+        int totalVideos = body.get("totalVideos") != null ? Integer.parseInt(body.get("totalVideos").toString()) : 1;
         int progression = calculerProgression(inscriptionId, totalVideos);
 
         if (progression < 100) {
@@ -123,12 +125,13 @@ public class VideoProgressionController {
         List<String> videoTitles = getVideoTitles(videoIds);
 
         List<Map<String, Object>> questions =
-                genererQuizFinal(titreFomation, categorie, videoTitles);
+                genererQuizFinal(titreFormation, categorie, videoTitles, niveau);
 
         Map<String, Object> result = new HashMap<>();
         result.put("questions",    questions);
         result.put("inscriptionId", inscriptionId);
-        result.put("scoreMinimum", 70); // 70% pour obtenir le certificat
+        result.put("niveau",       niveau);
+        result.put("scoreMinimum", "EXPERT".equals(niveau) ? 80 : 70); 
         return ResponseEntity.ok(result);
     }
 
@@ -137,9 +140,14 @@ public class VideoProgressionController {
     public ResponseEntity<Map<String, Object>> soumettreQuizFinal(
             @RequestBody Map<String, Object> body) {
 
-        Long inscriptionId = Long.valueOf(body.get("inscriptionId").toString());
-        int  score         = Integer.parseInt(body.get("score").toString());
-        boolean reussi     = score >= 70;
+        Long inscriptionId = body.get("inscriptionId") != null ? Long.valueOf(body.get("inscriptionId").toString()) : 0L;
+        int  score         = body.get("score") != null ? Integer.parseInt(body.get("score").toString()) : 0;
+        
+        // Sécurité sur le champ niveau pour éviter le NPE
+        String niveauStr = body.get("niveau") != null ? body.get("niveau").toString() : "";
+        Long parcoursId = body.get("parcoursId") != null ? Long.valueOf(body.get("parcoursId").toString()) : null;
+
+        boolean reussi = score >= (("EXPERT".equals(niveauStr)) ? 80 : 70);
 
         Map<String, Object> result = new HashMap<>();
         result.put("score",  score);
@@ -147,33 +155,49 @@ public class VideoProgressionController {
 
         if (reussi) {
             try {
+                // 1. Validation de l'inscription individuelle
                 inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
                     ins.setStatut("Terminé");
+                    ins.setProgression(100.0);
                     inscriptionRepo.save(ins);
+
+                    // 2. Si c'est un parcours et niveau EXPERT, validation du parcours
+                    if (parcoursId != null && "EXPERT".equals(niveauStr) && ins.getCandidat() != null) {
+                        inscriptionParcoursRepo.findByCandidatIdAndParcoursId(ins.getCandidat().getId(), parcoursId)
+                                .ifPresent(ip -> {
+                                    ip.setStatut("TERMINE");
+                                    inscriptionParcoursRepo.save(ip);
+                                    System.out.println("🏆 Parcours " + parcoursId + " terminé avec succès !");
+                                });
+                    }
                 });
+                
                 result.put("certificatGenere", true);
                 result.put("message",
-                        "Félicitations ! Vous avez obtenu " + score
-                                + "% — Votre certificat est disponible !");
+                        "Félicitations ! Vous avez réussi avec " + score
+                                + "%. Votre certificat est disponible !");
             } catch (Exception e) {
                 result.put("certificatGenere", false);
-                result.put("message", "Score validé mais erreur certificat.");
+                result.put("message", "Score validé mais erreur lors de la mise à jour.");
             }
         } else {
             result.put("certificatGenere", false);
             result.put("message",
                     "Score insuffisant (" + score
-                            + "%). Il faut 70% minimum. Vous pouvez réessayer !");
+                            + "%). Il faut " + (parcoursId != null && "EXPERT".equals(niveauStr) ? "80" : "70") 
+                            + "% minimum. Vous pouvez réessayer !");
         }
         return ResponseEntity.ok(result);
     }
+
 
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> genererQuizFinal(
             String titreFormation,
             String categorie,
-            List<String> videoTitles) {
+            List<String> videoTitles,
+            String niveau) {
 
         if (geminiApiKey == null || geminiApiKey.isEmpty()) {
             return getQuizFinalFallback(titreFormation);
@@ -189,20 +213,21 @@ public class VideoProgressionController {
                 
                 Le candidat vient de terminer la formation complète :
                 "%s"
+                Niveau ciblé : %s
                 
-                Voici les chapitres/vidéos qu'il a regardés :
+                Voici les titres des vidéos qu'il a étudiées :
                 - %s
                 
-                Génère exactement 10 questions QCM d'évaluation finale
-                qui couvrent l'ensemble des concepts importants de cette formation.
+                Génère exactement 10 questions QCM d'évaluation technique
+                parfaitement adaptées au niveau %s.
                 
                 Règles :
-                - Questions variées couvrant différents aspects de la formation
-                - Difficulté progressive (3 faciles, 4 moyennes, 3 difficiles)
-                - 4 options par question (A, B, C, D)
-                - Une seule bonne réponse
-                - Questions techniques et concrètes, PAS génériques
-                - Inclure une explication pour la bonne réponse
+                - Questions variées couvrant l'ensemble de la formation.
+                - Difficulté : %s.
+                - 4 options par question (A, B, C, D).
+                - Une seule bonne réponse.
+                - Questions techniques et concrètes (syntaxe, architecture, cas pratiques).
+                - Inclure une explication détaillée pour la bonne réponse.
                 
                 Réponds UNIQUEMENT en JSON valide sans markdown ni backticks :
                 [
@@ -214,15 +239,18 @@ public class VideoProgressionController {
                     "difficulte": "facile"
                   }
                 ]
-                """.formatted(categorie, titreFormation, listeVideos);
+                """.formatted(categorie, titreFormation, niveau.isEmpty() ? "Standard" : niveau, 
+                           listeVideos, niveau.isEmpty() ? "Intermédiaire" : niveau,
+                           "EXPERT".equals(niveau) ? "Haut Niveau / Architecture" : "Progressive");
 
             String requestBody = mapper.writeValueAsString(Map.of(
-                    "model", "llama-3.1-8b-instant", // Modèle courant gratuit et ultra-rapide
+                    "model", "llama-3.1-8b-instant",
                     "messages", List.of(Map.of(
                             "role", "user",
                             "content", prompt
                     )),
-                    "temperature", 0.5
+                    "temperature", 0.5,
+                    "max_tokens", 4096
             ));
 
             String url = "https://api.groq.com/openai/v1/chat/completions";
@@ -231,7 +259,7 @@ public class VideoProgressionController {
                     HttpRequest.newBuilder()
                             .uri(URI.create(url))
                             .header("Content-Type", "application/json")
-                            .header("Authorization", "Bearer " + geminiApiKey) // on a gardé l'ancien nom de variable
+                            .header("Authorization", "Bearer " + geminiApiKey)
                             .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                             .build(),
                     HttpResponse.BodyHandlers.ofString()
@@ -246,20 +274,23 @@ public class VideoProgressionController {
             }
 
             String text = root.path("choices").get(0)
-                    .path("message").path("content").asText("[]").trim()
-                    .replaceAll("(?s)```json\\s*", "")
-                    .replaceAll("(?s)```\\s*", "").trim();
+                    .path("message").path("content").asText("[]").trim();
 
+            // Hardened JSON Extraction
             int start = text.indexOf('[');
             int end   = text.lastIndexOf(']');
             if (start >= 0 && end > start) {
                 text = text.substring(start, end + 1);
             }
 
+            // Nettoyer les éventuels backticks markdown
+            text = text.replaceAll("(?s)```json\\s*", "")
+                       .replaceAll("(?s)```\\s*", "").trim();
+
             List<Map<String, Object>> questions =
                     mapper.readValue(text, List.class);
 
-            System.out.println("✅ Quiz final généré par Gemini: "
+            System.out.println("✅ Quiz final généré par l'IA: "
                     + questions.size() + " questions pour " + titreFormation);
             return questions;
 

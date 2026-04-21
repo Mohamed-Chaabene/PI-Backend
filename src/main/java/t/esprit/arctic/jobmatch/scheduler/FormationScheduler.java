@@ -5,12 +5,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import t.esprit.arctic.jobmatch.repository.FormationRepository;
 import t.esprit.arctic.jobmatch.service.FormationService;
+import t.esprit.arctic.jobmatch.service.ParcoursFormationService;
 
 @Component
 @RequiredArgsConstructor
 public class FormationScheduler {
 
     private final FormationService formationService;
+    private final ParcoursFormationService parcoursService;
     private final FormationRepository formationRepo;
 
     @Scheduled(cron = "0 0 2 * * *")
@@ -20,11 +22,12 @@ public class FormationScheduler {
         System.out.println("╚══════════════════════════════════════╝");
 
         var result = formationService.refreshScoresEtBadges();
+        parcoursService.refreshGlobalStats();
 
         System.out.println("══ Résumé ══════════════════════════════");
         System.out.println("  Formations mises à jour : " + result.get("miseAJour"));
-        System.out.println("  Formations archivées    : " + result.get("archives"));
         System.out.println("  Total traité            : " + result.get("total"));
+        System.out.println("  Parcours mis à jour     : OK");
         System.out.println("════════════════════════════════════════");
     }
 
