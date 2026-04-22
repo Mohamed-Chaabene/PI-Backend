@@ -10,3 +10,12 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS receiver_name VARCHAR(255) NULL;
 -- Allow NULL sender_id for system notifications (profile incomplete, etc.)
 ALTER TABLE notifications MODIFY COLUMN sender_id BIGINT NULL;
 
+-- Create candidat_competence join table for many-to-many relationship
+CREATE TABLE IF NOT EXISTS candidat_competence (
+  candidat_id BIGINT NOT NULL,
+  competence_id BIGINT NOT NULL,
+  PRIMARY KEY (candidat_id, competence_id),
+  FOREIGN KEY (candidat_id) REFERENCES candidat(id) ON DELETE CASCADE,
+  FOREIGN KEY (competence_id) REFERENCES competence(id) ON DELETE CASCADE
+);
+
