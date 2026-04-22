@@ -2,6 +2,8 @@ package t.esprit.arctic.jobmatch.repository;
 
 import t.esprit.arctic.jobmatch.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
+import t.esprit.arctic.jobmatch.entity.TypeDocument;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -13,6 +15,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findByType(String type);
 
 
+    List<Document> findByType(TypeDocument type);
 
      //Trouve les documents orphelins non associés à un candidat
 

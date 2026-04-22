@@ -1,51 +1,61 @@
 package t.esprit.arctic.jobmatch.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Document;
+import t.esprit.arctic.jobmatch.entity.TypeDocument;
 import t.esprit.arctic.jobmatch.repository.DocumentRepository;
+import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DocumentScheduler {
 
     private final DocumentRepository documentRepository;
+    private final CandidatureRepository candidatureRepository;
 
-
+    /**
+      S'exécute tous les jours à 02:00
+     */
     @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void nettoyerDocumentsAnciens() {
-        System.out.println(" [SCHEDULER] Nettoyage des documents anciens - " + LocalDateTime.now());
+        log.info(" [SCHEDULER] Nettoyage des documents anciens - {}", LocalDateTime.now());
 
         LocalDateTime dateLimite = LocalDateTime.now().minusDays(30);
         List<Document> documentsAnciens = documentRepository.findByUpdatedAtBefore(dateLimite);
 
         int compteur = 0;
         for (Document doc : documentsAnciens) {
-            System.out.println("Suppression: " + doc.getNom());
+            log.info("Suppression: {}", doc.getNom());
             documentRepository.delete(doc);
             compteur++;
         }
 
-        System.out.println(" Nettoyage terminé - " + compteur + " document(s) supprimé(s)");
+        log.info(" Nettoyage terminé - {} document(s) supprimé(s)", compteur);
     }
 
-
-
-     // Tâche 2: Met à jour les scores ATS des CV S'exécute tous les jours à 03:00
-
+    /**
+     * Tâche 2: Met à jour les scores ATS des CV
+     * S'exécute tous les jours à 03:00
+     */
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void mettreAJourScoresATS() {
-        System.out.println(" [SCHEDULER] Mise à jour scores ATS - " + LocalDateTime.now());
+        log.info("📊 [SCHEDULER] Mise à jour scores ATS - {}", LocalDateTime.now());
 
         try {
-            List<Document> cvDocuments = documentRepository.findByType("CV");
+            // Utiliser l'Enum TypeDocument.CV au lieu de String "CV"
+            List<Document> cvDocuments = documentRepository.findByType(TypeDocument.CV);
 
             int compteur = 0;
             for (Document cv : cvDocuments) {
@@ -53,25 +63,61 @@ public class DocumentScheduler {
                 cv.setScoreATS(scoreATS);
                 documentRepository.save(cv);
                 compteur++;
-                System.out.println(cv.getNom() + " - Score ATS: " + scoreATS + "%");
+                log.info("{} - Score ATS: {}%", cv.getNom(), scoreATS);
             }
 
-            System.out.println( compteur + " CV(s) mis à jour");
+            log.info(" {} CV(s) mis à jour", compteur);
 
         } catch (Exception e) {
-            System.err.println(" Erreur mise à jour scores: " + e.getMessage());
+            log.error(" Erreur mise à jour scores: {}", e.getMessage());
         }
     }
 
+    /**
+     * Tâche 3: Archivage automatique des candidatures après 7 jours
+     * S'exécute tous les jours à minuit
+     */
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void archiverCandidaturesAuto() {
+        log.info(" [SCHEDULER] Archivage auto des candidatures - {}", LocalDateTime.now());
 
+        try {
+            // Date limite = maintenant - 7 jours
+            Date dateLimite = new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7));
+
+            // Date d'archivage = maintenant
+            LocalDateTime dateArchive = LocalDateTime.now();
+
+            // Archiver directement avec les 2 paramètres
+            int nbArchive = candidatureRepository.archiverCandidaturesPlusDe7Jours(dateLimite, dateArchive);
+
+            if (nbArchive > 0) {
+                log.info(" {} candidature(s) archivées (plus de 7 jours)", nbArchive);
+            } else {
+                log.info(" Aucune candidature à archiver aujourd'hui");
+            }
+
+        } catch (Exception e) {
+            log.error(" Erreur lors de l'archivage automatique: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Tâche 4: Test du scheduler (commenté par défaut)
+     * Pour tester, décommentez l'annotation @Scheduled
+     */
     // @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void testScheduler() {
-        System.out.println(" [TEST] Scheduler fonctionne - " + LocalDateTime.now());
+        log.info(" [TEST] Scheduler fonctionne - {}", LocalDateTime.now());
         long count = documentRepository.count();
-        System.out.println(" Nombre total de documents: " + count);
+        log.info(" Nombre total de documents: {}", count);
     }
 
+    /**
+     * Calcule le score ATS d'un CV basé sur son contenu
+     */
     private int calculerScoreATS(String contenuHTML) {
         if (contenuHTML == null || contenuHTML.isEmpty()) {
             return 0;
@@ -86,9 +132,6 @@ public class DocumentScheduler {
         if (contenuTexte.contains("diplôme") || contenuTexte.contains("diplome")) score += 20;
         if (contenuTexte.contains("projet") || contenuTexte.contains("project")) score += 20;
 
-        return score;
+        return Math.min(score, 100);
     }
-
-
-
 }
