@@ -111,7 +111,7 @@ public class InscriptionParcoursService {
                 Formation f = parcours.getFormationParNiveau(niv);
                 if (f != null) {
                     System.out.println("✅ Marquage formation " + f.getTitre() + " comme TERMINEE pour le niveau " + niv);
-                    inscriptionFormationService.marquerCommeTerminee(ins.getCandidat(), f);
+                    inscriptionFormationService.marquerCommeTerminee(ins.getCandidat(), f, parcours.getId());
                 }
             }
         }
