@@ -249,14 +249,10 @@ public class EntretienService {
 
         // Vérifier que le recruteur est propriétaire de l'entretien
         if (!entretien.getRecruteur().getId().equals(recruteurId)) {
-            throw new RuntimeException("Accès non autorisé à cet entretien");
+            throw new RuntimeException("Vous n'avez pas le droit de supprimer cet entretien");
         }
 
-        // Vérifier que l'entretien n'est pas déjà terminé
-        if (entretien.isCompleted()) {
-            throw new RuntimeException("Impossible de supprimer un entretien terminé");
-        }
-
+        // Allow deletion even if completed (for cleanup/management purposes)
         entretienRepository.delete(entretien);
     }
 
