@@ -106,6 +106,13 @@ public class OffreEmploiController {
             recruteur.getNom(),
             offre.getTitre()
         );
+        
+        // Notify all candidates in the same location
+        notificationService.notifyCandidatesByJobLocation(
+            offre.getLocation(),
+            offre.getTitre(),
+            recruteur.getNom()
+        );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedOffre);
     }

@@ -28,6 +28,7 @@ public class ParticipationService {
     private final CandidatRepository candidatRepository;
     private final QRCodeService qrCodeService;
     private final ParticipationRepository participationRepository;
+    private final NotificationService notificationService;
 
 
     public ParticipationResponse confirmer(ParticipationRequest request) {
@@ -51,7 +52,19 @@ public class ParticipationService {
                 .candidat(candidat)
                 .build();
 
-        return toResponse(repository.save(p));
+        ParticipationResponse saved = toResponse(repository.save(p));
+        
+        try {
+            notificationService.notifyFollowersOfEventParticipation(
+                candidat.getId(),
+                candidat.getNom(),
+                evenement.getTitre()
+            );
+        } catch (Exception e) {
+            System.err.println("Error notifying followers of event participation: " + e.getMessage());
+        }
+        
+        return saved;
     }
 
     public ParticipationResponse annuler(Long id) {
