@@ -6,8 +6,10 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Feedback {
 
@@ -30,7 +32,7 @@ public class Feedback {
 
     @ManyToOne
     @JoinColumn(name = "formation_id", nullable = false)
-    @JsonIgnoreProperties({"inscriptions", "competences", "hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "inscriptions", "competences", "hibernateLazyInitializer", "handler" })
     private Formation formation;
 
     @ManyToOne
@@ -48,7 +50,7 @@ public class Feedback {
 
     @PrePersist
     public void prePersist() {
-        this.dateCreation    = new Date();
+        this.dateCreation = new Date();
         this.dateModification = new Date();
     }
 

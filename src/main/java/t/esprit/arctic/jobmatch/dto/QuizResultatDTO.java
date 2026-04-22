@@ -21,5 +21,6 @@ public class QuizResultatDTO {
     private String nextNiveauLabel;     // null si Expert ou échoué
     private NiveauOrdre niveauSuivantDebloque;
     private String message;
+    private Long inscriptionId;
     private List<CorrectionQuestionDTO> corrections;
 }

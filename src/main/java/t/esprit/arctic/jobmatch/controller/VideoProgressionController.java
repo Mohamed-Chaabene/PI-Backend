@@ -26,6 +26,7 @@ public class VideoProgressionController {
     private final VideoProgressionRepository     videoProgressionRepo;
     private final InscriptionFormationRepository inscriptionRepo;
     private final t.esprit.arctic.jobmatch.repository.InscriptionParcoursRepository inscriptionParcoursRepo;
+    private final t.esprit.arctic.jobmatch.service.CertificatService certificatService;
 
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -63,8 +64,23 @@ public class VideoProgressionController {
         vp.setDateVue(LocalDateTime.now());
         videoProgressionRepo.save(vp);
 
-        int progression = calculerProgression(inscriptionId, totalVideos);
+        int progression = calculerProgression(inscriptionId, formationId, totalVideos);
         mettreAJourInscription(inscriptionId, progression);
+
+        // Si progression 100% au niveau EXPERT, on active l'exigence de macro-feedback
+        if (progression >= 100) {
+            inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
+                if (ins.getCandidat() != null) {
+                    inscriptionParcoursRepo.findByCandidatId(ins.getCandidat().getId()).stream()
+                            .filter(ip -> "EXPERT".equals(ip.getNiveauActuel().toString()) && ip.getParcours().getNiveauExpert() != null && ip.getParcours().getNiveauExpert().getId().equals(formationId))
+                            .findFirst()
+                            .ifPresent(ip -> {
+                                ip.setEvaluationParcoursRequise(true);
+                                inscriptionParcoursRepo.save(ip);
+                            });
+                }
+            });
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("progression",      progression);
@@ -83,13 +99,33 @@ public class VideoProgressionController {
         List<VideoProgression> vps =
                 videoProgressionRepo.findByInscriptionId(inscriptionId);
 
-        int progression = calculerProgression(inscriptionId, totalVideos);
+        // On vérifie d'abord si l'inscription est déjà marquée comme terminée en base
+        Optional<t.esprit.arctic.jobmatch.entity.InscriptionFormation> insOpt = inscriptionRepo.findById(inscriptionId);
+        int progressionInDb = insOpt.map(i -> i.getProgression() != null ? i.getProgression().intValue() : 0).orElse(0);
+        String statutInDb = insOpt.map(i -> i.getStatut()).orElse("EnCours");
+
+        int progression = ("Terminé".equalsIgnoreCase(statutInDb) || progressionInDb >= 100) ? 100 : -1;
+
+        // Calcul réel basé sur les vidéos uniques de CETTE formation
+        int progressionCalculee = calculerProgression(inscriptionId, insOpt.map(i -> i.getFormation().getId()).orElse(0L), totalVideos);
+
+        // Si non terminée en base, on utilise le calcul
+        if (progression == -1) {
+            progression = progressionCalculee;
+        }
+
+        // SYNCHRONISATION : Si la base est à 0 (ou en retard) mais que le calcul donne plus, on met à jour la base
+        if (progressionCalculee > progressionInDb && !"Terminé".equalsIgnoreCase(statutInDb)) {
+            mettreAJourInscription(inscriptionId, progressionCalculee);
+        }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("videosVues",  vps.stream()
-                .filter(VideoProgression::isVuComplete).count());
+        long distinctVues = videoProgressionRepo.countDistinctVideoIdByInscriptionIdAndVuCompleteTrue(inscriptionId);
+        
+        result.put("videosVues",  distinctVues);
         result.put("totalVideos", totalVideos);
         result.put("progression", progression);
+        result.put("tentativesUtilisees", insOpt.map(i -> i.getTentativesQuizFinal() != null ? i.getTentativesQuizFinal() : 0).orElse(0));
         result.put("details",     vps);
         return ResponseEntity.ok(result);
     }
@@ -105,7 +141,10 @@ public class VideoProgressionController {
         String niveau        = Objects.toString(body.get("niveau"), "");
 
         int totalVideos = body.get("totalVideos") != null ? Integer.parseInt(body.get("totalVideos").toString()) : 1;
-        int progression = calculerProgression(inscriptionId, totalVideos);
+        
+        Long formationId = inscriptionRepo.findById(inscriptionId)
+                .map(ins -> ins.getFormation().getId()).orElse(0L);
+        int progression = calculerProgression(inscriptionId, formationId, totalVideos);
 
         if (progression < 100) {
             Map<String, Object> err = new HashMap<>();
@@ -127,11 +166,29 @@ public class VideoProgressionController {
         List<Map<String, Object>> questions =
                 genererQuizFinal(titreFormation, categorie, videoTitles, niveau);
 
+        // Gestion des tentatives et vérification de la limite (3 tentatives max pour formation simple ou expert)
+        int tentatives = 0;
+        Optional<t.esprit.arctic.jobmatch.entity.InscriptionFormation> insOpt = inscriptionRepo.findById(inscriptionId);
+        if (insOpt.isPresent()) {
+            t.esprit.arctic.jobmatch.entity.InscriptionFormation ins = insOpt.get();
+            tentatives = (ins.getTentativesQuizFinal() != null ? ins.getTentativesQuizFinal() : 0) + 1;
+            
+            if (tentatives > 3) {
+                Map<String, Object> err = new HashMap<>();
+                err.put("error", "Nombre maximum de tentatives (3) atteint pour ce quiz.");
+                return ResponseEntity.badRequest().body(err);
+            }
+            
+            ins.setTentativesQuizFinal(tentatives);
+            inscriptionRepo.save(ins);
+        }
+
         Map<String, Object> result = new HashMap<>();
         result.put("questions",    questions);
         result.put("inscriptionId", inscriptionId);
         result.put("niveau",       niveau);
         result.put("scoreMinimum", "EXPERT".equals(niveau) ? 80 : 70); 
+        result.put("tentativesUtilisees", tentatives);
         return ResponseEntity.ok(result);
     }
 
@@ -168,6 +225,13 @@ public class VideoProgressionController {
                                     ip.setStatut("TERMINE");
                                     inscriptionParcoursRepo.save(ip);
                                     System.out.println("🏆 Parcours " + parcoursId + " terminé avec succès !");
+                                    
+                                    // 3. Génération du certificat final
+                                    try {
+                                        certificatService.genererPourParcours(ip);
+                                    } catch (Exception e) {
+                                        System.err.println("Erreur génération certificat : " + e.getMessage());
+                                    }
                                 });
                     }
                 });
@@ -369,19 +433,33 @@ public class VideoProgressionController {
         return questions;
     }
 
-    private int calculerProgression(Long inscriptionId, int totalVideos) {
-        if (totalVideos == 0) return 0;
+    private int calculerProgression(Long inscriptionId, Long formationId, int totalVideos) {
+        if (totalVideos <= 0) return 0;
+        
+        // Sécurité : on regarde d'abord le statut forcé
+        Optional<t.esprit.arctic.jobmatch.entity.InscriptionFormation> insOpt = inscriptionRepo.findById(inscriptionId);
+        if (insOpt.isPresent() && ("Terminé".equalsIgnoreCase(insOpt.get().getStatut()) || insOpt.get().getProgression() >= 100)) {
+            return 100;
+        }
+
         long videosVues = videoProgressionRepo
-                .countByInscriptionIdAndVuCompleteTrue(inscriptionId);
+                .countDistinctVideoIdByInscriptionIdAndFormationIdAndVuCompleteTrue(inscriptionId, formationId);
         return (int) Math.min(100,
                 Math.round((double) videosVues / totalVideos * 100));
     }
 
     private void mettreAJourInscription(Long inscriptionId, int progression) {
         inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
+            // On ne revient jamais en arrière si c'est déjà terminé
+            if ("Terminé".equalsIgnoreCase(ins.getStatut()) || ins.getProgression() >= 100) {
+                return;
+            }
+            
             ins.setProgression((double) progression);
             if (progression > 0 && progression < 100) {
                 ins.setStatut("EnCours");
+            } else if (progression >= 100) {
+                ins.setStatut("Terminé");
             }
             inscriptionRepo.save(ins);
         });

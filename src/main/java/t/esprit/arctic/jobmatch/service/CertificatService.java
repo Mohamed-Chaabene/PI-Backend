@@ -27,6 +27,7 @@ public class CertificatService {
     private final CertificatRepository certificatRepository;
     private final InscriptionFormationRepository inscriptionFormationRepository;
 
+    @org.springframework.transaction.annotation.Transactional
     public Certificat genererAutomatiquement(InscriptionFormation inscription) {
         return certificatRepository.findByInscriptionId(inscription.getId())
                 .orElseGet(() -> {
@@ -42,6 +43,7 @@ public class CertificatService {
      * Génère un certificat lié à un parcours quand le candidat réussit le quiz Expert.
      * On trouve ou crée une InscriptionFormation pour la formation Expert du parcours.
      */
+    @org.springframework.transaction.annotation.Transactional
     public Certificat genererPourParcours(InscriptionParcours inscriptionParcours) {
         // Récupérer la formation Expert du parcours
         t.esprit.arctic.jobmatch.entity.Formation formationExpert =

@@ -47,4 +47,6 @@ public class InscriptionFormation {
     @OneToOne(mappedBy = "inscription", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private Certificat certificat;
-}
+
+    private Integer tentativesQuizFinal = 0;
+}

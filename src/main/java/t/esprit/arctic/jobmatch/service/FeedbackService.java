@@ -3,7 +3,6 @@ package t.esprit.arctic.jobmatch.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.dto.FeedbackMacroDTO;
-import t.esprit.arctic.jobmatch.dto.FeedbackMicroDTO;
 import t.esprit.arctic.jobmatch.entity.*;
 import t.esprit.arctic.jobmatch.repository.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +14,6 @@ import java.util.Optional;
 public class FeedbackService {
 
     private final FeedbackRepository feedbackRepository;
-    private final FeedbackMicroRepository microRepo;
     private final FeedbackMacroRepository macroRepo;
     private final InscriptionParcoursRepository inscriptionRepo;
     private final CertificatService certificatService;
@@ -74,27 +72,6 @@ public class FeedbackService {
     }
 
     @Transactional
-    public void saveMicro(FeedbackMicroDTO dto) {
-        InscriptionParcours inscription = inscriptionRepo.findById(dto.getInscriptionId())
-                .orElseThrow(() -> new RuntimeException("Inscription non trouvée"));
-
-        FeedbackMicro micro = FeedbackMicro.builder()
-                .inscription(inscription)
-                .candidat(inscription.getCandidat())
-                .parcours(inscription.getParcours())
-                .niveau(dto.getNiveau())
-                .note(dto.getNote())
-                .clarite(dto.getClarite())
-                .difficulte(dto.getDifficulte())
-                .commentaire(dto.getCommentaire())
-                .build();
-
-        microRepo.save(micro);
-
-        alertService.checkLowRating(dto.getParcoursId(), "MICRO ("+dto.getNiveau()+")", dto.getNote());
-    }
-
-    @Transactional
     public void saveMacro(FeedbackMacroDTO dto) {
         if (macroRepo.existsByInscriptionId(dto.getInscriptionId())) {
             return; // Idempotence
@@ -122,11 +99,10 @@ public class FeedbackService {
 
         alertService.checkLowRating(dto.getParcoursId(), "MACRO", dto.getNoteGlobale());
 
-        // Déclencher la certification puisque le macro-feedback (obligatoire) est soumis
-        try {
-            certificatService.genererPourParcours(inscription);
-        } catch (Exception e) {
-            System.err.println("Erreur génération certificat après macro-feedback : " + e.getMessage());
-        }
+        // Note: La génération du certificat est maintenant gérée après la réussite du quiz final Expert
     }
-}
+
+    public List<FeedbackMacro> getMacroByParcours(Long parcoursId) {
+        return macroRepo.findByParcoursId(parcoursId);
+    }
+}

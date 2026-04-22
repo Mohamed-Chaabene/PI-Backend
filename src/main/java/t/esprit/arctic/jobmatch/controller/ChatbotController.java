@@ -319,21 +319,17 @@ public class ChatbotController {
             String truncated = fileText.length() > 6000
                     ? fileText.substring(0, 6000) + "\n...[document tronqué]"
                     : fileText;
-            String prompt = message.isEmpty()
-                    ? "Analyse et résume ce document. ATTENTION: Si ce document n'a AUCUN rapport avec la formation, tu DOIS obligatoirement refuser l'analyse détaillée en expliquant que c'est hors-sujet."
-                    : message + "\n\n(IMPORTANT: Avant de répondre, vérifie si ce document est hors-sujet par rapport à la formation. Si oui, refuse de répondre et signale-le obligatoirement)";
+            String prompt = message.isEmpty() ? "Analyse ce document." : message;
             userMessageFull = prompt + "\n\n[Document joint: " + fileName + "]\n" + truncated;
         } else if (hasFile && (fileData != null && !fileData.trim().isEmpty())) {
-            String prompt = message.isEmpty()
-                    ? "J'ai joint le document: " + fileName + ". ATTENTION: S'il te semble sans rapport avec la formation, refuse de l'analyser."
-                    : message + "\n\n(IMPORTANT: L'analyse de contenu est soumise à la règle de hors-sujet)";
+            String prompt = message.isEmpty() ? "J'ai joint le document: " + fileName : message;
             userMessageFull = prompt + "\n\n[Document joint: " + fileName + " - le texte n'a pas pu être extrait]";
         }
 
         if (hasImage) {
             historyHasImage = true;
-            String fallbackImgPrompt = "Analyse cette image. ATTENTION: Si cette image n'a AUCUN rapport avec la formation, tu DOIS obligatoirement refuser l'analyse détaillée en expliquant que c'est hors-sujet.";
-            String txtToSend = userMessageFull.isEmpty() ? fallbackImgPrompt : userMessageFull + "\n\n(IMPORTANT: Avant d'analyser, vérifie si l'image est hors-sujet par rapport à la formation. Si oui, refuse de répondre et signale-le obligatoirement)";
+            String fallbackImgPrompt = "Analyse cette image.";
+            String txtToSend = userMessageFull.isEmpty() ? fallbackImgPrompt : userMessageFull;
 
             List<Map<String, Object>> contentParts = new ArrayList<>();
             contentParts.add(Map.of("type", "text", "text", txtToSend));
@@ -351,7 +347,7 @@ public class ChatbotController {
         String requestBody = mapper.writeValueAsString(Map.of(
                 "model",       modelToUse,
                 "messages",    messages,
-                "temperature", 0.7,
+                "temperature", 0.1,
                 "max_tokens",  1024
         ));
 
@@ -404,72 +400,38 @@ public class ChatbotController {
 
     private String buildSystemPrompt(String titre, String categorie, String niveau, String context) {
 
-        String contextDesc = context.equals("video")
-                ? "a video training course / une formation vidéo"
-                : "technical documentation / une documentation technique";
-
         return String.format("""
-            You are a pedagogical AI assistant embedded in %s.
+            You are a pedagogical AI assistant.
             
             Training: "%s"
             Category: %s
             Level: %s
             
-            Your role:
-            - Answer learners' questions about this training
-            - Explain technical concepts clearly and pedagogically
-            - Provide code examples when useful
-            - Summarize chapters or concepts
-            - Suggest practical exercises
-            - Encourage and motivate the learner
-            - Analyze images shared by the learner IF they are related to the training
-            - Analyze and summarize documents (PDF, Word) shared by the learner IF they are related to the training
+            === CRITICAL OFF-TOPIC RULE (STRICT) ===
+            Before providing ANY analysis or description of a message, image, or document, you MUST determine if it is directly related to the training "%s".
             
-            === CRITICAL OFF-TOPIC RULE ===
-            You MUST strictly detect and refuse off-topic content:
+            IF THE CONTENT IS OFF-TOPIC:
+            - You MUST refuse to analyze, describe, or summarize it.
+            - You MUST output ONLY the following refusal sentence and NOTHING ELSE.
+            - NO analysis of the image/document.
+            - NO technical explanation of why it is off-topic.
+            - NO extra notes, NO suggestions, NO "I would be happy to help with...".
             
-            1. OFF-TOPIC QUESTIONS: If the user asks a question that has NO relation to the training
-               "%s" (category: %s), politely refuse and redirect.
-               - Example refusal (French): "Cette question est hors du sujet de la formation. Je suis ici pour vous aider uniquement sur les thèmes liés à **%s**. Posez-moi une question sur ce sujet !"
-               - Example refusal (English): "This question is off-topic. I'm here to help you only with topics related to **%s**. Ask me something about the training!"
-               - Example refusal (Arabic): "هذا السؤال خارج نطاق التكوين. أنا هنا فقط للمساعدة في مواضيع **%s**. اطرح سؤالاً يتعلق بالتكوين!"
-            
-            2. OFF-TOPIC IMAGES: If the user shares an image that has NO relation to the training
-               (e.g., personal photos, random memes, unrelated screenshots), refuse politely:
-               - Example: "L'image que vous avez partagée ne semble pas être liée à la formation **%s**. Partagez des captures d'écran ou images en lien avec les concepts du cours."
-            
-            3. OFF-TOPIC DOCUMENTS: If the user shares a document (PDF, Word, etc.) that has NO
-               relation to the training (e.g., personal CV, unrelated articles), refuse politely:
-               - Example: "Le document partagé ne semble pas être lié à la formation **%s**. Partagez des documents en rapport avec le cours pour que je puisse vous aider."
-            
-            IMPORTANT: Be SMART about relevance — if there is any reasonable connection to the
-            training topic, answer helpfully. Only refuse clearly unrelated content.
+            EXACT REFUSAL PHRASING (to be used based on the user's language):
+            - FRENCH: "Cette image/question/document ne semble pas être liée à la formation **%s**. Je suis ici pour vous aider uniquement sur les thèmes liés à **%s**. Posez-moi une question sur ce sujet !"
+            - ENGLISH: "This image/question/document does not seem to be related to the training **%s**. I am here to help you only with topics related to **%s**. Ask me a question about this subject!"
+            - ARABIC: "هذه الصورة/السؤال/المستند لا يبدو مرتبطًا بالتكوين **%s**. أنا هنا لمساعدتك فقط في المواضيع المتعلقة بـ **%s**. اطرح سؤالاً حول هذا الموضوع!"
             
             === CRITICAL LANGUAGE RULE ===
-            You MUST detect the language of the user's message and reply
-            in EXACTLY the same language.
-            - If the user writes in French  → reply entirely in French
-            - If the user writes in English → reply entirely in English
-            - If the user writes in Arabic  → reply entirely in Arabic
-            - Never mix languages in the same response
-            - Never explain this rule to the user
-            
-            === DOCUMENT HANDLING ===
-            When a document is shared:
-            - Summarize its key points if asked
-            - Check if its content relates to the training topic
-            - Answer questions about the document content in relation to the training
-            - If the document is off-topic, refuse using the OFF-TOPIC DOCUMENTS rule above
+            Detect the language of the user's message and reply in EXACTLY the same language.
             
             === FORMAT ===
-            - Be concise and precise (max 300 words unless asked otherwise)
-            - Use bullet points for clarity when appropriate
-            - Bold (**) important terms
-            - Use code blocks for code samples
-            - Stay in the context of the training "%s"
+            - Be concise.
+            - Use bullet points if helpful.
+            - Stay strictly within the context of the training "%s".
             """,
-                contextDesc, titre, categorie, niveau,
-                titre, categorie, titre, titre, titre, titre, titre,
+                titre, categorie, niveau,
+                titre, titre, titre, titre, titre, titre, titre,
                 titre
         );
     }

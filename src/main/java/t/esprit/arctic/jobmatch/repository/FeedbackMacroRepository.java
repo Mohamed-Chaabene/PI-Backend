@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface FeedbackMacroRepository extends JpaRepository<FeedbackMacro, Long> {
     boolean existsByInscriptionId(Long inscriptionId);
     Optional<FeedbackMacro> findByInscriptionId(Long inscriptionId);
+    java.util.List<FeedbackMacro> findByParcoursId(Long parcoursId);
 }

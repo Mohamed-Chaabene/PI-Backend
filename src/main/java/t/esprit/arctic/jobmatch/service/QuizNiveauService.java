@@ -30,6 +30,7 @@ public class QuizNiveauService {
     private final InscriptionParcoursRepository inscriptionParcoursRepository;
     private final CertificatService certificatService;
     private final InscriptionFormationService inscriptionFormationService;
+    private final NotificationService notificationService;
 
     @Value("${gemini.api.key:}")
     private String groqApiKey;
@@ -78,9 +79,13 @@ public class QuizNiveauService {
                 (lastEx != null ? lastEx.getMessage() : "Inconnue"));
         }
 
-        // 4. Calculer le numéro de tentative
+        // 4. Calculer le numéro de tentative et vérifier la limite pour l'Expert
         int tentative = quizRepository.countByInscriptionParcoursIdAndNiveau(
                 inscription.getId(), niveau) + 1;
+        
+        if (niveau == NiveauOrdre.EXPERT && tentative > 3) {
+            throw new RuntimeException("Désolé, vous avez atteint la limite de 3 tentatives pour le niveau Expert.");
+        }
 
         // 5. Sauvegarder le QuizNiveau
         QuizNiveau quiz = new QuizNiveau();
@@ -185,50 +190,32 @@ public class QuizNiveauService {
 
         if (reussi) {
             NiveauOrdre suivant = niveau.suivant();
-            boolean isLastLevel = (suivant == null) || 
-                                 (inscription.getParcours().getFormationParNiveau(suivant) == null);
+            Formation formationSuivante = (suivant != null) ? inscription.getParcours().getFormationParNiveau(suivant) : null;
+            
+            boolean isLastLevel = (suivant == null) || (formationSuivante == null);
 
             if (isLastLevel) {
-                needsFeedback = FeedbackType.MACRO;
-                // Quiz Final réussi — parcours marqué comme terminé
+                message = "Félicitations ! Vous avez brillamment réussi le niveau Expert et terminé votre parcours ! " +
+                        "Votre certificat est maintenant disponible dans votre tableau de bord.";
                 inscription.setStatut("TERMINE");
-                inscription.setEvaluationParcoursRequise(true);
+                inscription.setEvaluationParcoursRequise(true); // Pour solliciter l'avis sur la page parcours
                 inscriptionParcoursRepository.save(inscription);
 
-                // Marquer la formation du niveau actuel comme terminée
-                Formation lastFormation = inscription.getParcours().getFormationParNiveau(niveau);
-                if (lastFormation != null) {
-                    inscriptionFormationService.marquerCommeTerminee(inscription.getCandidat(), lastFormation);
+                // Envoyer la notification de succès
+                try {
+                    Long userId = inscription.getCandidat().getId();
+                    notificationService.notifyParcoursCompletion(userId, inscription.getParcours().getTitre(), inscription.getParcours().getId());
+                } catch (Exception e) {
+                    System.err.println("❌ Erreur lors de l'envoi de la notification de fin de parcours: " + e.getMessage());
                 }
-
-                message = String.format("Félicitations ! Vous avez complété le parcours avec un score de %d%% au niveau %s. " +
-                        "Une dernière étape : obtenez votre certificat en partageant votre expérience !", 
-                        score, niveau.toNiveauLabel());
             } else {
-                // Micro-feedback pour les niveaux intermédiaires (pas le premier)
-                if (!niveau.isFirst()) {
-                    needsFeedback = FeedbackType.MICRO;
-                }
-
                 inscription.setNiveauActuel(suivant);
                 inscriptionParcoursRepository.save(inscription);
                 nextNiveauLabel = suivant.toNiveauLabel();
-
-                // 1. Marquer la formation du niveau actuel comme terminée
-                Formation currentLevelFormation = inscription.getParcours().getFormationParNiveau(niveau);
-                if (currentLevelFormation != null) {
-                    inscriptionFormationService.marquerCommeTerminee(inscription.getCandidat(), currentLevelFormation);
-                }
-
-                // 2. Inscription automatique à la Formation du niveau suivant
-                Formation nextFormation = inscription.getParcours().getFormationParNiveau(suivant);
-                if (nextFormation != null) {
-                    inscriptionFormationService.inscrireAutomatiquement(inscription.getCandidat(), nextFormation);
-                }
-
-                message = String.format("Bravo ! Vous avez réussi le niveau %s avec %d%%. " +
+                
+                message = String.format("Bravo ! Vous avez réussi le niveau %s. " +
                         "Le niveau %s est maintenant débloqué !",
-                        niveau.toNiveauLabel(), score, suivant.toNiveauLabel());
+                        niveau.toNiveauLabel(), suivant.toNiveauLabel());
             }
         } else {
             message = String.format("Score : %d%% (seuil requis : %d%%). " +
@@ -241,8 +228,9 @@ public class QuizNiveauService {
                 .reussi(reussi)
                 .needsFeedback(needsFeedback)
                 .nextNiveauLabel(nextNiveauLabel)
-                .niveauSuivantDebloque(reussi && !niveau.isLast() ? niveau.suivant() : null)
+                .niveauSuivantDebloque((reussi && !niveau.isLast() && inscription.getParcours().getFormationParNiveau(niveau.suivant()) != null) ? niveau.suivant() : null)
                 .message(message)
+                .inscriptionId(inscription.getId())
                 .corrections(corrections)
                 .build();
     }

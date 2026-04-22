@@ -17,7 +17,7 @@ public class QuizNiveau {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inscription_parcours_id", nullable = false)
-    @JsonIgnoreProperties({"candidat", "parcours", "hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"candidat", "parcours", "niveauActuel", "hibernateLazyInitializer", "handler"})
     private InscriptionParcours inscriptionParcours;
 
     @Enumerated(EnumType.STRING)

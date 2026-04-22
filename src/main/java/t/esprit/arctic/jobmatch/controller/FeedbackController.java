@@ -8,7 +8,7 @@ import t.esprit.arctic.jobmatch.entity.Feedback;
 import t.esprit.arctic.jobmatch.dto.FeedbackDTO;
 import org.springframework.beans.BeanUtils;
 import t.esprit.arctic.jobmatch.dto.FeedbackMacroDTO;
-import t.esprit.arctic.jobmatch.dto.FeedbackMicroDTO;
+import t.esprit.arctic.jobmatch.entity.FeedbackMacro;
 import t.esprit.arctic.jobmatch.service.FeedbackService;
 import java.util.List;
 import java.util.Map;
@@ -82,15 +82,14 @@ public class FeedbackController {
         return ResponseEntity.ok(Map.of("moyenne", moyenne, "total", total));
     }
 
-    @PostMapping("/micro")
-    public ResponseEntity<Void> saveMicro(@Valid @RequestBody FeedbackMicroDTO dto) {
-        feedbackService.saveMicro(dto);
-        return ResponseEntity.ok().build();
-    }
-
     @PostMapping("/macro")
     public ResponseEntity<Void> saveMacro(@Valid @RequestBody FeedbackMacroDTO dto) {
         feedbackService.saveMacro(dto);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/parcours/{parcoursId}/macro")
+    public ResponseEntity<List<FeedbackMacro>> getMacrosByParcours(@PathVariable Long parcoursId) {
+        return ResponseEntity.ok(feedbackService.getMacroByParcours(parcoursId));
     }
 }

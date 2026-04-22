@@ -15,7 +15,7 @@ public class FormationScheduler {
     private final ParcoursFormationService parcoursService;
     private final FormationRepository formationRepo;
 
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "1 * * * * *")
     public void calculerScoresEtBadges() {
         System.out.println("╔══════════════════════════════════════╗");
         System.out.println("║  Scheduler formations — démarrage   ║");

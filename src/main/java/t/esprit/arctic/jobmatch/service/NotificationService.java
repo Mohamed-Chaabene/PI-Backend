@@ -303,6 +303,7 @@ public class NotificationService {
         
         System.out.println("✅ Notifications sent to " + followerIds.length + " followers");
     }
+
     public void notifyCandidatesByJobLocation(String jobLocation, String jobTitle, String recruiterName) {
         try {
             if (jobLocation == null || jobLocation.isEmpty()) {
@@ -318,7 +319,7 @@ public class NotificationService {
                         }
                         String candidatCountry = candidat.getLocalisation().getPays();
                         return candidatCountry != null && 
-                               candidatCountry.equalsIgnoreCase(jobLocation);
+                                candidatCountry.equalsIgnoreCase(jobLocation);
                     })
                     .toList();
             
@@ -349,6 +350,28 @@ public class NotificationService {
         } catch (Exception e) {
             System.err.println("Error notifying candidates by job location: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify candidate when they complete a full parcours
+     */
+    public void notifyParcoursCompletion(Long userId, String parcoursTitle, Long parcoursId) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setSenderId(null); // System notification
+            notification.setType("PARCOURS_COMPLETED");
+            notification.setMessage("Félicitations ! Vous avez terminé le parcours \"" + parcoursTitle + "\" avec succès. Votre certificat est disponible ! N'oubliez pas de partager votre avis !");
+            notification.setIsRead(false);
+            notification.setOffreEmploiId(parcoursId); // Utilisation temporaire pour l'ID du parcours
+            
+            Notification savedNotification = notificationRepository.save(notification);
+            sendPusherNotification(userId, savedNotification);
+            
+            System.out.println("✅ Parcours completion notification sent to user " + userId + " for parcours " + parcoursId);
+        } catch (Exception e) {
+            System.err.println("❌ Error sending parcours completion notification: " + e.getMessage());
         }
     }
 }
