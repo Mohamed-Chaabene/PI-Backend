@@ -5,15 +5,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Background;
 import t.esprit.arctic.jobmatch.entity.Candidat;
+import t.esprit.arctic.jobmatch.entity.Competence;
 import t.esprit.arctic.jobmatch.entity.Education;
 import t.esprit.arctic.jobmatch.entity.Localisation;
 import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import t.esprit.arctic.jobmatch.repository.BackgroundRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
+import t.esprit.arctic.jobmatch.repository.CompetenceRepository;
 import t.esprit.arctic.jobmatch.repository.EducationRepository;
 import t.esprit.arctic.jobmatch.repository.LocalisationRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,7 @@ public class CandidatService {
     private final EducationRepository educationRepository;
     private final LocalisationRepository localisationRepository;
     private final BackgroundRepository backgroundRepository;
+    private final CompetenceRepository competenceRepository;
 
     @Transactional
     public Candidat create(Candidat candidat) {
@@ -107,6 +111,21 @@ public class CandidatService {
     public Candidat findByEmail(String email) {
         return repository.findByEmail(email).orElseThrow(() -> 
             new ResourceNotFoundException("Candidat not found with email: " + email));
+    }
+
+    @Transactional
+    public Candidat updateCompetencesFromStrings(Long id, List<String> competenceNames) {
+        Candidat candidat = getById(id);
+        
+        // Only link to existing competences - do not auto-create
+        List<Competence> competences = competenceNames.stream()
+                .map(name -> competenceRepository.findByNom(name)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                            "Competence not found: " + name + ". Please select from available competences.")))
+                .collect(Collectors.toList());
+        
+        candidat.setCompetences(competences);
+        return repository.save(candidat);
     }
 }
 

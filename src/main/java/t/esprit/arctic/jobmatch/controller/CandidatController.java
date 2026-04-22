@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Candidat;
+import t.esprit.arctic.jobmatch.entity.Competence;
 import t.esprit.arctic.jobmatch.service.CandidatService;
 
 import java.io.BufferedInputStream;
@@ -136,5 +137,18 @@ public class CandidatController {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/competences")
+    public ResponseEntity<?> updateCompetences(
+            @PathVariable Long id,
+            @RequestBody Map<String, List<String>> payload) {
+        List<String> competenceNames = payload.get("competences");
+        if (competenceNames == null) {
+            return ResponseEntity.badRequest().body("competences field is required");
+        }
+        Candidat updated = service.updateCompetencesFromStrings(id, competenceNames);
+        return ResponseEntity.ok(toCandidateProfilePayload(updated));
+    }
 }
+
 
