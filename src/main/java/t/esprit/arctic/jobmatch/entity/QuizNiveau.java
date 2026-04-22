@@ -2,6 +2,7 @@ package t.esprit.arctic.jobmatch.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ public class QuizNiveau {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inscription_parcours_id", nullable = false)
-    @JsonIgnoreProperties({"candidat", "parcours", "niveauActuel", "hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private InscriptionParcours inscriptionParcours;
 
     @Enumerated(EnumType.STRING)

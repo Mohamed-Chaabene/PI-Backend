@@ -22,4 +22,8 @@ public interface QuizNiveauRepository extends JpaRepository<QuizNiveau, Long> {
 
     /** Compte le nombre de tentatives pour un niveau */
     int countByInscriptionParcoursIdAndNiveau(Long inscriptionParcoursId, NiveauOrdre niveau);
+
+    /** Récupère le dernier quiz réussi pour un niveau */
+    Optional<QuizNiveau> findFirstByInscriptionParcoursIdAndNiveauAndReussiTrueOrderByDateTentativeDesc(
+            Long inscriptionParcoursId, NiveauOrdre niveau);
 }

@@ -59,6 +59,16 @@ public class QuizNiveauController {
         }
     }
 
+    /** Récupère le résultat détaillé d'un quiz déjà passé */
+    @GetMapping("/{id}/resultat")
+    public ResponseEntity<?> getResultat(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(quizService.getResultat(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     /** Historique des quiz du candidat pour une inscription parcours */
     @GetMapping("/inscription/{inscriptionParcoursId}")
     public ResponseEntity<List<QuizNiveau>> getHistorique(

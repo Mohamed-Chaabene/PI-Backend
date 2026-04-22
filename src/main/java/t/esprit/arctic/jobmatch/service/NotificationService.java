@@ -80,6 +80,7 @@ public class NotificationService {
             data.put("type", notification.getType());
             data.put("message", notification.getMessage());
             data.put("senderId", notification.getSenderId());
+            data.put("offreEmploiId", notification.getOffreEmploiId());
             data.put("createdAt", notification.getCreatedAt().toString());
 
             // Send to private channel for specific user
@@ -362,7 +363,7 @@ public class NotificationService {
             notification.setUserId(userId);
             notification.setSenderId(null); // System notification
             notification.setType("PARCOURS_COMPLETED");
-            notification.setMessage("Félicitations ! Vous avez terminé le parcours \"" + parcoursTitle + "\" avec succès. Votre certificat est disponible ! N'oubliez pas de partager votre avis !");
+            notification.setMessage("Félicitations ! Vous avez terminé le parcours \"" + parcoursTitle + "\" ! Cliquez ici pour laisser votre avis et nous aider à nous améliorer !");
             notification.setIsRead(false);
             notification.setOffreEmploiId(parcoursId); // Utilisation temporaire pour l'ID du parcours
             

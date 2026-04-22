@@ -52,7 +52,10 @@ public class QuizNiveauService {
         // 2. Vérifier que le candidat n'a pas déjà réussi ce niveau
         if (quizRepository.existsByInscriptionParcoursIdAndNiveauAndReussiTrue(
                 inscription.getId(), niveau)) {
-            throw new RuntimeException("Ce niveau a déjà été réussi");
+            QuizNiveau lastSuccessful = quizRepository.findFirstByInscriptionParcoursIdAndNiveauAndReussiTrueOrderByDateTentativeDesc(
+                    inscription.getId(), niveau).orElse(null);
+            Long quizId = lastSuccessful != null ? lastSuccessful.getId() : 0L;
+            throw new RuntimeException("ALREADY_PASSED:" + quizId);
         }
 
         int nombreQuestions = req.getNombreQuestions() > 0 ? req.getNombreQuestions() : 10;
@@ -116,6 +119,21 @@ public class QuizNiveauService {
     }
 
     /**
+     * Récupère le résultat complet (avec corrections) d'un quiz déjà soumis.
+     */
+    @Transactional(readOnly = true)
+    public QuizResultatDTO getResultat(Long id) {
+        QuizNiveau quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Quiz non trouvé"));
+
+        if (quiz.getReponsesCandidat() == null || quiz.getReponsesCandidat().isEmpty()) {
+            throw new RuntimeException("Ce quiz n'a pas encore été soumis");
+        }
+
+        return calculerResultat(quiz);
+    }
+
+    /**
      * ÉTAPE 2 : Corrige le quiz soumis
      */
     @Transactional
@@ -128,19 +146,97 @@ public class QuizNiveauService {
             throw new RuntimeException("Ce quiz a déjà été soumis");
         }
 
-        // 2. Parser questionsJson pour obtenir les bonnes réponses
+        // 2. Sauvegarder les réponses initialement
+        try {
+            quiz.setReponsesCandidat(mapper.writeValueAsString(dto.getReponses()));
+        } catch (Exception e) {
+            quiz.setReponsesCandidat("{}");
+        }
+
+        // 3. Calculer le résultat
+        QuizResultatDTO resultat = calculerResultat(quiz);
+
+        // 4. Mettre à jour l'entité avec le score et la réussite calculés
+        quiz.setScore(resultat.getScore());
+        quiz.setReussi(resultat.isReussi());
+        quizRepository.save(quiz);
+
+        // 5. Déterminer le besoin en feedback et mettre à jour l'inscription si réussi
+        InscriptionParcours inscription = quiz.getInscriptionParcours();
+        FeedbackType needsFeedback = FeedbackType.NONE;
+        String nextNiveauLabel = null;
+        String message = resultat.getMessage();
+        NiveauOrdre niveau = quiz.getNiveau();
+
+        if (resultat.isReussi()) {
+            // Synchroniser la progression de la formation associée à ce niveau
+            Formation formationActuelle = inscription.getParcours().getFormationParNiveau(niveau);
+            if (formationActuelle != null) {
+                inscriptionFormationService.marquerCommeTerminee(inscription.getCandidat(), formationActuelle);
+            }
+
+            NiveauOrdre suivant = niveau.suivant();
+            Formation formationSuivante = (suivant != null) ? inscription.getParcours().getFormationParNiveau(suivant) : null;
+            
+            boolean isLastLevel = (suivant == null) || (formationSuivante == null);
+
+            if (isLastLevel) {
+                message = "Félicitations ! Vous avez brillamment réussi le niveau Expert et terminé votre parcours ! " +
+                        "Votre certificat est maintenant disponible dans votre tableau de bord.";
+                String oldStatut = inscription.getStatut();
+                inscription.setStatut("TERMINE");
+                inscription.setEvaluationParcoursRequise(true);
+                inscriptionParcoursRepository.save(inscription);
+
+                if (!"TERMINE".equals(oldStatut)) {
+                    try {
+                        Long userId = inscription.getCandidat().getId();
+                        notificationService.notifyParcoursCompletion(userId, inscription.getParcours().getTitre(), inscription.getParcours().getId());
+                    } catch (Exception e) {
+                        System.err.println("❌ Erreur notification fin parcours: " + e.getMessage());
+                    }
+                }
+            } else {
+                inscription.setNiveauActuel(suivant);
+                inscriptionParcoursRepository.save(inscription);
+                nextNiveauLabel = suivant.toNiveauLabel();
+                
+                message = String.format("Bravo ! Vous avez réussi le niveau %s. Le niveau %s est maintenant débloqué !",
+                        niveau.toNiveauLabel(), suivant.toNiveauLabel());
+            }
+        } else {
+            message = String.format("Score : %d%% (seuil requis : %d%%). Vous pouvez réessayer ce niveau.", 
+                    resultat.getScore(), resultat.getSeuilRequis());
+        }
+
+        // Mettre à jour le message dans le DTO
+        resultat.setMessage(message);
+        resultat.setNextNiveauLabel(nextNiveauLabel);
+        resultat.setNiveauSuivantDebloque((resultat.isReussi() && !niveau.isLast() && inscription.getParcours().getFormationParNiveau(niveau.suivant()) != null) ? niveau.suivant() : null);
+
+        return resultat;
+    }
+
+    private QuizResultatDTO calculerResultat(QuizNiveau quiz) {
+        // 1. Parser questionsJson
         List<Map<String, Object>> questions;
         try {
             JsonNode root = mapper.readTree(quiz.getQuestionsJson());
             JsonNode questionsNode = root.has("questions") ? root.get("questions") : root;
-            questions = mapper.convertValue(questionsNode,
-                    new TypeReference<List<Map<String, Object>>>() {});
+            questions = mapper.convertValue(questionsNode, new TypeReference<List<Map<String, Object>>>() {});
         } catch (Exception e) {
             throw new RuntimeException("Erreur parsing des questions : " + e.getMessage());
         }
 
-        // 3. Comparer avec les réponses du candidat
-        Map<Integer, String> reponses = dto.getReponses();
+        // 2. Parser reponsesCandidat
+        Map<Integer, String> reponses;
+        try {
+            reponses = mapper.readValue(quiz.getReponsesCandidat(), new TypeReference<Map<Integer, String>>() {});
+        } catch (Exception e) {
+            reponses = Map.of();
+        }
+
+        // 3. Comparer
         int nbBonnes = 0;
         int total = questions.size();
         List<CorrectionQuestionDTO> corrections = new ArrayList<>();
@@ -148,8 +244,7 @@ public class QuizNiveauService {
         for (int i = 0; i < total; i++) {
             Map<String, Object> q = questions.get(i);
             String bonneReponse = Objects.toString(q.get("bonneReponse"), "").trim();
-            String reponseCandidat = reponses != null && reponses.containsKey(i + 1)
-                    ? Objects.toString(reponses.get(i + 1), "").trim() : "";
+            String reponseCandidat = reponses.getOrDefault(i + 1, "").trim();
 
             boolean correct = bonneReponse.equalsIgnoreCase(reponseCandidat);
             if (correct) nbBonnes++;
@@ -164,73 +259,22 @@ public class QuizNiveauService {
                     .build());
         }
 
-        // 4. Calculer le score
         int score = total > 0 ? (int) Math.round((double) nbBonnes / total * 100) : 0;
-
-        // 5. Récupérer le seuil dynamique
-        NiveauOrdre niveau = quiz.getNiveau();
-        int seuil = niveau.seuilReussite();
+        int seuil = quiz.getNiveau().seuilReussite();
         boolean reussi = score >= seuil;
 
-        // 6. Sauvegarder les réponses et le score
-        try {
-            quiz.setReponsesCandidat(mapper.writeValueAsString(reponses));
-        } catch (Exception e) {
-            quiz.setReponsesCandidat("{}");
-        }
-        quiz.setScore(score);
-        quiz.setReussi(reussi);
-        quizRepository.save(quiz);
-
-        // 7. Déterminer le besoin en feedback et mettre à jour l'inscription si réussi
-        InscriptionParcours inscription = quiz.getInscriptionParcours();
-        FeedbackType needsFeedback = FeedbackType.NONE;
-        String nextNiveauLabel = null;
-        String message;
-
-        if (reussi) {
-            NiveauOrdre suivant = niveau.suivant();
-            Formation formationSuivante = (suivant != null) ? inscription.getParcours().getFormationParNiveau(suivant) : null;
-            
-            boolean isLastLevel = (suivant == null) || (formationSuivante == null);
-
-            if (isLastLevel) {
-                message = "Félicitations ! Vous avez brillamment réussi le niveau Expert et terminé votre parcours ! " +
-                        "Votre certificat est maintenant disponible dans votre tableau de bord.";
-                inscription.setStatut("TERMINE");
-                inscription.setEvaluationParcoursRequise(true); // Pour solliciter l'avis sur la page parcours
-                inscriptionParcoursRepository.save(inscription);
-
-                // Envoyer la notification de succès
-                try {
-                    Long userId = inscription.getCandidat().getId();
-                    notificationService.notifyParcoursCompletion(userId, inscription.getParcours().getTitre(), inscription.getParcours().getId());
-                } catch (Exception e) {
-                    System.err.println("❌ Erreur lors de l'envoi de la notification de fin de parcours: " + e.getMessage());
-                }
-            } else {
-                inscription.setNiveauActuel(suivant);
-                inscriptionParcoursRepository.save(inscription);
-                nextNiveauLabel = suivant.toNiveauLabel();
-                
-                message = String.format("Bravo ! Vous avez réussi le niveau %s. " +
-                        "Le niveau %s est maintenant débloqué !",
-                        niveau.toNiveauLabel(), suivant.toNiveauLabel());
-            }
-        } else {
-            message = String.format("Score : %d%% (seuil requis : %d%%). " +
-                    "Vous pouvez réessayer ce niveau.", score, seuil);
-        }
+        String message = reussi ? 
+                "Félicitations ! Vous avez réussi ce niveau." : 
+                String.format("Score : %d%% (seuil requis : %d%%).", score, seuil);
 
         return QuizResultatDTO.builder()
                 .score(score)
                 .seuilRequis(seuil)
                 .reussi(reussi)
-                .needsFeedback(needsFeedback)
-                .nextNiveauLabel(nextNiveauLabel)
-                .niveauSuivantDebloque((reussi && !niveau.isLast() && inscription.getParcours().getFormationParNiveau(niveau.suivant()) != null) ? niveau.suivant() : null)
                 .message(message)
-                .inscriptionId(inscription.getId())
+                .needsFeedback(FeedbackType.NONE)
+                .niveau(quiz.getNiveau())
+                .inscriptionId(quiz.getInscriptionParcours().getId())
                 .corrections(corrections)
                 .build();
     }

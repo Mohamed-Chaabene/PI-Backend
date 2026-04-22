@@ -18,6 +18,7 @@ public class QuizResultatDTO {
     private int seuilRequis;
     private boolean reussi;
     private FeedbackType needsFeedback; // NONE | MICRO | MACRO
+    private NiveauOrdre niveau;
     private String nextNiveauLabel;     // null si Expert ou échoué
     private NiveauOrdre niveauSuivantDebloque;
     private String message;

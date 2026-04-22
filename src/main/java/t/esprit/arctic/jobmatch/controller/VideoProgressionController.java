@@ -27,6 +27,7 @@ public class VideoProgressionController {
     private final InscriptionFormationRepository inscriptionRepo;
     private final t.esprit.arctic.jobmatch.repository.InscriptionParcoursRepository inscriptionParcoursRepo;
     private final t.esprit.arctic.jobmatch.service.CertificatService certificatService;
+    private final t.esprit.arctic.jobmatch.service.NotificationService notificationService;
 
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -75,8 +76,22 @@ public class VideoProgressionController {
                             .filter(ip -> "EXPERT".equals(ip.getNiveauActuel().toString()) && ip.getParcours().getNiveauExpert() != null && ip.getParcours().getNiveauExpert().getId().equals(formationId))
                             .findFirst()
                             .ifPresent(ip -> {
-                                ip.setEvaluationParcoursRequise(true);
-                                inscriptionParcoursRepo.save(ip);
+                                if (!"TERMINE".equals(ip.getStatut())) {
+                                    ip.setStatut("TERMINE");
+                                    ip.setEvaluationParcoursRequise(true);
+                                    inscriptionParcoursRepo.save(ip);
+                                    
+                                    // Envoyer la notification de succès
+                                    try {
+                                        notificationService.notifyParcoursCompletion(
+                                            ins.getCandidat().getId(), 
+                                            ip.getParcours().getTitre(), 
+                                            ip.getParcours().getId()
+                                        );
+                                    } catch (Exception e) {
+                                        System.err.println("❌ Erreur notification fin parcours via progression: " + e.getMessage());
+                                    }
+                                }
                             });
                 }
             });
@@ -219,18 +234,35 @@ public class VideoProgressionController {
                     inscriptionRepo.save(ins);
 
                     // 2. Si c'est un parcours et niveau EXPERT, validation du parcours
-                    if (parcoursId != null && "EXPERT".equals(niveauStr) && ins.getCandidat() != null) {
-                        inscriptionParcoursRepo.findByCandidatIdAndParcoursId(ins.getCandidat().getId(), parcoursId)
+                    // On tente de récupérer le parcoursId s'il est manquant
+                    final Long finalParcoursId = (parcoursId != null) ? parcoursId : 
+                        inscriptionParcoursRepo.findByCandidatId(ins.getCandidat().getId()).stream()
+                            .filter(ip -> ip.getParcours().getNiveauExpert() != null && ip.getParcours().getNiveauExpert().getId().equals(ins.getFormation().getId()))
+                            .map(ip -> ip.getParcours().getId())
+                            .findFirst().orElse(null);
+
+                    if (finalParcoursId != null && "EXPERT".equalsIgnoreCase(niveauStr) && ins.getCandidat() != null) {
+                        inscriptionParcoursRepo.findByCandidatIdAndParcoursId(ins.getCandidat().getId(), finalParcoursId)
                                 .ifPresent(ip -> {
-                                    ip.setStatut("TERMINE");
-                                    inscriptionParcoursRepo.save(ip);
-                                    System.out.println("🏆 Parcours " + parcoursId + " terminé avec succès !");
-                                    
-                                    // 3. Génération du certificat final
-                                    try {
-                                        certificatService.genererPourParcours(ip);
-                                    } catch (Exception e) {
-                                        System.err.println("Erreur génération certificat : " + e.getMessage());
+                                    if (!"TERMINE".equals(ip.getStatut())) {
+                                        ip.setStatut("TERMINE");
+                                        ip.setEvaluationParcoursRequise(true);
+                                        inscriptionParcoursRepo.save(ip);
+                                        System.out.println("🏆 Parcours " + finalParcoursId + " terminé avec succès !");
+                                        
+                                        // 3. Notification de fin de parcours
+                                        notificationService.notifyParcoursCompletion(
+                                            ins.getCandidat().getId(), 
+                                            ip.getParcours().getTitre(), 
+                                            finalParcoursId
+                                        );
+
+                                        // 4. Génération du certificat final
+                                        try {
+                                            certificatService.genererPourParcours(ip);
+                                        } catch (Exception e) {
+                                            System.err.println("Erreur génération certificat : " + e.getMessage());
+                                        }
                                     }
                                 });
                     }
