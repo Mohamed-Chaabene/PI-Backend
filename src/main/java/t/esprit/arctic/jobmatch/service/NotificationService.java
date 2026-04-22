@@ -80,6 +80,7 @@ public class NotificationService {
             data.put("type", notification.getType());
             data.put("message", notification.getMessage());
             data.put("senderId", notification.getSenderId());
+            data.put("offreEmploiId", notification.getOffreEmploiId());
             data.put("createdAt", notification.getCreatedAt().toString());
 
             // Send to private channel for specific user
@@ -303,6 +304,7 @@ public class NotificationService {
         
         System.out.println("✅ Notifications sent to " + followerIds.length + " followers");
     }
+
     public void notifyCandidatesByJobLocation(String jobLocation, String jobTitle, String recruiterName) {
         try {
             if (jobLocation == null || jobLocation.isEmpty()) {
@@ -318,7 +320,7 @@ public class NotificationService {
                         }
                         String candidatCountry = candidat.getLocalisation().getPays();
                         return candidatCountry != null && 
-                               candidatCountry.equalsIgnoreCase(jobLocation);
+                                candidatCountry.equalsIgnoreCase(jobLocation);
                     })
                     .toList();
             
@@ -349,6 +351,41 @@ public class NotificationService {
         } catch (Exception e) {
             System.err.println("Error notifying candidates by job location: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify candidate when they complete a full parcours
+     */
+    public void notifyParcoursCompletion(Long userId, String parcoursTitle, Long parcoursId) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setSenderId(null); // System notification
+            notification.setType("PARCOURS_COMPLETED");
+            notification.setMessage("Félicitations ! Vous avez terminé le parcours \"" + parcoursTitle + "\" ! Cliquez ici pour laisser votre avis et nous aider à nous améliorer !");
+            notification.setIsRead(false);
+            notification.setOffreEmploiId(parcoursId); // Utilisation temporaire pour l'ID du parcours
+            
+            Notification savedNotification = notificationRepository.save(notification);
+            sendPusherNotification(userId, savedNotification);
+            
+            System.out.println("✅ Parcours completion notification sent to user " + userId + " for parcours " + parcoursId);
+        } catch (Exception e) {
+            System.err.println("❌ Error sending parcours completion notification: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Delete parcours completion notification after feedback submission
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteParcoursCompletionNotification(Long userId, Long parcoursId) {
+        try {
+            notificationRepository.deleteByUserIdAndTypeAndOffreEmploiId(userId, "PARCOURS_COMPLETED", parcoursId);
+            System.out.println("✅ Parcours completion notification deleted for user " + userId + " and parcours " + parcoursId);
+        } catch (Exception e) {
+            System.err.println("❌ Error deleting parcours completion notification: " + e.getMessage());
         }
     }
 }

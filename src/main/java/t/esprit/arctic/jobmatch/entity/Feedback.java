@@ -6,8 +6,10 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Feedback {
 
@@ -30,12 +32,16 @@ public class Feedback {
 
     @ManyToOne
     @JoinColumn(name = "formation_id", nullable = false)
-    @JsonIgnoreProperties({"inscriptions", "competences"})
+    @JsonIgnoreProperties({ "inscriptions", "competences", "hibernateLazyInitializer", "handler" })
     private Formation formation;
 
     @ManyToOne
     @JoinColumn(name = "candidat_id", nullable = false)
-    @JsonIgnoreProperties({"motDePasse", "inscriptions", "candidatures", "competences", "educations", "backgrounds"})
+    @JsonIgnoreProperties({
+            "motDePasse", "inscriptions", "candidatures",
+            "competences", "educations", "backgrounds",
+            "hibernateLazyInitializer", "handler"
+    })
     private Candidat candidat;
 
     @ManyToOne
@@ -44,7 +50,7 @@ public class Feedback {
 
     @PrePersist
     public void prePersist() {
-        this.dateCreation    = new Date();
+        this.dateCreation = new Date();
         this.dateModification = new Date();
     }
 

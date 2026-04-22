@@ -39,4 +39,15 @@ public interface InscriptionFormationRepository
     Optional<InscriptionFormation> findByCandidatIdAndFormationId(
             @Param("candidatId") Long candidatId,
             @Param("formationId") Long formationId);
+
+    @Query("""
+        SELECT i FROM InscriptionFormation i
+        WHERE i.candidat.id = :candidatId
+        AND i.formation.id = :formationId
+        AND ( (:parcoursId IS NULL AND i.parcoursId IS NULL) OR i.parcoursId = :parcoursId )
+    """)
+    Optional<InscriptionFormation> findByCandidatIdAndFormationIdAndParcoursId(
+            @Param("candidatId") Long candidatId,
+            @Param("formationId") Long formationId,
+            @Param("parcoursId") Long parcoursId);
 }

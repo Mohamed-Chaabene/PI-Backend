@@ -13,4 +13,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countByUserIdAndIsReadFalse(Long userId);
     
     boolean existsByEntretienIdAndTypeAndIsReadFalse(Long entretienId, String type);
+    
+    void deleteByUserIdAndTypeAndOffreEmploiId(Long userId, String type, Long offreEmploiId);
 }

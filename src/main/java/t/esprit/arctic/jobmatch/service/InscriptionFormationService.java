@@ -96,6 +96,74 @@ public class InscriptionFormationService {
         return existing;
     }
 
+    @Transactional
+    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation) {
+        return inscrireAutomatiquement(candidat, formation, null);
+    }
+
+    @Transactional
+    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation, Long parcoursId) {
+        if (formation == null) return null;
+
+        // Vérifier si déjà inscrit dans ce contexte (avec ou sans parcoursId)
+        return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidat.getId(), formation.getId(), parcoursId)
+                .orElseGet(() -> {
+                    InscriptionFormation newIns = new InscriptionFormation();
+                    newIns.setCandidat(candidat);
+                    newIns.setFormation(formation);
+                    newIns.setParcoursId(parcoursId);
+                    newIns.setDateInscription(new Date());
+                    newIns.setStatut("EnCours");
+                    newIns.setProgression(0.0);
+                    return inscriptionRepository.save(newIns);
+                });
+    }
+
+    /**
+     * Force la progression d'une formation à 100% dans un contexte donné.
+     * Le parcoursId est obligatoire si on marque depuis un parcours, pour ne pas contaminer
+     * une inscription standalone ayant la même formation.
+     */
+    @Transactional
+    public void marquerCommeTerminee(t.esprit.arctic.jobmatch.entity.Candidat candidat,
+                                     t.esprit.arctic.jobmatch.entity.Formation formation,
+                                     Long parcoursId) {
+        if (candidat == null || formation == null) return;
+
+        // Use parcoursId-aware lookup to avoid contaminating standalone inscriptions
+        InscriptionFormation ins = inscriptionRepository
+                .findByCandidatIdAndFormationIdAndParcoursId(candidat.getId(), formation.getId(), parcoursId)
+                .orElseGet(() -> {
+                    // Fallback: create a new inscription in context
+                    InscriptionFormation newIns = new InscriptionFormation();
+                    newIns.setCandidat(candidat);
+                    newIns.setFormation(formation);
+                    newIns.setParcoursId(parcoursId);
+                    newIns.setDateInscription(new java.util.Date());
+                    return newIns;
+                });
+
+        ins.setProgression(100.0);
+        ins.setStatut("Terminé");
+        inscriptionRepository.save(ins);
+        System.out.println("✅ Formation synchronisée à 100% pour " + candidat.getNom() + " sur " + formation.getTitre() + " (parcours=" + parcoursId + ")");
+    }
+
+    @Transactional
+    public void marquerCommeTerminee(t.esprit.arctic.jobmatch.entity.Candidat candidat,
+                                     t.esprit.arctic.jobmatch.entity.Formation formation) {
+        // Legacy overload without parcoursId — only mark the standalone inscription (parcoursId=null)
+        marquerCommeTerminee(candidat, formation, null);
+    }
+
+
+    @Transactional(readOnly = true)
+    public InscriptionFormation getByCandidatAndFormationAndParcours(Long candidatId, Long formationId, Long parcoursId) {
+        return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId)
+                .orElseThrow(() -> new RuntimeException("Inscription non trouvée pour candidat=" + candidatId 
+                    + ", formation=" + formationId + ", parcours=" + parcoursId));
+    }
+
     public void delete(Long id) {
         getById(id);
         inscriptionRepository.deleteById(id);

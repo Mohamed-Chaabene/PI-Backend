@@ -35,14 +35,56 @@ public class SuggestionController {
 
     @GetMapping("/formations")
     public ResponseEntity<List<FormationSuggestion>> suggest(
-            @RequestParam String titre) throws Exception {
+            @RequestParam String titre,
+            @RequestParam(required = false) String niveau) throws Exception {
+        String baseTitre = titre.trim().toLowerCase();
+        // Sujet principal : le premier mot (ex: "Angular") pour filtrer les faux résultats
+        final String primaryTopic = baseTitre.split("[\\s\\-\\:]+")[0];
 
-        String query = URLEncoder.encode(
-                titre + " cours complet tutoriel", StandardCharsets.UTF_8);
+        String levelTerms = "";
 
+        if (niveau != null && !niveau.isBlank()) {
+            String n = niveau.trim().toLowerCase();
+            // N'ajouter les termes de niveau que si le titre n'en contient pas déjà de manière explicite
+            boolean hasLevelInTitre = baseTitre.contains("débutant") || baseTitre.contains("beginner") ||
+                                      baseTitre.contains("interm") || baseTitre.contains("medium") ||
+                                      baseTitre.contains("avanc") || baseTitre.contains("advanced") ||
+                                      baseTitre.contains("expert") || baseTitre.contains("senior");
+
+            if (!hasLevelInTitre) {
+                if (n.contains("débutant") || n.contains("debutant")) {
+                    levelTerms = " beginner introduction";
+                } else if (n.contains("interm") || n.contains("medium")) {
+                    // Pour intermédiaire, "projects" et "advanced" donnent souvent des résultats de meilleur niveau
+                    levelTerms = " intermediate projects advanced";
+                } else if (n.contains("avanc") || n.contains("advanced")) {
+                    levelTerms = " advanced masterclass";
+                } else if (n.contains("expert") || n.contains("senior")) {
+                    levelTerms = " expert advanced senior";
+                } else {
+                    levelTerms = " " + niveau;
+                }
+            }
+        }
+
+        // Recherche simplifiée
+        String query = URLEncoder.encode(titre + levelTerms, StandardCharsets.UTF_8);
+
+        List<FormationSuggestion> suggestions = fetchSuggestions(query, titre, niveau, primaryTopic);
+
+        // Fallback si aucun résultat (en restant filtré sur le sujet principal)
+        if (suggestions.isEmpty()) {
+            suggestions = fetchSuggestions(URLEncoder.encode(titre, StandardCharsets.UTF_8), titre, niveau, primaryTopic);
+        }
+
+        return ResponseEntity.ok(suggestions);
+    }
+
+    private List<FormationSuggestion> fetchSuggestions(String encodedQuery, String originalTitre, String requestedNiveau, String primaryTopic) throws Exception {
+        // Suppression de relevanceLanguage=fr pour permettre les résultats internationaux de haute qualité
         String ytUrl = "https://www.googleapis.com/youtube/v3/search"
-                + "?part=snippet&type=playlist&relevanceLanguage=fr"
-                + "&maxResults=5&order=relevance&q=" + query
+                + "?part=snippet&type=playlist"
+                + "&maxResults=10&order=relevance&q=" + encodedQuery
                 + "&key=" + youtubeApiKey;
 
         HttpResponse<String> response = http.send(
@@ -52,31 +94,42 @@ public class SuggestionController {
         );
 
         JsonNode root = mapper.readTree(response.body());
-
-        if (root.has("error")) {
-            return ResponseEntity.ok(fallbackSuggestion(titre));
+        if (root.has("error") || !root.has("items")) {
+            return new ArrayList<>();
         }
 
         List<FormationSuggestion> suggestions = new ArrayList<>();
+        String topicLower = primaryTopic.toLowerCase();
+
         for (JsonNode item : root.path("items")) {
             String playlistId  = item.path("id").path("playlistId").asText();
             String videoTitle  = item.path("snippet").path("title").asText();
+            String channelName = item.path("snippet").path("channelTitle").asText();
             String thumbnail   = item.path("snippet")
                     .path("thumbnails").path("medium").path("url").asText();
-            String channelName = item.path("snippet").path("channelTitle").asText();
 
             if (playlistId.isEmpty() || playlistId.equals("null")) continue;
+
+            // ── FILTRAGE DE PERTINENCE STRICT ──
+            // Le sujet principal doit être présent dans le titre ou le nom de la chaîne
+            String titleLower = videoTitle.toLowerCase();
+            String chanLower  = channelName.toLowerCase();
+            if (!titleLower.contains(topicLower) && !chanLower.contains(topicLower)) {
+                continue;
+            }
 
             int nbVideos = getPlaylistVideoCount(playlistId);
             if (nbVideos < 3) continue;
 
+            String niveauFinal = (requestedNiveau != null && !requestedNiveau.isBlank()) ? requestedNiveau : detectNiveau(videoTitle);
+
             suggestions.add(new FormationSuggestion(
                     playlistId, videoTitle, thumbnail, channelName,
-                    "", detectCategorie(titre), detectNiveau(titre), nbVideos
+                    "", detectCategorie(videoTitle), niveauFinal, nbVideos
             ));
             if (suggestions.size() >= 3) break;
         }
-        return ResponseEntity.ok(suggestions);
+        return suggestions;
     }
 
 
@@ -332,11 +385,19 @@ public class SuggestionController {
         String t = titre.toLowerCase();
         if (t.contains("débutant") || t.contains("initiation") ||
                 t.contains("introduction") || t.contains("bases") ||
-                t.contains("beginner") || t.contains("zéro"))
+                t.contains("beginner") || t.contains("zéro") ||
+                t.contains("level 1") || t.contains("101"))
             return "Débutant";
+
         if (t.contains("avancé") || t.contains("expert") ||
-                t.contains("master") || t.contains("advanced"))
+                t.contains("master") || t.contains("advanced") ||
+                t.contains("professional") || t.contains("senior"))
             return "Avancé";
+
+        // Si le titre contient "tutorial", "course", "tuto" sans préciser le niveau, c'est souvent Débutant
+        if (t.contains("tutorial") || t.contains("cours") || t.contains("guide"))
+            return "Débutant";
+
         return "Intermédiaire";
     }
 }
