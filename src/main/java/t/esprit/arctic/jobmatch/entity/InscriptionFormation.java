@@ -49,4 +49,7 @@ public class InscriptionFormation {
     private Certificat certificat;
 
     private Integer tentativesQuizFinal = 0;
-}
+    
+    @Column(name = "parcours_id")
+    private Long parcoursId;
+}

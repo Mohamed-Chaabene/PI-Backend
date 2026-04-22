@@ -375,5 +375,18 @@ public class NotificationService {
             System.err.println("❌ Error sending parcours completion notification: " + e.getMessage());
         }
     }
+
+    /**
+     * Delete parcours completion notification after feedback submission
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteParcoursCompletionNotification(Long userId, Long parcoursId) {
+        try {
+            notificationRepository.deleteByUserIdAndTypeAndOffreEmploiId(userId, "PARCOURS_COMPLETED", parcoursId);
+            System.out.println("✅ Parcours completion notification deleted for user " + userId + " and parcours " + parcoursId);
+        } catch (Exception e) {
+            System.err.println("❌ Error deleting parcours completion notification: " + e.getMessage());
+        }
+    }
 }
 

@@ -49,7 +49,7 @@ public class InscriptionParcoursService {
         // Inscription automatique au premier niveau (DEBUTANT)
         Formation beginnerLevel = parcours.getNiveauDebutant();
         if (beginnerLevel != null) {
-            inscriptionFormationService.inscrireAutomatiquement(candidat, beginnerLevel);
+            inscriptionFormationService.inscrireAutomatiquement(candidat, beginnerLevel, parcoursId);
         }
 
         return saved;
@@ -93,23 +93,29 @@ public class InscriptionParcoursService {
     @Transactional
     public void syncProgression(InscriptionParcours ins) {
         if (ins == null || ins.getParcours() == null) return;
-
-        ParcoursFormation p = ins.getParcours();
-        Candidat c = ins.getCandidat();
+        ParcoursFormation parcours = ins.getParcours();
         NiveauOrdre actuel = ins.getNiveauActuel();
         boolean estTermine = "TERMINE".equals(ins.getStatut());
 
-        // Liste des niveaux à synchroniser (ceux qui sont sensés être terminés)
+        System.out.println("🔄 SyncProgression pour Inscription ID: " + ins.getId() + " | Niveau: " + actuel + " | Statut: " + ins.getStatut());
+
+        // Si on est au début (DEBUTANT) et que ce n'est pas fini, on ne force rien à 100%
+        if (actuel == NiveauOrdre.DEBUTANT && !estTermine) {
+            System.out.println("ℹ️ Niveau DEBUTANT détecté, pas de synchronisation forcée.");
+            return;
+        }
+
         for (NiveauOrdre niv : NiveauOrdre.values()) {
             boolean doitEtreFini = estTermine || niv.ordinal() < actuel.ordinal();
-            
             if (doitEtreFini) {
-                Formation f = p.getFormationParNiveau(niv);
+                Formation f = parcours.getFormationParNiveau(niv);
                 if (f != null) {
-                    inscriptionFormationService.marquerCommeTerminee(c, f);
+                    System.out.println("✅ Marquage formation " + f.getTitre() + " comme TERMINEE pour le niveau " + niv);
+                    inscriptionFormationService.marquerCommeTerminee(ins.getCandidat(), f);
                 }
             }
         }
+        inscriptionParcoursRepository.save(ins);
     }
 
     /**

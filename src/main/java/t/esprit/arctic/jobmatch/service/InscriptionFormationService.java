@@ -98,14 +98,20 @@ public class InscriptionFormationService {
 
     @Transactional
     public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation) {
+        return inscrireAutomatiquement(candidat, formation, null);
+    }
+
+    @Transactional
+    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation, Long parcoursId) {
         if (formation == null) return null;
 
-        // Vérifier si déjà inscrit
-        return inscriptionRepository.findByCandidatIdAndFormationId(candidat.getId(), formation.getId())
+        // Vérifier si déjà inscrit dans ce contexte (avec ou sans parcoursId)
+        return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidat.getId(), formation.getId(), parcoursId)
                 .orElseGet(() -> {
                     InscriptionFormation newIns = new InscriptionFormation();
                     newIns.setCandidat(candidat);
                     newIns.setFormation(formation);
+                    newIns.setParcoursId(parcoursId);
                     newIns.setDateInscription(new Date());
                     newIns.setStatut("EnCours");
                     newIns.setProgression(0.0);
@@ -135,6 +141,13 @@ public class InscriptionFormationService {
         System.out.println("✅ Formation synchronisée à 100% pour " + candidat.getNom() + " sur " + formation.getTitre());
     }
 
+
+    @Transactional(readOnly = true)
+    public InscriptionFormation getByCandidatAndFormationAndParcours(Long candidatId, Long formationId, Long parcoursId) {
+        return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId)
+                .orElseThrow(() -> new RuntimeException("Inscription non trouvée pour candidat=" + candidatId 
+                    + ", formation=" + formationId + ", parcours=" + parcoursId));
+    }
 
     public void delete(Long id) {
         getById(id);

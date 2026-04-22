@@ -18,6 +18,7 @@ public class FeedbackService {
     private final InscriptionParcoursRepository inscriptionRepo;
     private final CertificatService certificatService;
     private final FeedbackAlertService alertService;
+    private final NotificationService notificationService;
 
     public List<Feedback> getAll() {
         return feedbackRepository.findAll();
@@ -73,12 +74,18 @@ public class FeedbackService {
 
     @Transactional
     public void saveMacro(FeedbackMacroDTO dto) {
-        if (macroRepo.existsByInscriptionId(dto.getInscriptionId())) {
-            return; // Idempotence
-        }
-
         InscriptionParcours inscription = inscriptionRepo.findById(dto.getInscriptionId())
                 .orElseThrow(() -> new RuntimeException("Inscription non trouvée"));
+
+        // Marquer l'exigence de feedback comme remplie (avant le check d'idempotence pour s'assurer que c'est fait)
+        inscription.setEvaluationParcoursRequise(false);
+        inscriptionRepo.save(inscription);
+
+        if (macroRepo.existsByInscriptionId(dto.getInscriptionId())) {
+            // Supprimer quand même la notification au cas où elle subsisterait
+            notificationService.deleteParcoursCompletionNotification(inscription.getCandidat().getId(), dto.getParcoursId());
+            return; // Déjà enregistré
+        }
 
         FeedbackMacro macro = FeedbackMacro.builder()
                 .inscription(inscription)
@@ -93,13 +100,10 @@ public class FeedbackService {
 
         macroRepo.save(macro);
 
-        // Clôturer l'exigence de feedback
-        inscription.setEvaluationParcoursRequise(false);
-        inscriptionRepo.save(inscription);
-
         alertService.checkLowRating(dto.getParcoursId(), "MACRO", dto.getNoteGlobale());
 
-        // Note: La génération du certificat est maintenant gérée après la réussite du quiz final Expert
+        // Supprimer la notification de fin de parcours car le feedback est fait
+        notificationService.deleteParcoursCompletionNotification(inscription.getCandidat().getId(), dto.getParcoursId());
     }
 
     public List<FeedbackMacro> getMacroByParcours(Long parcoursId) {
