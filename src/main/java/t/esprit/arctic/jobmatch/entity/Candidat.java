@@ -77,6 +77,11 @@ public class Candidat extends Utilisateur {
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Candidature> candidatures = new java.util.ArrayList<>();
 
+    // Recommendations linked to this candidate
+    @JsonIgnore
+    @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CandidateRecommendation> candidateRecommendations = new java.util.ArrayList<>();
+
     public void setExperience(int i) {
     }
 

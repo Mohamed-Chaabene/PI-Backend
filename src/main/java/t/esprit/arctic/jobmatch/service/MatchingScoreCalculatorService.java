@@ -181,12 +181,15 @@ public class MatchingScoreCalculatorService {
         for (Background background : candidat.getBackgrounds()) {
             try {
                 if (background.getStartDate() != null && background.getEndDate() != null) {
-                    // Parse string dates (assuming format: yyyy-MM-dd or similar)
-                    LocalDate startDate = LocalDate.parse(background.getStartDate());
-                    LocalDate endDate = LocalDate.parse(background.getEndDate());
+                    // Parse dates (handles both yyyy-MM-dd and yyyy formats)
+                    // Use Jan 1 for start dates, Dec 31 for end dates (year-only format)
+                    LocalDate startDate = parseFlexibleDate(background.getStartDate(), true);
+                    LocalDate endDate = parseFlexibleDate(background.getEndDate(), false);
                     
-                    long days = ChronoUnit.DAYS.between(startDate, endDate);
-                    totalYears += days / 365.0; // Convert to years
+                    if (startDate != null && endDate != null) {
+                        long days = ChronoUnit.DAYS.between(startDate, endDate);
+                        totalYears += days / 365.0; // Convert to years
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Error calculating experience for background: {}", e.getMessage());
@@ -194,6 +197,49 @@ public class MatchingScoreCalculatorService {
         }
 
         return totalYears;
+    }
+
+    /**
+     * Parse dates in flexible format (yyyy-MM-dd or yyyy)
+     * For year-only format: 
+     *   - isStartDate=true: returns Jan 1 of that year
+     *   - isStartDate=false: returns Dec 31 of that year
+     */
+    private LocalDate parseFlexibleDate(String dateStr, boolean isStartDate) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+
+        dateStr = dateStr.trim();
+
+        try {
+            // Try full date format first (yyyy-MM-dd)
+            if (dateStr.contains("-") && dateStr.split("-").length >= 3) {
+                return LocalDate.parse(dateStr);
+            }
+
+            // Try year-only format (yyyy)
+            if (dateStr.matches("\\d{4}")) {
+                int year = Integer.parseInt(dateStr);
+                if (isStartDate) {
+                    return LocalDate.of(year, 1, 1);  // Jan 1 for start
+                } else {
+                    return LocalDate.of(year, 12, 31); // Dec 31 for end
+                }
+            }
+
+            // Fallback: try to parse year from mixed formats
+            int year = Integer.parseInt(dateStr.replaceAll("\\D", ""));
+            if (isStartDate) {
+                return LocalDate.of(year, 1, 1);
+            } else {
+                return LocalDate.of(year, 12, 31);
+            }
+
+        } catch (Exception e) {
+            log.warn("Could not parse date: {}", dateStr);
+            return null;
+        }
     }
 
     /**

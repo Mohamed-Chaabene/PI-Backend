@@ -77,6 +77,11 @@ public class OffreEmploi {
     @OneToMany(mappedBy = "offreEmploi", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Candidature> candidatures;
 
+    // Recommendations linked to this job offer
+    @JsonIgnore
+    @OneToMany(mappedBy = "offre", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CandidateRecommendation> candidateRecommendations;
+
     // les constructeurs
     public OffreEmploi() {}
 

@@ -35,6 +35,11 @@ public class Utilisateur {
         @Column(columnDefinition = "TEXT")
         private String followers;
 
+        // Login history for this user
+        @JsonIgnore
+        @OneToMany(mappedBy = "utilisateur", cascade = CascadeType.ALL, orphanRemoval = true)
+        private java.util.List<LoginHistory> loginHistories = new java.util.ArrayList<>();
+
         // Getters explicites pour Lombok
         public String getEmail() {
                 return email;

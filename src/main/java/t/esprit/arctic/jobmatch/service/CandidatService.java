@@ -117,11 +117,17 @@ public class CandidatService {
     public Candidat updateCompetencesFromStrings(Long id, List<String> competenceNames) {
         Candidat candidat = getById(id);
         
-        // Only link to existing competences - do not auto-create
+        // Link to existing competences or create new ones if they don't exist
         List<Competence> competences = competenceNames.stream()
                 .map(name -> competenceRepository.findByNom(name)
-                        .orElseThrow(() -> new ResourceNotFoundException(
-                            "Competence not found: " + name + ". Please select from available competences.")))
+                        .orElseGet(() -> {
+                            // Auto-create competence if it doesn't exist
+                            Competence newCompetence = new Competence();
+                            newCompetence.setNom(name);
+                            newCompetence.setNiveau("Intermédiaire"); // Default level
+                            newCompetence.setType("Technique"); // Default type
+                            return competenceRepository.save(newCompetence);
+                        }))
                 .collect(Collectors.toList());
         
         candidat.setCompetences(competences);
