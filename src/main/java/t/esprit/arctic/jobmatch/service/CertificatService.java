@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.entity.Certificat;
 import t.esprit.arctic.jobmatch.entity.InscriptionFormation;
+import t.esprit.arctic.jobmatch.entity.InscriptionParcours;
 import t.esprit.arctic.jobmatch.repository.CertificatRepository;
+import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -23,16 +25,61 @@ import java.util.Locale;
 public class CertificatService {
 
     private final CertificatRepository certificatRepository;
+    private final InscriptionFormationRepository inscriptionFormationRepository;
 
+    @org.springframework.transaction.annotation.Transactional
     public Certificat genererAutomatiquement(InscriptionFormation inscription) {
-        if (certificatRepository.existsByInscriptionId(inscription.getId())) {
-            throw new RuntimeException("Un certificat existe deja pour cette inscription");
+        return certificatRepository.findByInscriptionId(inscription.getId())
+                .orElseGet(() -> {
+                    Certificat certificat = new Certificat();
+                    certificat.setTitre("Certificat - " + inscription.getFormation().getTitre());
+                    certificat.setDateObtention(new Date());
+                    certificat.setInscription(inscription);
+                    return certificatRepository.save(certificat);
+                });
+    }
+
+    /**
+     * Génère un certificat lié à un parcours quand le candidat réussit le quiz Expert.
+     * On trouve ou crée une InscriptionFormation pour la formation Expert du parcours.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public Certificat genererPourParcours(InscriptionParcours inscriptionParcours) {
+        // Récupérer la formation Expert du parcours
+        t.esprit.arctic.jobmatch.entity.Formation formationExpert =
+                inscriptionParcours.getParcours().getFormationParNiveau(
+                        t.esprit.arctic.jobmatch.entity.NiveauOrdre.EXPERT);
+
+        if (formationExpert == null) {
+            throw new RuntimeException("Aucune formation Expert trouvée pour ce parcours");
         }
-        Certificat certificat = new Certificat();
-        certificat.setTitre("Certificat - " + inscription.getFormation().getTitre());
-        certificat.setDateObtention(new Date());
-        certificat.setInscription(inscription);
-        return certificatRepository.save(certificat);
+
+        // Trouver ou créer une InscriptionFormation pour la formation Expert
+        Long candidatId = inscriptionParcours.getCandidat().getId();
+        Long formationId = formationExpert.getId();
+
+        InscriptionFormation inscriptionFormation = inscriptionFormationRepository
+                .findByCandidatIdAndFormationId(candidatId, formationId)
+                .orElseGet(() -> {
+                    InscriptionFormation newInsc = new InscriptionFormation();
+                    newInsc.setCandidat(inscriptionParcours.getCandidat());
+                    newInsc.setFormation(formationExpert);
+                    newInsc.setDateInscription(new Date());
+                    newInsc.setStatut("Terminé");
+                    newInsc.setProgression(100.0);
+                    return inscriptionFormationRepository.save(newInsc);
+                });
+
+        // Vérifier si un certificat existe déjà
+        return certificatRepository.findByInscriptionId(inscriptionFormation.getId())
+                .orElseGet(() -> {
+                    Certificat certificat = new Certificat();
+                    certificat.setTitre("Certificat Parcours - " + inscriptionParcours.getParcours().getTitre());
+                    certificat.setDateObtention(new Date());
+                    certificat.setInscription(inscriptionFormation);
+                    certificat.setParcours(inscriptionParcours.getParcours());
+                    return certificatRepository.save(certificat);
+                });
     }
 
     public List<Certificat> getAll() {

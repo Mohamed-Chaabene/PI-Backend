@@ -26,6 +26,20 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     boolean existsByFormationIdAndCandidatId(Long formationId, Long candidatId);
 
     @Query("""
+        SELECT f FROM Feedback f 
+        WHERE f.formation.id IN (
+            SELECT p.niveauDebutant.id FROM ParcoursFormation p WHERE p.id = :parcoursId
+        ) OR f.formation.id IN (
+            SELECT p.niveauIntermediaire.id FROM ParcoursFormation p WHERE p.id = :parcoursId
+        ) OR f.formation.id IN (
+            SELECT p.niveauAvance.id FROM ParcoursFormation p WHERE p.id = :parcoursId
+        ) OR f.formation.id IN (
+            SELECT p.niveauExpert.id FROM ParcoursFormation p WHERE p.id = :parcoursId
+        )
+    """)
+    List<Feedback> findByParcoursId(@Param("parcoursId") Long parcoursId);
+
+    @Query("""
         SELECT f.formation.id as formationId,
                f.formation.titre as formationNom,
                AVG(f.note) as moyenneNote,

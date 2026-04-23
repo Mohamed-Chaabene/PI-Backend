@@ -3,8 +3,10 @@ package t.esprit.arctic.jobmatch.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.pusher.rest.Pusher;
+import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Notification;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
+import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.NotificationRepository;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 
@@ -18,7 +20,30 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final CandidatRepository candidatRepository;
     private final Pusher pusher;
+
+    /**
+     * Send profile incomplete notification via Pusher (same pattern as follow - with DB persistence)
+     */
+    public void sendProfileIncompleteNotification(Long userId, String missingFields) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setSenderId(null);
+            notification.setType("PROFILE_INCOMPLETE");
+            notification.setMessage("Your profile is incomplete. Missing: " + missingFields);
+            notification.setIsRead(false);
+            
+            Notification savedNotification = notificationRepository.save(notification);
+
+            sendPusherNotification(userId, savedNotification);
+            
+        } catch (Exception e) {
+            System.err.println("Error sending profile incomplete notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Create a follow notification and send via Pusher
@@ -55,6 +80,7 @@ public class NotificationService {
             data.put("type", notification.getType());
             data.put("message", notification.getMessage());
             data.put("senderId", notification.getSenderId());
+            data.put("offreEmploiId", notification.getOffreEmploiId());
             data.put("createdAt", notification.getCreatedAt().toString());
 
             // Send to private channel for specific user
@@ -87,6 +113,123 @@ public class NotificationService {
      */
     public long getUnreadNotificationCount(Long userId) {
         return notificationRepository.countByUserIdAndIsReadFalse(userId);
+    }
+
+    /**
+     * Notify all followers when a candidate enrolls in a formation
+     */
+    public void notifyFollowersOfFormationEnrollment(Long candidatId, String candidatName, String formationName) {
+        try {
+            Utilisateur candidat = utilisateurRepository.findById(candidatId)
+                    .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+            
+            String followersString = candidat.getFollowers();
+            if (followersString == null || followersString.isEmpty()) {
+                return;
+            }
+            
+            String[] followerIds = followersString.split(",");
+            
+            for (String followerId : followerIds) {
+                try {
+                    Long followerIdLong = Long.parseLong(followerId.trim());
+                    
+                    Notification notification = new Notification();
+                    notification.setUserId(followerIdLong);
+                    notification.setSenderId(candidatId);
+                    notification.setType("formation_enrollment");
+                    notification.setMessage(candidatName + " joined the formation: " + formationName);
+                    notification.setIsRead(false);
+                    
+                    Notification savedNotification = notificationRepository.save(notification);
+                    sendPusherNotification(followerIdLong, savedNotification);
+                    
+                } catch (NumberFormatException e) {
+                    System.err.println("Error parsing follower ID: " + followerId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error notifying followers of formation enrollment: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify all followers when a candidate participates in an event
+     */
+    public void notifyFollowersOfEventParticipation(Long candidatId, String candidatName, String eventName) {
+        try {
+            Utilisateur candidat = utilisateurRepository.findById(candidatId)
+                    .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
+            
+            String followersString = candidat.getFollowers();
+            if (followersString == null || followersString.isEmpty()) {
+                return;
+            }
+            
+            String[] followerIds = followersString.split(",");
+            
+            for (String followerId : followerIds) {
+                try {
+                    Long followerIdLong = Long.parseLong(followerId.trim());
+                    
+                    Notification notification = new Notification();
+                    notification.setUserId(followerIdLong);
+                    notification.setSenderId(candidatId);
+                    notification.setType("event_participation");
+                    notification.setMessage(candidatName + " is participating in: " + eventName);
+                    notification.setIsRead(false);
+                    
+                    Notification savedNotification = notificationRepository.save(notification);
+                    sendPusherNotification(followerIdLong, savedNotification);
+                    
+                } catch (NumberFormatException e) {
+                    System.err.println("Error parsing follower ID: " + followerId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error notifying followers of event participation: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify all candidates when a new recruiter joins
+     */
+    public void notifyAllCandidatesOfNewRecruiter(Long recruiterId, String recruiterName, String company) {
+        try {
+            // Get all candidates
+            List<Utilisateur> allCandidates = candidatRepository.findAll()
+                    .stream()
+                    .map(candidat -> (Utilisateur) candidat)
+                    .toList();
+            
+            if (allCandidates.isEmpty()) {
+                return;
+            }
+            
+            String message = recruiterName + " from " + (company != null ? company : "a company") + " joined - follow to see their job offers!";
+            
+            for (Utilisateur candidate : allCandidates) {
+                try {
+                    Notification notification = new Notification();
+                    notification.setUserId(candidate.getId());
+                    notification.setSenderId(recruiterId);
+                    notification.setType("new_recruiter");
+                    notification.setMessage(message);
+                    notification.setIsRead(false);
+                    
+                    Notification savedNotification = notificationRepository.save(notification);
+                    sendPusherNotification(candidate.getId(), savedNotification);
+                    
+                } catch (Exception e) {
+                    System.err.println("Error notifying candidate " + candidate.getId() + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error notifying candidates of new recruiter: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -161,4 +304,89 @@ public class NotificationService {
         
         System.out.println("✅ Notifications sent to " + followerIds.length + " followers");
     }
+
+    public void notifyCandidatesByJobLocation(String jobLocation, String jobTitle, String recruiterName) {
+        try {
+            if (jobLocation == null || jobLocation.isEmpty()) {
+                return;
+            }
+            
+            // Get all candidates with matching location (comparing by pays/country)
+            List<Candidat> candidatesInLocation = candidatRepository.findAll()
+                    .stream()
+                    .filter(candidat -> {
+                        if (candidat.getLocalisation() == null) {
+                            return false;
+                        }
+                        String candidatCountry = candidat.getLocalisation().getPays();
+                        return candidatCountry != null && 
+                                candidatCountry.equalsIgnoreCase(jobLocation);
+                    })
+                    .toList();
+            
+            if (candidatesInLocation.isEmpty()) {
+                return;
+            }
+            
+            String message = "New job opportunity in " + jobLocation + ": " + jobTitle + " by " + recruiterName;
+            
+            for (Candidat candidate : candidatesInLocation) {
+                try {
+                    Notification notification = new Notification();
+                    notification.setUserId(candidate.getId());
+                    notification.setSenderId(null); // System notification
+                    notification.setType("job_location_match");
+                    notification.setMessage(message);
+                    notification.setIsRead(false);
+                    
+                    Notification savedNotification = notificationRepository.save(notification);
+                    sendPusherNotification(candidate.getId(), savedNotification);
+                    
+                } catch (Exception e) {
+                    System.err.println("Error notifying candidate " + candidate.getId() + ": " + e.getMessage());
+                }
+            }
+            
+            System.out.println("✅ Job location notifications sent to " + candidatesInLocation.size() + " candidates in " + jobLocation);
+        } catch (Exception e) {
+            System.err.println("Error notifying candidates by job location: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify candidate when they complete a full parcours
+     */
+    public void notifyParcoursCompletion(Long userId, String parcoursTitle, Long parcoursId) {
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setSenderId(null); // System notification
+            notification.setType("PARCOURS_COMPLETED");
+            notification.setMessage("Félicitations ! Vous avez terminé le parcours \"" + parcoursTitle + "\" ! Cliquez ici pour laisser votre avis et nous aider à nous améliorer !");
+            notification.setIsRead(false);
+            notification.setOffreEmploiId(parcoursId); // Utilisation temporaire pour l'ID du parcours
+            
+            Notification savedNotification = notificationRepository.save(notification);
+            sendPusherNotification(userId, savedNotification);
+            
+            System.out.println("✅ Parcours completion notification sent to user " + userId + " for parcours " + parcoursId);
+        } catch (Exception e) {
+            System.err.println("❌ Error sending parcours completion notification: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Delete parcours completion notification after feedback submission
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteParcoursCompletionNotification(Long userId, Long parcoursId) {
+        try {
+            notificationRepository.deleteByUserIdAndTypeAndOffreEmploiId(userId, "PARCOURS_COMPLETED", parcoursId);
+            System.out.println("✅ Parcours completion notification deleted for user " + userId + " and parcours " + parcoursId);
+        } catch (Exception e) {
+            System.err.println("❌ Error deleting parcours completion notification: " + e.getMessage());
+        }
+    }
 }
+

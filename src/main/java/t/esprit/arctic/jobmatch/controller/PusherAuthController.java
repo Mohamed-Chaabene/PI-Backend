@@ -28,26 +28,17 @@ public class PusherAuthController {
             @RequestParam String channel_name) {
         
         try {
-            // Verify JWT and extract user ID
             Long userId = extractUserIdFromToken(token);
             
-            // Verify user is authorized for this channel
             String expectedChannelName = "private-user-" + userId;
             if (!channel_name.equals(expectedChannelName)) {
                 return "{\"error\": \"Unauthorized channel access\"}";
             }
 
-            System.out.println("✅ Authorizing channel: " + channel_name + " for user: " + userId);
-
-            // Generate Pusher authentication token - returns JSON string
             String authResponse = pusher.authenticate(socket_id, channel_name);
-            
-            System.out.println("✅ Pusher auth response: " + authResponse);
-            
-            // Return the auth response directly (it's already a JSON string)
             return authResponse;
         } catch (Exception e) {
-            System.err.println("❌ Channel authentication error: " + e.getMessage());
+            System.err.println("Channel authentication error: " + e.getMessage());
             e.printStackTrace();
             return "{\"error\": \"Authentication failed\"}";
         }

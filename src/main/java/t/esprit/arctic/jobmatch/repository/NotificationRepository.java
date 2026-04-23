@@ -12,6 +12,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByUserIdAndIsReadFalseOrderByCreatedAtDesc(Long userId);
     long countByUserIdAndIsReadFalse(Long userId);
     
-    // Scheduler methods for idempotence checks
     boolean existsByEntretienIdAndTypeAndIsReadFalse(Long entretienId, String type);
+    
+    void deleteByUserIdAndTypeAndOffreEmploiId(Long userId, String type, Long offreEmploiId);
 }

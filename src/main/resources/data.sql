@@ -17,3 +17,37 @@ SET @candidat_id = LAST_INSERT_ID();
 
 INSERT INTO candidat (id, prenom, telephone, niveau_etude) VALUES
     (@candidat_id, 'Jean', '+33123456789', 'Master');
+
+-- Insert competences
+INSERT IGNORE INTO competence (nom, niveau, type) VALUES
+    ('Java', 'Intermédiaire', 'Technical'),
+    ('JavaScript', 'Avancé', 'Technical'),
+    ('Python', 'Intermédiaire', 'Technical'),
+    ('React', 'Avancé', 'Technical'),
+    ('Angular', 'Intermédiaire', 'Technical'),
+    ('Spring Boot', 'Intermédiaire', 'Technical'),
+    ('SQL', 'Avancé', 'Technical'),
+    ('MongoDB', 'Intermédiaire', 'Technical'),
+    ('Docker', 'Débutant', 'Technical'),
+    ('Kubernetes', 'Débutant', 'Technical'),
+    ('AWS', 'Intermédiaire', 'Technical'),
+    ('Git', 'Avancé', 'Technical'),
+    ('REST API', 'Avancé', 'Technical'),
+    ('GraphQL', 'Intermédiaire', 'Technical'),
+    ('TypeScript', 'Intermédiaire', 'Technical'),
+    ('HTML/CSS', 'Avancé', 'Technical'),
+    ('Communication', 'Avancé', 'Soft'),
+    ('Teamwork', 'Avancé', 'Soft'),
+    ('Problem Solving', 'Avancé', 'Soft'),
+    ('Project Management', 'Intermédiaire', 'Soft'),
+    ('Leadership', 'Intermédiaire', 'Soft'),
+    ('Adaptability', 'Avancé', 'Soft'),
+    ('Critical Thinking', 'Avancé', 'Soft'),
+    ('Time Management', 'Avancé', 'Soft'),
+    ('Agile', 'Intermédiaire', 'Soft'),
+    ('Scrum', 'Intermédiaire', 'Soft'),
+    ('User Interface Design', 'Intermédiaire', 'Technical'),
+    ('Machine Learning', 'Débutant', 'Technical'),
+    ('Data Analysis', 'Intermédiaire', 'Technical'),
+    ('Microservices', 'Intermédiaire', 'Technical');
+

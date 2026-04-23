@@ -13,10 +13,15 @@ import t.esprit.arctic.jobmatch.dto.RegisterResponse;
 import t.esprit.arctic.jobmatch.dto.PasswordResetRequest;
 import t.esprit.arctic.jobmatch.dto.VerifyOtpRequest;
 import t.esprit.arctic.jobmatch.dto.PasswordResetResponse;
+import t.esprit.arctic.jobmatch.dto.ProfileCompletenessDto;
 import t.esprit.arctic.jobmatch.entity.*;
 import t.esprit.arctic.jobmatch.security.JwtService;
 import t.esprit.arctic.jobmatch.service.UtilisateurService;
 import t.esprit.arctic.jobmatch.service.TwilioService;
+import t.esprit.arctic.jobmatch.service.LoginHistoryService;
+import t.esprit.arctic.jobmatch.service.NotificationService;
+import t.esprit.arctic.jobmatch.service.ProfileCheckService;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,6 +33,9 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final JwtService jwtService;
     private final TwilioService twilioService;
+    private final LoginHistoryService loginHistoryService;
+    private final NotificationService notificationService;
+    private final ProfileCheckService profileCheckService;
 
     //  REGISTER
     @PostMapping("/register")
@@ -102,7 +110,7 @@ public class AuthController {
 
     // LOGIN
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
+    public LoginResponse login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         try {
             if (request.email == null || request.email.trim().isEmpty()) {
                 throw new BadCredentialsException("Email requis");
@@ -123,9 +131,27 @@ public class AuthController {
                 throw new RuntimeException("Token JWT non généré");
             }
             
-            // Extraire le rôle du token
             String role = jwtService.extractRole(token);
-            System.out.println("[AUTH DEBUG] login email=" + request.email + " roleFromToken=" + role);
+            
+            String ipAddress = getClientIpAddress(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+            loginHistoryService.recordLoginByEmail(request.email, ipAddress, userAgent);
+            
+            try {
+                long connectionCount = loginHistoryService.countConnectionsByEmail(request.email);
+                
+                if (connectionCount >= 2 && role.equals("CANDIDAT")) {
+                    Utilisateur user = service.getByEmail(request.email);
+                    if (user instanceof Candidat) {
+                        ProfileCompletenessDto profile = profileCheckService.checkProfileCompleteness(user.getId());
+                        if (!profile.isComplete()) {
+                            notificationService.sendProfileIncompleteNotification(user.getId(), profile.getMissingFields());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error: Profile check notification failed: " + e.getMessage());
+            }
             
             return new LoginResponse(token, request.email, role, "Connexion réussie");
         } catch (BadCredentialsException ex) {
@@ -135,6 +161,20 @@ public class AuthController {
             ex.printStackTrace();
             throw new RuntimeException("Erreur lors de la connexion: " + ex.getMessage());
         }
+    }
+
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty()) {
+            return xRealIp;
+        }
+        
+        return request.getRemoteAddr();
     }
 
     //  TEST ROLE (DEBUG)
@@ -206,12 +246,40 @@ public class AuthController {
             // Update password in database
             service.resetPasswordByPhone(phoneNumber, newPassword);
 
-            System.out.println("[PASSWORD RESET] ✅ Password reset successful for phone: " + phoneNumber);
+            System.out.println("[PASSWORD RESET] Password reset successful for phone: " + phoneNumber);
             return new PasswordResetResponse(true, "Nouveau mot de passe envoyé au numéro fourni. Vérifiez vos SMS.", "SUCCESS");
         } catch (Exception e) {
-            System.err.println("[PASSWORD RESET] ❌ Error: " + e.getMessage());
+            System.err.println("[PASSWORD RESET] Error: " + e.getMessage());
             e.printStackTrace();
             return new PasswordResetResponse(false, "Erreur: " + e.getMessage(), "ERROR");
+        }
+    }
+
+    @PostMapping("/change-password")
+    public java.util.Map<String, Object> changePassword(@RequestBody java.util.Map<String, String> request) {
+        try {
+            Long userId = Long.valueOf(request.get("userId"));
+            String oldPassword = request.get("oldPassword");
+            String newPassword = request.get("newPassword");
+
+            if (userId == null || oldPassword == null || newPassword == null) {
+                return java.util.Map.of(
+                    "success", false,
+                    "message", "Missing required fields"
+                );
+            }
+
+            service.changePassword(userId, oldPassword, newPassword);
+            
+            return java.util.Map.of(
+                "success", true,
+                "message", "Password changed successfully"
+            );
+        } catch (Exception e) {
+            return java.util.Map.of(
+                "success", false,
+                "message", e.getMessage()
+            );
         }
     }
 }

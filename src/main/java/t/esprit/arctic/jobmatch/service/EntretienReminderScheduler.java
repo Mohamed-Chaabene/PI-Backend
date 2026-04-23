@@ -26,7 +26,7 @@ public class EntretienReminderScheduler {
      * Send interview reminders every 5 minutes.
      * Checks for interviews in the next hour window and creates reminder notifications.
      */
-    @Scheduled(cron = "0 */5 * * * *")
+    @Scheduled(cron = "1 * * * * *")
     @Transactional
     public void sendInterviewReminders() {
         try {

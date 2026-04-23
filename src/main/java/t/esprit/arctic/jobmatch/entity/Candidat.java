@@ -65,9 +65,11 @@ public class Candidat extends Utilisateur {
     private List<Education> educations = new java.util.ArrayList<>();
 
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Background> backgrounds = new java.util.ArrayList<>();
 
     @OneToMany(mappedBy = "candidat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<InscriptionFormation> inscriptions = new java.util.ArrayList<>();
 
     // Un candidat peut postuler à 0..* emplois via la table de liaison Candidature

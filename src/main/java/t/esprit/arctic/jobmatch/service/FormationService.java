@@ -137,17 +137,6 @@ public class FormationService {
         for (FormationStatsDTO stat : stats) {
             String badge = calculerBadge(stat);
 
-            if ("Disponible".equals(stat.getStatut())
-                    && (stat.getTotalInscrits() == null || stat.getTotalInscrits() == 0L)) {
-                Formation f = formationRepository.findById(stat.getFormationId()).orElse(null);
-                if (f != null) {
-                    f.setStatut("Archivée");
-                    formationRepository.save(f);
-                    archives++;
-                }
-                continue;
-            }
-
             formationRepository.updateScoreEtBadge(
                     stat.getFormationId(),
                     stat.getScorePopularite(),
