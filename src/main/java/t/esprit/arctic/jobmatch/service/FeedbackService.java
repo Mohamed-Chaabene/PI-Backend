@@ -81,32 +81,39 @@ public class FeedbackService {
         inscription.setEvaluationParcoursRequise(false);
         inscriptionRepo.save(inscription);
 
-        if (macroRepo.existsByInscriptionId(dto.getInscriptionId())) {
-            // Supprimer quand même la notification au cas où elle subsisterait
-            notificationService.deleteParcoursCompletionNotification(inscription.getCandidat().getId(), dto.getParcoursId());
-            return; // Déjà enregistré
+        Optional<FeedbackMacro> existingOpt = macroRepo.findByInscriptionId(dto.getInscriptionId());
+        
+        if (existingOpt.isPresent()) {
+            FeedbackMacro macro = existingOpt.get();
+            macro.setNoteGlobale(dto.getNoteGlobale());
+            macro.setProgression(dto.getProgression());
+            macro.setExperienceQuiz(dto.getExperienceQuiz());
+            macro.setRecommandation(dto.getRecommandation());
+            macro.setCommentaireLibre(dto.getCommentaireLibre());
+            macroRepo.save(macro);
+        } else {
+            FeedbackMacro macro = FeedbackMacro.builder()
+                    .inscription(inscription)
+                    .candidat(inscription.getCandidat())
+                    .parcours(inscription.getParcours())
+                    .noteGlobale(dto.getNoteGlobale())
+                    .progression(dto.getProgression())
+                    .experienceQuiz(dto.getExperienceQuiz())
+                    .recommandation(dto.getRecommandation())
+                    .commentaireLibre(dto.getCommentaireLibre())
+                    .build();
+            macroRepo.save(macro);
         }
 
-        FeedbackMacro macro = FeedbackMacro.builder()
-                .inscription(inscription)
-                .candidat(inscription.getCandidat())
-                .parcours(inscription.getParcours())
-                .noteGlobale(dto.getNoteGlobale())
-                .progression(dto.getProgression())
-                .experienceQuiz(dto.getExperienceQuiz())
-                .recommandation(dto.getRecommandation())
-                .commentaireLibre(dto.getCommentaireLibre())
-                .build();
-
-        macroRepo.save(macro);
-
         alertService.checkLowRating(dto.getParcoursId(), "MACRO", dto.getNoteGlobale());
-
-        // Supprimer la notification de fin de parcours car le feedback est fait
-        notificationService.deleteParcoursCompletionNotification(inscription.getCandidat().getId(), dto.getParcoursId());
+        // notificationService.deleteParcoursCompletionNotification(inscription.getCandidat().getId(), dto.getParcoursId());
     }
 
     public List<FeedbackMacro> getMacroByParcours(Long parcoursId) {
         return macroRepo.findByParcoursId(parcoursId);
+    }
+
+    public Optional<FeedbackMacro> getMacroByInscriptionId(Long inscriptionId) {
+        return macroRepo.findByInscriptionId(inscriptionId);
     }
 }

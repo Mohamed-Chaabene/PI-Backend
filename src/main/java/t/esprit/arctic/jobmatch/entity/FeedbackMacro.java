@@ -1,5 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Date;
@@ -24,14 +25,17 @@ public class FeedbackMacro {
 
     @OneToOne
     @JoinColumn(name = "inscription_id")
+    @JsonIgnore
     private InscriptionParcours inscription;
 
     @ManyToOne
     @JoinColumn(name = "candidat_id")
+    @JsonIgnore
     private Candidat candidat;
 
     @ManyToOne
     @JoinColumn(name = "parcours_id")
+    @JsonIgnore
     private ParcoursFormation parcours;
 
     @Temporal(TemporalType.TIMESTAMP)

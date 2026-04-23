@@ -92,4 +92,11 @@ public class FeedbackController {
     public ResponseEntity<List<FeedbackMacro>> getMacrosByParcours(@PathVariable Long parcoursId) {
         return ResponseEntity.ok(feedbackService.getMacroByParcours(parcoursId));
     }
+
+    @GetMapping("/inscription/{inscriptionId}/macro")
+    public ResponseEntity<FeedbackMacro> getMacroByInscription(@PathVariable Long inscriptionId) {
+        return feedbackService.getMacroByInscriptionId(inscriptionId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
