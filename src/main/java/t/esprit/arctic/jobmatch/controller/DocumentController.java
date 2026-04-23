@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.entity.Document;
+import t.esprit.arctic.jobmatch.entity.TypeDocument;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.DocumentRepository;
@@ -23,6 +24,14 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.core.io.ByteArrayResource;
+
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import t.esprit.arctic.jobmatch.dto.DocumentDTO;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -54,21 +63,52 @@ public class DocumentController {
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé pour ID: " + user.getId()));
     }
 
-    // CREATE
     @PostMapping
-    public ResponseEntity<Document> create(@RequestBody Document document) {
+    public ResponseEntity<?> create(@Valid @RequestBody DocumentDTO documentDTO, BindingResult bindingResult) {
+        // Vérifier les erreurs de validation DTO
+        if (bindingResult.hasErrors()) {
+            return getValidationErrors(bindingResult);
+        }
+
+        Map<String, String> validationErrors = validerChampsObligatoires(documentDTO);
+        if (!validationErrors.isEmpty()) {
+            return ResponseEntity.badRequest().body(validationErrors);
+        }
+
         try {
             Candidat candidat = getCandidatConnecte();
-            document.setCandidat(candidat);
-            System.out.println(" Document lié au candidat ID: " + candidat.getId());
-        } catch (Exception e) {
-            System.out.println(" Liaison candidat échouée: " + e.getMessage());
-        }
-        Document saved = documentRepository.save(document);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
-    }
 
-    // READ ALL
+            Document document = new Document();
+            document.setNom(documentDTO.getNomFichier());
+            document.setPrenom(documentDTO.getPrenom());
+            document.setTitre(documentDTO.getTitre());
+            document.setEmail(documentDTO.getEmail());
+            document.setTelephone(documentDTO.getTelephone());
+            document.setAdresse(documentDTO.getAdresse());
+            document.setProfil(documentDTO.getProfil());
+            document.setCompetences(documentDTO.getCompetences());
+            document.setLangues(documentDTO.getLangues());
+            document.setCentresInteret(documentDTO.getCentresInteret());
+            document.setExperiences(documentDTO.getExperiences());
+            document.setFormations(documentDTO.getFormations());
+            document.setPhotoName(documentDTO.getPhotoName());
+            document.setPhotoData(documentDTO.getPhotoData());
+            document.setType(TypeDocument.valueOf(documentDTO.getType()));
+            document.setContenu(documentDTO.getContenu());
+            document.setTemplate(documentDTO.getTemplate());
+            document.setCompatibleATS(documentDTO.getCompatibleATS() != null ? documentDTO.getCompatibleATS() : true);
+            document.setAjouterPhoto(documentDTO.getAjouterPhoto() != null ? documentDTO.getAjouterPhoto() : false);
+            document.setCandidat(candidat);
+
+            Document saved = documentRepository.save(document);
+            return new ResponseEntity<>(saved, HttpStatus.CREATED);
+
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Erreur lors de la création: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
     @GetMapping
     public ResponseEntity<List<Document>> getAll() {
         try {
@@ -82,7 +122,6 @@ public class DocumentController {
         }
     }
 
-    // READ ONE
     @GetMapping("/{id}")
     public ResponseEntity<Document> getById(@PathVariable Long id) {
         Document document = documentRepository.findById(id)
@@ -97,12 +136,23 @@ public class DocumentController {
         return ResponseEntity.ok(document);
     }
 
-    // UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<Document> update(@PathVariable Long id,
-                                           @RequestBody Document document) {
+    public ResponseEntity<?> update(@PathVariable Long id,
+                                    @Valid @RequestBody DocumentDTO documentDTO,
+                                    BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return getValidationErrors(bindingResult);
+        }
+
+        Map<String, String> validationErrors = validerChampsObligatoires(documentDTO);
+        if (!validationErrors.isEmpty()) {
+            return ResponseEntity.badRequest().body(validationErrors);
+        }
+
         Document existing = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé"));
+
         try {
             Candidat candidat = getCandidatConnecte();
             if (existing.getCandidat() != null &&
@@ -111,16 +161,29 @@ public class DocumentController {
             }
         } catch (Exception ignored) {}
 
-        existing.setNom(document.getNom());
-        existing.setType(document.getType());
-        existing.setContenu(document.getContenu());
-        existing.setTemplate(document.getTemplate());
-        existing.setCompatibleATS(document.getCompatibleATS());
-        existing.setAjouterPhoto(document.getAjouterPhoto());
+        existing.setNom(documentDTO.getNom());
+        existing.setPrenom(documentDTO.getPrenom());
+        existing.setTitre(documentDTO.getTitre());
+        existing.setEmail(documentDTO.getEmail());
+        existing.setTelephone(documentDTO.getTelephone());
+        existing.setAdresse(documentDTO.getAdresse());
+        existing.setProfil(documentDTO.getProfil());
+        existing.setCompetences(documentDTO.getCompetences());
+        existing.setLangues(documentDTO.getLangues());
+        existing.setCentresInteret(documentDTO.getCentresInteret());
+        existing.setExperiences(documentDTO.getExperiences());
+        existing.setFormations(documentDTO.getFormations());
+        existing.setPhotoName(documentDTO.getPhotoName());
+        existing.setPhotoData(documentDTO.getPhotoData());
+        existing.setType(TypeDocument.valueOf(documentDTO.getType()));
+        existing.setContenu(documentDTO.getContenu());
+        existing.setTemplate(documentDTO.getTemplate());
+        existing.setCompatibleATS(documentDTO.getCompatibleATS() != null ? documentDTO.getCompatibleATS() : true);
+        existing.setAjouterPhoto(documentDTO.getAjouterPhoto() != null ? documentDTO.getAjouterPhoto() : false);
+
         return ResponseEntity.ok(documentRepository.save(existing));
     }
 
-    // DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         Document existing = documentRepository.findById(id)
@@ -136,6 +199,78 @@ public class DocumentController {
         documentRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+
+    private ResponseEntity<Map<String, String>> getValidationErrors(BindingResult bindingResult) {
+        Map<String, String> errors = new HashMap<>();
+        for (FieldError error : bindingResult.getFieldErrors()) {
+            errors.put(error.getField(), error.getDefaultMessage());
+        }
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+    private Map<String, String> validerChampsObligatoires(DocumentDTO documentDTO) {
+        Map<String, String> errors = new HashMap<>();
+
+        if (documentDTO.getNom() == null || documentDTO.getNom().trim().isEmpty()) {
+            errors.put("nom", "Le nom est obligatoire");
+        } else if (documentDTO.getNom().length() < 2) {
+            errors.put("nom", "Le nom doit contenir au moins 2 caractères");
+        } else if (documentDTO.getNom().length() > 100) {
+            errors.put("nom", "Le nom ne peut pas dépasser 100 caractères");
+        } else if (!documentDTO.getNom().matches("^[a-zA-ZÀ-ÿ\\s'-]+$")) {
+            errors.put("nom", "Le nom ne doit contenir que des lettres, espaces, tirets ou apostrophes");
+        }
+
+        if (documentDTO.getPrenom() == null || documentDTO.getPrenom().trim().isEmpty()) {
+            errors.put("prenom", "Le prénom est obligatoire");
+        } else if (documentDTO.getPrenom().length() < 2) {
+            errors.put("prenom", "Le prénom doit contenir au moins 2 caractères");
+        } else if (documentDTO.getPrenom().length() > 100) {
+            errors.put("prenom", "Le prénom ne peut pas dépasser 100 caractères");
+        } else if (!documentDTO.getPrenom().matches("^[a-zA-ZÀ-ÿ\\s'-]+$")) {
+            errors.put("prenom", "Le prénom ne doit contenir que des lettres, espaces, tirets ou apostrophes");
+        }
+
+        if (documentDTO.getEmail() == null || documentDTO.getEmail().trim().isEmpty()) {
+            errors.put("email", "L'email est obligatoire");
+        } else if (!documentDTO.getEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            errors.put("email", "Format d'email invalide (ex: nom@domaine.com)");
+        }
+
+        if (documentDTO.getTelephone() != null && !documentDTO.getTelephone().trim().isEmpty()) {
+            if (!documentDTO.getTelephone().matches("^(\\+216)?[\\s]?[0-9]{8}$|^[0-9]{8}$")) {
+                errors.put("telephone", "Format de téléphone invalide. Exemples: +216 55 555 555, 55555555, 55 555 555");
+            }
+        }
+
+        // Validation du profil
+        if (documentDTO.getProfil() == null || documentDTO.getProfil().trim().isEmpty()) {
+            errors.put("profil", "Le profil est obligatoire");
+        } else if (documentDTO.getProfil().length() < 20) {
+            errors.put("profil", "Le profil doit contenir au moins 20 caractères");
+        }
+
+        // Validation des compétences
+        if (documentDTO.getCompetences() == null || documentDTO.getCompetences().trim().isEmpty()) {
+            errors.put("competences", "Les compétences sont obligatoires");
+        }
+
+        // Validation des expériences
+        if (documentDTO.getExperiences() == null || documentDTO.getExperiences().trim().isEmpty()) {
+            errors.put("experiences", "Les expériences sont obligatoires");
+        }
+
+        // Validation de la formation
+        if (documentDTO.getFormations() == null || documentDTO.getFormations().trim().isEmpty()) {
+            errors.put("formations", "La formation est obligatoire");
+        }
+
+        return errors;
+    }
+
+
+
 
     // ============ SPRING DATA JPA KEYWORDS ============
 
@@ -604,33 +739,49 @@ public class DocumentController {
     }
 
     // ==================== TRAITEMENT PHOTO ====================
+    // ==================== TRAITEMENT PHOTO ====================
     @PostMapping("/traiter-photo")
     public ResponseEntity<Map<String, String>> traiterPhoto(@RequestParam("photo") MultipartFile photo) {
         try {
             if (photo == null || photo.isEmpty()) {
                 Map<String, String> error = new HashMap<>();
                 error.put("error", "Photo requise");
+                error.put("success", "false");
                 return ResponseEntity.badRequest().body(error);
             }
 
             if (photo.getSize() > 5 * 1024 * 1024) {
                 Map<String, String> error = new HashMap<>();
                 error.put("error", "Photo trop volumineuse (max 5 Mo)");
+                error.put("success", "false");
                 return ResponseEntity.badRequest().body(error);
             }
 
             try {
                 String mlUrl = ML_API_URL + "/photo/professionalize";
 
-                String base64Image = Base64.getEncoder().encodeToString(photo.getBytes());
+                // Créer le body multipart
+                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
+                // Convertir le fichier en ByteArrayResource
+                ByteArrayResource resource = new ByteArrayResource(photo.getBytes()) {
+                    @Override
+                    public String getFilename() {
+                        return photo.getOriginalFilename();
+                    }
+                };
+
+                // IMPORTANT: Le nom du paramètre doit correspondre à ce que le ML attend
+                // Si ML attend "file", utilisez "file". Si ML attend "photo", utilisez "photo"
+                body.add("file", resource);  // ← Changé de "photo" à "file"
+
+                // Configurer les headers
                 HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-                Map<String, String> requestBody = new HashMap<>();
-                requestBody.put("image_base64", "data:" + photo.getContentType() + ";base64," + base64Image);
-
-                HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+                // Créer et envoyer la requête
+                HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+                RestTemplate restTemplate = new RestTemplate();
 
                 ResponseEntity<Map> response = restTemplate.postForEntity(mlUrl, requestEntity, Map.class);
 
@@ -638,24 +789,33 @@ public class DocumentController {
                     Map<String, String> result = new HashMap<>();
                     result.put("photoUrl", (String) response.getBody().get("image_professionnelle"));
                     result.put("photoName", photo.getOriginalFilename());
+                    result.put("success", "true");
                     return ResponseEntity.ok(result);
+                } else {
+                    throw new Exception("Réponse ML invalide");
                 }
+
             } catch (Exception mlError) {
                 System.out.println("⚠ Service ML photo indisponible: " + mlError.getMessage());
+                mlError.printStackTrace();
+
+                // Fallback: retourner l'image originale
+                String base64Image = Base64.getEncoder().encodeToString(photo.getBytes());
+                String photoUrl = "data:" + photo.getContentType() + ";base64," + base64Image;
+
+                Map<String, String> result = new HashMap<>();
+                result.put("photoUrl", photoUrl);
+                result.put("photoName", photo.getOriginalFilename());
+                result.put("success", "true");
+                result.put("warning", "Traitement IA indisponible, image originale utilisée");
+                return ResponseEntity.ok(result);
             }
 
-            String base64Image = Base64.getEncoder().encodeToString(photo.getBytes());
-            String photoUrl = "data:" + photo.getContentType() + ";base64," + base64Image;
-
-            Map<String, String> result = new HashMap<>();
-            result.put("photoUrl", photoUrl);
-            result.put("photoName", photo.getOriginalFilename());
-
-            return ResponseEntity.ok(result);
-
         } catch (Exception e) {
+            e.printStackTrace();
             Map<String, String> error = new HashMap<>();
             error.put("error", "Erreur traitement photo: " + e.getMessage());
+            error.put("success", "false");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

@@ -44,17 +44,14 @@ public class DocumentScheduler {
         log.info(" Nettoyage terminé - {} document(s) supprimé(s)", compteur);
     }
 
-    /**
-     * Tâche 2: Met à jour les scores ATS des CV
-     * S'exécute tous les jours à 03:00
-     */
+    //Met à jour les scores des CV  S'exécute tous les jours à 03:00
+
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void mettreAJourScoresATS() {
         log.info("📊 [SCHEDULER] Mise à jour scores ATS - {}", LocalDateTime.now());
 
         try {
-            // Utiliser l'Enum TypeDocument.CV au lieu de String "CV"
             List<Document> cvDocuments = documentRepository.findByType(TypeDocument.CV);
 
             int compteur = 0;
@@ -73,10 +70,8 @@ public class DocumentScheduler {
         }
     }
 
-    /**
-     * Tâche 3: Archivage automatique des candidatures après 7 jours
-     * S'exécute tous les jours à minuit
-     */
+    //Archivage automatique des candidatures après 7 jours S'exécute tous les jours à minuit
+
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void archiverCandidaturesAuto() {
@@ -84,9 +79,7 @@ public class DocumentScheduler {
 
         try {
             // Date limite = maintenant - 7 jours
-            Date dateLimite = new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7));
-
-            // Date d'archivage = maintenant
+            LocalDateTime dateLimite = LocalDateTime.now().minusDays(7);
             LocalDateTime dateArchive = LocalDateTime.now();
 
             // Archiver directement avec les 2 paramètres
@@ -103,11 +96,10 @@ public class DocumentScheduler {
         }
     }
 
-    /**
-     * Tâche 4: Test du scheduler (commenté par défaut)
-     * Pour tester, décommentez l'annotation @Scheduled
-     */
-    // @Scheduled(cron = "0 * * * * *")
+
+    // Test du scheduler Pour tester, décommentez l'annotation @Scheduled
+
+     @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void testScheduler() {
         log.info(" [TEST] Scheduler fonctionne - {}", LocalDateTime.now());
@@ -115,9 +107,9 @@ public class DocumentScheduler {
         log.info(" Nombre total de documents: {}", count);
     }
 
-    /**
-     * Calcule le score ATS d'un CV basé sur son contenu
-     */
+
+    //  Calcule le score ATS d'un CV basé sur son contenu
+
     private int calculerScoreATS(String contenuHTML) {
         if (contenuHTML == null || contenuHTML.isEmpty()) {
             return 0;

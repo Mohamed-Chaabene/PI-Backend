@@ -32,7 +32,6 @@ public class CandidatureController {
     private final OffreEmploiRepository offreEmploiRepository;
     private final EmailService emailService;
 
-    // ==================== EXISTANT: ADMIN ====================
     @GetMapping("/admin/toutes")
     public ResponseEntity<List<CandidatureDTO>> getAllCandidaturesForAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -52,7 +51,6 @@ public class CandidatureController {
         return ResponseEntity.ok(candidatures);
     }
 
-    // ==================== EXISTANT: CREATE ====================
     @PostMapping
     public ResponseEntity<?> creerCandidature(@Valid @RequestBody CandidatureDTO dto, BindingResult result) {
         System.out.println("=== REQUETE RECUE ===");
@@ -122,7 +120,6 @@ public class CandidatureController {
         return new ResponseEntity<>(convertToDTO(saved), HttpStatus.CREATED);
     }
 
-    // ==================== EXISTANT: READ - Mes candidatures ====================
     @GetMapping("/mes-candidatures")
     public ResponseEntity<List<CandidatureDTO>> getMesCandidatures() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -137,7 +134,7 @@ public class CandidatureController {
         return ResponseEntity.ok(candidatures);
     }
 
-    // ==================== EXISTANT: READ - Statistiques ====================
+    // Statistiques
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -175,10 +172,7 @@ public class CandidatureController {
         return ResponseEntity.ok(stats);
     }
 
-<<<<<<< HEAD
-    // ==================== READ - Filtrer par statut ====================
-=======
-    // ==================== EXISTANT: READ - Candidatures par offre ====================
+    // candidatures par offre
     @GetMapping("/offre/{offreId}")
     public ResponseEntity<List<CandidatureDTO>> getCandidaturesByOffre(@PathVariable Long offreId) {
         List<CandidatureDTO> candidatures = candidatureRepository.findByOffreEmploiId(offreId)
@@ -188,8 +182,7 @@ public class CandidatureController {
         return ResponseEntity.ok(candidatures);
     }
 
-    // ==================== EXISTANT: READ - Filtrer par statut ====================
->>>>>>> 3d5443a (Ajout scheduler archivage candidatures)
+    // filtrer par statut
     @GetMapping("/filtre/statut/{statut}")
     public ResponseEntity<List<CandidatureDTO>> filtrerParStatut(@PathVariable String statut) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -205,7 +198,7 @@ public class CandidatureController {
         return ResponseEntity.ok(resultats);
     }
 
-    // ==================== EXISTANT: READ - Trier par date ====================
+    // Trier par date
     @GetMapping("/tri/date")
     public ResponseEntity<List<CandidatureDTO>> trierParDate() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -221,7 +214,7 @@ public class CandidatureController {
         return ResponseEntity.ok(resultats);
     }
 
-    // ==================== EXISTANT: READ - Recherche par entreprise ====================
+    // recherche par entreprise
     @GetMapping("/recherche")
     public ResponseEntity<List<CandidatureDTO>> rechercherParEntreprise(@RequestParam String entreprise) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -254,7 +247,6 @@ public class CandidatureController {
         return ResponseEntity.ok(convertToDTO(candidature));
     }
 
-    // ==================== EXISTANT: UPDATE ====================
     @PutMapping("/{id}")
     public ResponseEntity<?> modifierCandidature(
             @PathVariable Long id,
@@ -297,7 +289,6 @@ public class CandidatureController {
         return ResponseEntity.ok(convertToDTO(updated));
     }
 
-    // ==================== EXISTANT: RECRUTEUR - Modifier statut ====================
     @PutMapping("/{id}/statut")
     public ResponseEntity<CandidatureDTO> modifierStatutCandidature(
             @PathVariable Long id,
@@ -323,7 +314,6 @@ public class CandidatureController {
         return ResponseEntity.ok(convertToDTO(candidatureRepository.save(candidature)));
     }
 
-    // ==================== EXISTANT: DELETE ====================
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimerCandidature(@PathVariable Long id) {
         Candidature candidature = candidatureRepository.findById(id)
@@ -342,7 +332,7 @@ public class CandidatureController {
         return ResponseEntity.noContent().build();
     }
 
-    // ==================== EXISTANT: QUICK APPLY ====================
+    // QUICK APPLY
     @PostMapping("/quick-apply")
     public ResponseEntity<?> quickApply(@RequestBody Map<String, Object> quickApplyData) {
         try {
@@ -413,7 +403,6 @@ public class CandidatureController {
         }
     }
 
-    // ==================== EXISTANT: ALERTES ====================
     @GetMapping("/alertes")
     public ResponseEntity<List<Map<String, Object>>> getAlertes() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -477,7 +466,6 @@ public class CandidatureController {
         return ResponseEntity.ok(alertes);
     }
 
-    // ==================== EXISTANT: DOUBLONS ====================
     @GetMapping("/doublons")
     public ResponseEntity<List<List<CandidatureDTO>>> getDoublons() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -503,7 +491,7 @@ public class CandidatureController {
         return ResponseEntity.ok(doublons);
     }
 
-    // ==================== EXISTANT: ANALYSE PROFIL ====================
+    // ANALYSE PROFIL
     @GetMapping("/analyse-profil")
     public ResponseEntity<Map<String, Object>> getAnalyseProfil() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -541,7 +529,6 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== EXISTANT: TAUX REUSSITE ====================
     @GetMapping("/taux-reussite")
     public ResponseEntity<Map<String, Object>> getTauxReussite() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -570,7 +557,6 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== EXISTANT: STATS PAR MOIS ====================
     @GetMapping("/stats-par-mois")
     public ResponseEntity<List<Map<String, Object>>> getStatsParMois() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -602,7 +588,6 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== EXISTANT: SMART MATCH ====================
     @GetMapping("/smart-match")
     public ResponseEntity<List<Map<String, Object>>> getSmartMatch() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -655,7 +640,6 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== EXISTANT: RADAR COMPETENCES ====================
     @GetMapping("/radar-competences")
     public ResponseEntity<Map<String, Object>> getRadarCompetences() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -708,8 +692,6 @@ public class CandidatureController {
 
         return ResponseEntity.ok(result);
     }
-
-    // ==================== EXISTANT: PREDICTION SUCCES ====================
     @GetMapping("/prediction-succes")
     public ResponseEntity<Map<String, Object>> getPredictionSucces() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -762,7 +744,6 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== EXISTANT: RELANCES INTELLIGENTES ====================
     @GetMapping("/relances")
     public ResponseEntity<List<Map<String, Object>>> getRelances() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -810,7 +791,6 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== EXISTANT: GAMIFICATION ====================
     @GetMapping("/gamification")
     public ResponseEntity<Map<String, Object>> getGamification() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -962,7 +942,6 @@ public class CandidatureController {
         badges.add(badge);
     }
 
-    // ==================== EXISTANT: TIMELINE ====================
     @GetMapping("/timeline")
     public ResponseEntity<List<Map<String, Object>>> getTimeline() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -975,8 +954,8 @@ public class CandidatureController {
         List<Map<String, Object>> result = candidatures.stream()
                 .sorted((a, b) -> b.getDateEnvoi().compareTo(a.getDateEnvoi()))
                 .map(c -> {
-                    String icon = "ACCEPTEE".equals(c.getStatut()) ? "🏆" :
-                            "REFUSEE".equals(c.getStatut()) ? "❌" : "⏳";
+                    String icon = "ACCEPTEE".equals(c.getStatut()) ? "" :
+                            "REFUSEE".equals(c.getStatut()) ? "" : "";
                     String couleur = "ACCEPTEE".equals(c.getStatut()) ? "#10b981" :
                             "REFUSEE".equals(c.getStatut()) ? "#ef4444" : "#f59e0b";
 
@@ -995,9 +974,8 @@ public class CandidatureController {
         return ResponseEntity.ok(result);
     }
 
-    // JOIN
 
-    // Candidatures par nom du candidat (JOIN Candidature + Candidat)
+    // JOIN Candidature + Candidat
 
     @GetMapping("/jpql/par-nom-candidat")
     public ResponseEntity<List<Map<String, Object>>> getCandidaturesByCandidatNom(@RequestParam String nom) {
@@ -1021,7 +999,7 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-    // Candidatures par entreprise (JOIN Candidature + OffreEmploi)
+    // JOIN Candidature + OffreEmploi
 
     @GetMapping("/jpql/par-entreprise")
     public ResponseEntity<List<Map<String, Object>>> getCandidaturesByOffreEntreprise(@RequestParam String entreprise) {
@@ -1044,7 +1022,7 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-   //Candidatures qui ont un document (JOIN Candidature + Document)
+   //JOIN Candidature + Document
 
     @GetMapping("/jpql/avec-document-type")
     public ResponseEntity<List<Map<String, Object>>> getCandidaturesByDocumentType(@RequestParam String type) {
@@ -1067,7 +1045,7 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
- //Candidatures complètes par statut (JOIN 3 tables)
+ //Candidatures complètes par statut
 
     @GetMapping("/jpql/complet-par-statut")
     public ResponseEntity<List<Map<String, Object>>> getFullCandidaturesByStatut(@RequestParam String statut) {
@@ -1094,7 +1072,7 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-    //Toutes les candidatures avec LEFT JOIN document (pour admin)
+    //Toutes les candidatures avec LEFT JOIN document
 
     @GetMapping("/jpql/toutes-avec-left-join")
     public ResponseEntity<List<Map<String, Object>>> getAllCandidaturesWithLeftJoin() {
@@ -1136,7 +1114,7 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-   // Recherche multi-critères (JOIN 3 tables)
+   // Recherche multi-critères
 
     @GetMapping("/jpql/recherche-multi")
     public ResponseEntity<List<Map<String, Object>>> getCandidaturesByEntrepriseAndStatut(
@@ -1164,7 +1142,7 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-   //Statistiques par candidat (avec COUNT et GROUP BY)
+   //Statistiques par candidat
 
     @GetMapping("/jpql/stats-par-candidat")
     public ResponseEntity<List<Map<String, Object>>> getStatsByCandidat() {
@@ -1189,10 +1167,8 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint 8: Candidatures avec salaire minimum
-     * URL: GET /api/candidatures/jpql/high-salary?minSalary=50000
-     */
+    // Candidatures avec salaire minimum
+
     @GetMapping("/jpql/high-salary")
     public ResponseEntity<List<Map<String, Object>>> getCandidaturesByMinSalary(@RequestParam Double minSalary) {
         List<Object[]> results = candidatureRepository.findCandidaturesByMinSalary(minSalary);
@@ -1216,7 +1192,6 @@ public class CandidatureController {
         return ResponseEntity.ok(response);
     }
 
-    // ==================== METHODE UTILITAIRE ====================
     private CandidatureDTO convertToDTO(Candidature c) {
         CandidatureDTO dto = new CandidatureDTO();
         dto.setId(c.getId());
