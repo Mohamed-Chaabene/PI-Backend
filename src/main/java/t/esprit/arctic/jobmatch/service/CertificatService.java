@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.entity.Certificat;
 import t.esprit.arctic.jobmatch.entity.InscriptionFormation;
+import t.esprit.arctic.jobmatch.entity.InscriptionParcours;
 import t.esprit.arctic.jobmatch.repository.CertificatRepository;
+import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -23,20 +25,63 @@ import java.util.Locale;
 public class CertificatService {
 
     private final CertificatRepository certificatRepository;
+    private final InscriptionFormationRepository inscriptionFormationRepository;
 
-    // ── Generation automatique a 100% ────────────────────────────────────────
+    @org.springframework.transaction.annotation.Transactional
     public Certificat genererAutomatiquement(InscriptionFormation inscription) {
-        if (certificatRepository.existsByInscriptionId(inscription.getId())) {
-            throw new RuntimeException("Un certificat existe deja pour cette inscription");
-        }
-        Certificat certificat = new Certificat();
-        certificat.setTitre("Certificat - " + inscription.getFormation().getTitre());
-        certificat.setDateObtention(new Date());
-        certificat.setInscription(inscription);
-        return certificatRepository.save(certificat);
+        return certificatRepository.findByInscriptionId(inscription.getId())
+                .orElseGet(() -> {
+                    Certificat certificat = new Certificat();
+                    certificat.setTitre("Certificat - " + inscription.getFormation().getTitre());
+                    certificat.setDateObtention(new Date());
+                    certificat.setInscription(inscription);
+                    return certificatRepository.save(certificat);
+                });
     }
 
-    // ── CRUD ──────────────────────────────────────────────────────────────────
+    /**
+     * Génère un certificat lié à un parcours quand le candidat réussit le quiz Expert.
+     * On trouve ou crée une InscriptionFormation pour la formation Expert du parcours.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public Certificat genererPourParcours(InscriptionParcours inscriptionParcours) {
+        // Récupérer la formation Expert du parcours
+        t.esprit.arctic.jobmatch.entity.Formation formationExpert =
+                inscriptionParcours.getParcours().getFormationParNiveau(
+                        t.esprit.arctic.jobmatch.entity.NiveauOrdre.EXPERT);
+
+        if (formationExpert == null) {
+            throw new RuntimeException("Aucune formation Expert trouvée pour ce parcours");
+        }
+
+        // Trouver ou créer une InscriptionFormation pour la formation Expert
+        Long candidatId = inscriptionParcours.getCandidat().getId();
+        Long formationId = formationExpert.getId();
+
+        InscriptionFormation inscriptionFormation = inscriptionFormationRepository
+                .findByCandidatIdAndFormationId(candidatId, formationId)
+                .orElseGet(() -> {
+                    InscriptionFormation newInsc = new InscriptionFormation();
+                    newInsc.setCandidat(inscriptionParcours.getCandidat());
+                    newInsc.setFormation(formationExpert);
+                    newInsc.setDateInscription(new Date());
+                    newInsc.setStatut("Terminé");
+                    newInsc.setProgression(100.0);
+                    return inscriptionFormationRepository.save(newInsc);
+                });
+
+        // Vérifier si un certificat existe déjà
+        return certificatRepository.findByInscriptionId(inscriptionFormation.getId())
+                .orElseGet(() -> {
+                    Certificat certificat = new Certificat();
+                    certificat.setTitre("Certificat Parcours - " + inscriptionParcours.getParcours().getTitre());
+                    certificat.setDateObtention(new Date());
+                    certificat.setInscription(inscriptionFormation);
+                    certificat.setParcours(inscriptionParcours.getParcours());
+                    return certificatRepository.save(certificat);
+                });
+    }
+
     public List<Certificat> getAll() {
         return certificatRepository.findAll();
     }
@@ -50,7 +95,6 @@ public class CertificatService {
         return certificatRepository.findByInscriptionCandidatId(candidatId);
     }
 
-    // ── Chargement logo (priorite logo_transparent.png sans fond noir) ────────
     private byte[] loadLogo() {
         String[] names = {"/static/logo_transparent.png", "logo_png.png"};
         String workDir = System.getProperty("user.dir");
@@ -68,14 +112,12 @@ public class CertificatService {
         return null;
     }
 
-    // ── Generation PDF — style certificat classique avec logo ─────────────────
     public byte[] genererPdf(Long certificatId) {
         Certificat cert = getById(certificatId);
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            // Page paysage A4
             Rectangle pageSize = new Rectangle(PageSize.A4.getHeight(), PageSize.A4.getWidth());
             Document document  = new Document(pageSize, 0, 0, 0, 0);
             PdfWriter writer   = PdfWriter.getInstance(document, baos);
@@ -85,7 +127,6 @@ public class CertificatService {
             float W = pageSize.getWidth();   // ~842
             float H = pageSize.getHeight();  // ~595
 
-            // ── Palette (blanc + bleu + or) ───────────────────────────────
             BaseColor bleu      = new BaseColor(9,  101, 164);
             BaseColor bleuDark  = new BaseColor(5,   70, 115);
             BaseColor bleuLight = new BaseColor(230, 241, 251);
@@ -96,12 +137,10 @@ public class CertificatService {
             BaseColor fondGris  = new BaseColor(245, 246, 248);
             BaseColor white     = BaseColor.WHITE;
 
-            // ── Fond general gris tres clair (comme l'image) ──────────────
             cb.setColorFill(fondGris);
             cb.rectangle(0, 0, W, H);
             cb.fill();
 
-            // ── Bordure exterieure double (style image) ───────────────────
             float bOuter = 14f;
             float bGap   =  4f;
             float bInner =  2f;
@@ -124,7 +163,6 @@ public class CertificatService {
             cb.rectangle(filetM2, filetM2, W - 2*filetM2, H - 2*filetM2);
             cb.stroke();
 
-            // ── Coins decoratifs ──────────────────────────────────────────
             float cS = 28f;
             float cM = bTotal + 8;
             cb.setColorStroke(orLight);
@@ -134,13 +172,11 @@ public class CertificatService {
             drawCorner(cb, cM,     cM,     cS, "BL");
             drawCorner(cb, W - cM, cM,     cS, "BR");
 
-            // ── Fonts ─────────────────────────────────────────────────────
             BaseFont bfBold  = BaseFont.createFont(BaseFont.HELVETICA_BOLD,         BaseFont.CP1252, false);
             BaseFont bfReg   = BaseFont.createFont(BaseFont.HELVETICA,              BaseFont.CP1252, false);
             BaseFont bfItal  = BaseFont.createFont(BaseFont.HELVETICA_OBLIQUE,      BaseFont.CP1252, false);
             BaseFont bfBItal = BaseFont.createFont(BaseFont.HELVETICA_BOLDOBLIQUE,  BaseFont.CP1252, false);
 
-            // ── CERTIFICAT (grand titre) ───────────────────────────────────
             float centerX = W / 2;   // centre de la page (pas de medaille, pas de decalage)
             float titleY  = H - bTotal - 55;
 
@@ -163,7 +199,6 @@ public class CertificatService {
             cb.lineTo(centerX + 160, titleY - 32);
             cb.stroke();
 
-            // ── "Ce certificat est decerne a" ─────────────────────────────
             float awardY = titleY - 65;
             cb.beginText();
             cb.setColorFill(textMuted);
@@ -172,7 +207,6 @@ public class CertificatService {
                     "Ce certificat est decerne a", centerX, awardY, 0);
             cb.endText();
 
-            // ── Nom candidat ───────────────────────────────────────────────
             String nom = cert.getInscription().getCandidat().getNom() != null
                     ? cert.getInscription().getCandidat().getNom()
                     : cert.getInscription().getCandidat().getEmail();
@@ -191,7 +225,6 @@ public class CertificatService {
             cb.lineTo(centerX + nameW/2, nameY - 8);
             cb.stroke();
 
-            // ── "a complete avec succes la formation" ──────────────────────
             float descY = nameY - 36;
             cb.beginText();
             cb.setColorFill(textMuted);
@@ -200,7 +233,6 @@ public class CertificatService {
                     "a complete avec succes la formation", centerX, descY, 0);
             cb.endText();
 
-            // ── Titre formation ────────────────────────────────────────────
             String titreF = cert.getInscription().getFormation().getTitre();
             float formY   = descY - 26;
             cb.beginText();
@@ -209,7 +241,6 @@ public class CertificatService {
             cb.showTextAligned(Element.ALIGN_CENTER, titreF, centerX, formY, 0);
             cb.endText();
 
-            // ── Date en gras ───────────────────────────────────────────────
             SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy", Locale.FRENCH);
             float dateY = formY - 30;
             cb.beginText();
@@ -219,7 +250,6 @@ public class CertificatService {
                     sdf.format(cert.getDateObtention()), centerX, dateY, 0);
             cb.endText();
 
-            // ── Separateur ────────────────────────────────────────────────
             float sepY = dateY - 22;
             cb.setColorStroke(new BaseColor(210, 215, 225));
             cb.setLineWidth(0.6f);
@@ -227,7 +257,6 @@ public class CertificatService {
             cb.lineTo(centerX + 140, sepY);
             cb.stroke();
 
-            // ── Signature ─────────────────────────────────────────────────
             float sigY = sepY - 28;
             cb.beginText();
             cb.setColorFill(bleuDark);
@@ -241,9 +270,6 @@ public class CertificatService {
             cb.showTextAligned(Element.ALIGN_CENTER, "DIRECTEUR PEDAGOGIQUE", centerX, sigY - 14, 0);
             cb.endText();
 
-            // ════════════════════════════════════════════════════════════
-            // LOGO transparent — sous "DIRECTEUR PEDAGOGIQUE"
-            // ════════════════════════════════════════════════════════════
             float logoSize = 70f;
             float logoX    = centerX - logoSize / 2f;
             float logoY    = sigY - 14f - logoSize - 8f;
@@ -261,7 +287,6 @@ public class CertificatService {
                 cb.addTemplate(tmpl, logoX, logoY);
             }
 
-            // ── Details formation (bas gauche) ─────────────────────────────
             float detY  = bTotal + 48;
             float detX  = bTotal + 40;
 
@@ -289,7 +314,6 @@ public class CertificatService {
                 cb.endText();
             }
 
-            // ── Numero de certificat (bas droite) ──────────────────────────
             cb.beginText();
             cb.setColorFill(textMuted);
             cb.setFontAndSize(bfReg, 7.5f);
@@ -314,7 +338,6 @@ public class CertificatService {
         }
     }
 
-    // ── Helper : dessine un coin decoratif style image ────────────────────────
     private void drawCorner(PdfContentByte cb, float x, float y, float size, String pos) throws Exception {
         float s = size;
         float g = 6f;

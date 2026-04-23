@@ -63,4 +63,17 @@ public class InscriptionFormationController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/candidat/{candidatId}/formation/{formationId}")
+    public ResponseEntity<InscriptionFormation> getByDetails(
+            @PathVariable Long candidatId,
+            @PathVariable Long formationId,
+            @RequestParam(required = false) Long parcoursId) {
+        try {
+            InscriptionFormation ins = inscriptionService.getByCandidatAndFormationAndParcours(candidatId, formationId, parcoursId);
+            return ResponseEntity.ok(ins);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

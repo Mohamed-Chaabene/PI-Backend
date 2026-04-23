@@ -18,6 +18,16 @@ import t.esprit.arctic.jobmatch.repository.ChatbotHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import java.io.ByteArrayInputStream;
+import java.util.Base64;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api/chatbot")
 @CrossOrigin(origins = "http://localhost:4200", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
@@ -32,7 +42,6 @@ public class ChatbotController {
     private final HttpClient   http   = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ── Helper : construit le bloc image_url selon base64 ou URL ────────
     private Map<String, Object> buildImageContent(String imageUrl) {
         if (imageUrl.startsWith("data:image")) {
             String mediaType  = "image/jpeg";
@@ -54,8 +63,6 @@ public class ChatbotController {
         }
     }
 
-    // ── Helper : remplace le base64 par un placeholder avant sauvegarde ──
-    // Les images base64 font plusieurs Mo → trop grand pour TEXT en MySQL
     private String sanitizeImageUrlForDb(String imageUrl) {
         if (imageUrl != null && imageUrl.startsWith("data:image")) {
             String mediaType = "image/jpeg";
@@ -65,6 +72,14 @@ public class ChatbotController {
             return "[image:" + mediaType + "]";
         }
         return imageUrl;
+    }
+
+    private String sanitizeFileDataForDb(String fileData, String fileName) {
+        if (fileData != null && fileData.startsWith("data:")) {
+            String name = (fileName != null && !fileName.isEmpty()) ? fileName : "document";
+            return "[file:" + name + "]";
+        }
+        return fileData;
     }
 
     @GetMapping("/history")
@@ -152,7 +167,38 @@ public class ChatbotController {
         String imageUrl  = body.containsKey("imageUrl") && body.get("imageUrl") != null
                 ? body.get("imageUrl").toString() : null;
 
+        String fileData  = body.containsKey("fileData") && body.get("fileData") != null
+                ? body.get("fileData").toString() : null;
+        String fileName  = body.containsKey("fileName") && body.get("fileName") != null
+                ? body.get("fileName").toString() : null;
+        String fileText  = body.containsKey("fileText") && body.get("fileText") != null
+                ? body.get("fileText").toString() : null;
+
+        if ((fileText == null || fileText.trim().isEmpty()) && fileData != null && fileData.contains(";base64,")) {
+            try {
+                String base64Data = fileData.split(";base64,")[1];
+                byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(decodedBytes)) {
+                    if (fileName != null && fileName.toLowerCase().endsWith(".docx")) {
+                        try (XWPFDocument document = new XWPFDocument(bis);
+                             XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
+                            fileText = extractor.getText();
+                        }
+                    } else if (fileName != null && fileName.toLowerCase().endsWith(".pdf")) {
+                        try (PDDocument document = PDDocument.load(bis)) {
+                            PDFTextStripper pdfStripper = new PDFTextStripper();
+                            fileText = pdfStripper.getText(document);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Backend document text extraction failed: " + e.getMessage());
+            }
+        }
+
         boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty();
+        boolean hasFile  = (fileData != null && !fileData.trim().isEmpty())
+                || (fileText != null && !fileText.trim().isEmpty());
 
         String titreFormation = body.getOrDefault("titreFormation", "").toString();
         String categorie      = body.getOrDefault("categorie", "").toString();
@@ -171,11 +217,10 @@ public class ChatbotController {
                 body.containsKey("history") && body.get("history") != null
                         ? (List<Map<String, Object>>) body.get("history") : new ArrayList<>();
 
-        if (message.isEmpty() && !hasImage) {
+        if (message.isEmpty() && !hasImage && !hasFile) {
             return ResponseEntity.badRequest().body(Map.of("error", "Message vide"));
         }
 
-        // ── Gestion Historique BDD ──────────────────────────────────────
         List<Map<String, Object>> dbHistoryList = new ArrayList<>();
         ChatbotHistory chatHistDb = null;
 
@@ -190,7 +235,8 @@ public class ChatbotController {
                 chatHistDb.setFormationId(formationId);
                 chatHistDb.setSessionId(UUID.randomUUID().toString());
                 chatHistDb.setCreatedAt(java.time.LocalDateTime.now());
-                String shortTitle = message.length() > 30 ? message.substring(0, 30) + "..." : message;
+                String titleSource = !message.isEmpty() ? message : (fileName != null ? fileName : "Document");
+                String shortTitle  = titleSource.length() > 30 ? titleSource.substring(0, 30) + "..." : titleSource;
                 chatHistDb.setSessionTitle(shortTitle);
             } else {
                 if (chatHistDb.getHistoriqueJson() != null && !chatHistDb.getHistoriqueJson().isEmpty()) {
@@ -201,17 +247,25 @@ public class ChatbotController {
             }
         }
 
-        // ── Ajouter le message user en BDD (base64 → placeholder) ──────
         Map<String, Object> userMsgForDb = new HashMap<>();
         userMsgForDb.put("role", "user");
         userMsgForDb.put("content", message);
         if (hasImage) {
-            // JAMAIS stocker le base64 brut → remplacer par un placeholder court
             userMsgForDb.put("imageUrl", sanitizeImageUrlForDb(imageUrl));
+        }
+        if (hasFile) {
+            // Stocker le nom du fichier + le texte extrait (pas le base64 brut)
+            userMsgForDb.put("fileName", fileName);
+            if (fileText != null && !fileText.isEmpty()) {
+                // Stocker un extrait du texte (max 500 chars pour ne pas saturer la BDD)
+                String excerpt = fileText.length() > 500 ? fileText.substring(0, 500) + "..." : fileText;
+                userMsgForDb.put("fileExcerpt", excerpt);
+            } else {
+                userMsgForDb.put("fileExcerpt", sanitizeFileDataForDb(fileData, fileName));
+            }
         }
         dbHistoryList.add(userMsgForDb);
 
-        // ── Construire les messages pour GROQ (vrais base64/URL) ────────
         List<Map<String, Object>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content",
                 buildSystemPrompt(titreFormation, categorie, niveau, context)));
@@ -231,54 +285,75 @@ public class ChatbotController {
             String imgUrl         = h.containsKey("imageUrl") && h.get("imageUrl") != null
                     ? h.get("imageUrl").toString() : null;
 
-            // Les placeholders "[image:...]" issus de la BDD ne peuvent pas être envoyés à Groq
             boolean isPlaceholder = imgUrl != null && imgUrl.startsWith("[image:");
             boolean hasRealImg    = imgUrl != null && !imgUrl.trim().isEmpty() && !isPlaceholder;
+
+            String fileExcerptHist = h.containsKey("fileExcerpt") && h.get("fileExcerpt") != null
+                    ? h.get("fileExcerpt").toString() : null;
+            String fileNameHist    = h.containsKey("fileName") && h.get("fileName") != null
+                    ? h.get("fileName").toString() : null;
+
+            String enrichedContent = contentText;
+            if (fileExcerptHist != null && !fileExcerptHist.startsWith("[file:")) {
+                enrichedContent += "\n\n[Contenu du document '" + fileNameHist + "':\n" + fileExcerptHist + "]";
+            }
 
             if (hasRealImg) {
                 historyHasImage = true;
                 messages.add(Map.of(
                         "role", role,
                         "content", List.of(
-                                Map.of("type", "text", "text", contentText),
+                                Map.of("type", "text", "text", enrichedContent),
                                 buildImageContent(imgUrl)
                         )
                 ));
             } else {
-                messages.add(Map.of("role", role, "content", contentText));
+                messages.add(Map.of("role", role, "content", enrichedContent));
             }
         }
 
-        // ── Message actuel avec la vraie image ──────────────────────────
-        if (hasImage) {
-            historyHasImage = true;
-            messages.add(Map.of(
-                    "role", "user",
-                    "content", List.of(
-                            Map.of("type", "text", "text", message),
-                            buildImageContent(imageUrl)
-                    )
-            ));
-        } else {
-            messages.add(Map.of("role", "user", "content", message));
+        String userMessageFull = message;
+
+        if (hasFile && fileText != null && !fileText.trim().isEmpty()) {
+            // Tronquer à 6000 chars pour éviter la limite de tokens Groq (6000 TPM)
+            String truncated = fileText.length() > 6000
+                    ? fileText.substring(0, 6000) + "\n...[document tronqué]"
+                    : fileText;
+            String prompt = message.isEmpty() ? "Analyse ce document." : message;
+            userMessageFull = prompt + "\n\n[Document joint: " + fileName + "]\n" + truncated;
+        } else if (hasFile && (fileData != null && !fileData.trim().isEmpty())) {
+            String prompt = message.isEmpty() ? "J'ai joint le document: " + fileName : message;
+            userMessageFull = prompt + "\n\n[Document joint: " + fileName + " - le texte n'a pas pu être extrait]";
         }
 
-        // ── Choix du modèle ──────────────────────────────────────────────
+        if (hasImage) {
+            historyHasImage = true;
+            String fallbackImgPrompt = "Analyse cette image.";
+            String txtToSend = userMessageFull.isEmpty() ? fallbackImgPrompt : userMessageFull;
+
+            List<Map<String, Object>> contentParts = new ArrayList<>();
+            contentParts.add(Map.of("type", "text", "text", txtToSend));
+            contentParts.add(buildImageContent(imageUrl));
+            messages.add(Map.of("role", "user", "content", contentParts));
+        } else {
+            messages.add(Map.of("role", "user", "content",
+                    userMessageFull.isEmpty() ? "." : userMessageFull));
+        }
+
         String modelToUse = (hasImage || historyHasImage)
                 ? "meta-llama/llama-4-scout-17b-16e-instruct"
                 : "llama-3.1-8b-instant";
 
-        // ── Appel GROQ API ───────────────────────────────────────────────
         String requestBody = mapper.writeValueAsString(Map.of(
                 "model",       modelToUse,
                 "messages",    messages,
-                "temperature", 0.7,
+                "temperature", 0.1,
                 "max_tokens",  1024
         ));
 
         System.out.println("=== GROQ REQUEST ===");
         System.out.println("Model: " + modelToUse);
-        System.out.println("Has image: " + hasImage);
+        System.out.println("Has image: " + hasImage + " | Has file: " + hasFile);
 
         HttpResponse<String> response = http.send(
                 HttpRequest.newBuilder()
@@ -305,7 +380,6 @@ public class ChatbotController {
         String reply = root.path("choices").get(0)
                 .path("message").path("content").asText("Pas de réponse.");
 
-        // ── Sauvegarder la réponse assistant en BDD ─────────────────────
         if (chatHistDb != null && candidatId != null && formationId != null) {
             Map<String, Object> aiMsgMap = new HashMap<>();
             aiMsgMap.put("role", "assistant");
@@ -324,46 +398,41 @@ public class ChatbotController {
         return ResponseEntity.ok(Map.of("response", reply));
     }
 
-    // ✅ SEULE MODIFICATION : buildSystemPrompt mis à jour pour le multilangue
     private String buildSystemPrompt(String titre, String categorie, String niveau, String context) {
 
-        String contextDesc = context.equals("video")
-                ? "a video training course / une formation vidéo"
-                : "technical documentation / une documentation technique";
-
         return String.format("""
-            You are a pedagogical AI assistant embedded in %s.
+            You are a pedagogical AI assistant.
             
             Training: "%s"
             Category: %s
             Level: %s
             
-            Your role:
-            - Answer learners' questions about this training
-            - Explain technical concepts clearly and pedagogically
-            - Provide code examples when useful
-            - Summarize chapters or concepts
-            - Suggest practical exercises
-            - Encourage and motivate the learner
+            === CRITICAL OFF-TOPIC RULE (STRICT) ===
+            Before providing ANY analysis or description of a message, image, or document, you MUST determine if it is directly related to the training "%s".
+            
+            IF THE CONTENT IS OFF-TOPIC:
+            - You MUST refuse to analyze, describe, or summarize it.
+            - You MUST output ONLY the following refusal sentence and NOTHING ELSE.
+            - NO analysis of the image/document.
+            - NO technical explanation of why it is off-topic.
+            - NO extra notes, NO suggestions, NO "I would be happy to help with...".
+            
+            EXACT REFUSAL PHRASING (to be used based on the user's language):
+            - FRENCH: "Cette image/question/document ne semble pas être liée à la formation **%s**. Je suis ici pour vous aider uniquement sur les thèmes liés à **%s**. Posez-moi une question sur ce sujet !"
+            - ENGLISH: "This image/question/document does not seem to be related to the training **%s**. I am here to help you only with topics related to **%s**. Ask me a question about this subject!"
+            - ARABIC: "هذه الصورة/السؤال/المستند لا يبدو مرتبطًا بالتكوين **%s**. أنا هنا لمساعدتك فقط في المواضيع المتعلقة بـ **%s**. اطرح سؤالاً حول هذا الموضوع!"
             
             === CRITICAL LANGUAGE RULE ===
-            You MUST detect the language of the user's message and reply
-            in EXACTLY the same language.
-            - If the user writes in French  → reply entirely in French
-            - If the user writes in English → reply entirely in English
-            - If the user writes in Arabic  → reply entirely in Arabic
-            - Never mix languages in the same response
-            - Never explain this rule to the user
+            Detect the language of the user's message and reply in EXACTLY the same language.
             
             === FORMAT ===
-            - Be concise and precise (max 300 words unless asked otherwise)
-            - Use bullet points for clarity when appropriate
-            - Bold (**) important terms
-            - Use code blocks for code samples
-            - Stay in the context of the training "%s"
-            - If the question is off-topic, politely redirect to the training
+            - Be concise.
+            - Use bullet points if helpful.
+            - Stay strictly within the context of the training "%s".
             """,
-                contextDesc, titre, categorie, niveau, titre
+                titre, categorie, niveau,
+                titre, titre, titre, titre, titre, titre, titre,
+                titre
         );
     }
 }

@@ -25,6 +25,10 @@ public class VideoProgressionController {
 
     private final VideoProgressionRepository     videoProgressionRepo;
     private final InscriptionFormationRepository inscriptionRepo;
+    private final t.esprit.arctic.jobmatch.repository.InscriptionParcoursRepository inscriptionParcoursRepo;
+    private final t.esprit.arctic.jobmatch.service.CertificatService certificatService;
+    private final t.esprit.arctic.jobmatch.service.NotificationService notificationService;
+
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient   http   = HttpClient.newHttpClient();
@@ -35,9 +39,6 @@ public class VideoProgressionController {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    // ══════════════════════════════════════════════════════════════
-    // 1. Marquer une vidéo comme vue
-    // ══════════════════════════════════════════════════════════════
     @PostMapping("/video-vue")
     public ResponseEntity<Map<String, Object>> marquerVideoVue(
             @RequestBody Map<String, Object> body) {
@@ -64,8 +65,37 @@ public class VideoProgressionController {
         vp.setDateVue(LocalDateTime.now());
         videoProgressionRepo.save(vp);
 
-        int progression = calculerProgression(inscriptionId, totalVideos);
+        int progression = calculerProgression(inscriptionId, formationId, totalVideos);
         mettreAJourInscription(inscriptionId, progression);
+
+        // Si progression 100% au niveau EXPERT, on active l'exigence de macro-feedback
+        if (progression >= 100) {
+            inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
+                if (ins.getCandidat() != null) {
+                    inscriptionParcoursRepo.findByCandidatId(ins.getCandidat().getId()).stream()
+                            .filter(ip -> "EXPERT".equals(ip.getNiveauActuel().toString()) && ip.getParcours().getNiveauExpert() != null && ip.getParcours().getNiveauExpert().getId().equals(formationId))
+                            .findFirst()
+                            .ifPresent(ip -> {
+                                if (!"TERMINE".equals(ip.getStatut())) {
+                                    ip.setStatut("TERMINE");
+                                    ip.setEvaluationParcoursRequise(true);
+                                    inscriptionParcoursRepo.save(ip);
+                                    
+                                    // Envoyer la notification de succès
+                                    try {
+                                        notificationService.notifyParcoursCompletion(
+                                            ins.getCandidat().getId(), 
+                                            ip.getParcours().getTitre(), 
+                                            ip.getParcours().getId()
+                                        );
+                                    } catch (Exception e) {
+                                        System.err.println("❌ Erreur notification fin parcours via progression: " + e.getMessage());
+                                    }
+                                }
+                            });
+                }
+            });
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("progression",      progression);
@@ -76,9 +106,6 @@ public class VideoProgressionController {
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // 2. Récupérer la progression
-    // ══════════════════════════════════════════════════════════════
     @GetMapping("/inscription/{inscriptionId}")
     public ResponseEntity<Map<String, Object>> getProgression(
             @PathVariable Long inscriptionId,
@@ -87,34 +114,52 @@ public class VideoProgressionController {
         List<VideoProgression> vps =
                 videoProgressionRepo.findByInscriptionId(inscriptionId);
 
-        int progression = calculerProgression(inscriptionId, totalVideos);
+        // On vérifie d'abord si l'inscription est déjà marquée comme terminée en base
+        Optional<t.esprit.arctic.jobmatch.entity.InscriptionFormation> insOpt = inscriptionRepo.findById(inscriptionId);
+        int progressionInDb = insOpt.map(i -> i.getProgression() != null ? i.getProgression().intValue() : 0).orElse(0);
+        String statutInDb = insOpt.map(i -> i.getStatut()).orElse("EnCours");
+
+        int progression = ("Terminé".equalsIgnoreCase(statutInDb) || progressionInDb >= 100) ? 100 : -1;
+
+        // Calcul réel basé sur les vidéos uniques de CETTE formation
+        int progressionCalculee = calculerProgression(inscriptionId, insOpt.map(i -> i.getFormation().getId()).orElse(0L), totalVideos);
+
+        // Si non terminée en base, on utilise le calcul
+        if (progression == -1) {
+            progression = progressionCalculee;
+        }
+
+        // SYNCHRONISATION : Si la base est à 0 (ou en retard) mais que le calcul donne plus, on met à jour la base
+        if (progressionCalculee > progressionInDb && !"Terminé".equalsIgnoreCase(statutInDb)) {
+            mettreAJourInscription(inscriptionId, progressionCalculee);
+        }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("videosVues",  vps.stream()
-                .filter(VideoProgression::isVuComplete).count());
+        long distinctVues = videoProgressionRepo.countDistinctVideoIdByInscriptionIdAndVuCompleteTrue(inscriptionId);
+        
+        result.put("videosVues",  distinctVues);
         result.put("totalVideos", totalVideos);
         result.put("progression", progression);
+        result.put("tentativesUtilisees", insOpt.map(i -> i.getTentativesQuizFinal() != null ? i.getTentativesQuizFinal() : 0).orElse(0));
         result.put("details",     vps);
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // 3. Générer le quiz FINAL de la formation entière
-    // ══════════════════════════════════════════════════════════════
     @PostMapping("/quiz-final/generer")
     public ResponseEntity<Map<String, Object>> genererQuizFinal(
             @RequestBody Map<String, Object> body) throws Exception {
 
-        Long   inscriptionId = Long.valueOf(body.get("inscriptionId").toString());
-        String titreFomation = body.getOrDefault("titreFormation", "").toString();
-        String categorie     = body.getOrDefault("categorie", "").toString();
-        String playlistId    = body.getOrDefault("playlistId", "").toString();
+        Long   inscriptionId = body.get("inscriptionId") != null ? Long.valueOf(body.get("inscriptionId").toString()) : 0L;
+        String titreFormation = Objects.toString(body.get("titreFormation"), "");
+        String categorie     = Objects.toString(body.get("categorie"), "");
+        String playlistId    = Objects.toString(body.get("playlistId"), "");
+        String niveau        = Objects.toString(body.get("niveau"), "");
 
-        // Vérifier que la formation est bien terminée à 100%
-        // (récupérer totalVideos depuis body)
-        int totalVideos = Integer.parseInt(
-                body.getOrDefault("totalVideos", "1").toString());
-        int progression = calculerProgression(inscriptionId, totalVideos);
+        int totalVideos = body.get("totalVideos") != null ? Integer.parseInt(body.get("totalVideos").toString()) : 1;
+        
+        Long formationId = inscriptionRepo.findById(inscriptionId)
+                .map(ins -> ins.getFormation().getId()).orElse(0L);
+        int progression = calculerProgression(inscriptionId, formationId, totalVideos);
 
         if (progression < 100) {
             Map<String, Object> err = new HashMap<>();
@@ -123,7 +168,6 @@ public class VideoProgressionController {
             return ResponseEntity.badRequest().body(err);
         }
 
-        // Récupérer les titres des vidéos vues
         List<VideoProgression> vps =
                 videoProgressionRepo.findByInscriptionId(inscriptionId);
         List<String> videoIds = vps.stream()
@@ -132,68 +176,124 @@ public class VideoProgressionController {
                 .limit(10) // max 10 vidéos pour le contexte
                 .toList();
 
-        // Récupérer les infos YouTube des vidéos
         List<String> videoTitles = getVideoTitles(videoIds);
 
-        // Générer le quiz final avec Claude
         List<Map<String, Object>> questions =
-                genererQuizFinal(titreFomation, categorie, videoTitles);
+                genererQuizFinal(titreFormation, categorie, videoTitles, niveau);
+
+        // Gestion des tentatives et vérification de la limite (3 tentatives max pour formation simple ou expert)
+        int tentatives = 0;
+        Optional<t.esprit.arctic.jobmatch.entity.InscriptionFormation> insOpt = inscriptionRepo.findById(inscriptionId);
+        if (insOpt.isPresent()) {
+            t.esprit.arctic.jobmatch.entity.InscriptionFormation ins = insOpt.get();
+            tentatives = (ins.getTentativesQuizFinal() != null ? ins.getTentativesQuizFinal() : 0) + 1;
+            
+            if (tentatives > 3) {
+                Map<String, Object> err = new HashMap<>();
+                err.put("error", "Nombre maximum de tentatives (3) atteint pour ce quiz.");
+                return ResponseEntity.badRequest().body(err);
+            }
+            
+            ins.setTentativesQuizFinal(tentatives);
+            inscriptionRepo.save(ins);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("questions",    questions);
         result.put("inscriptionId", inscriptionId);
-        result.put("scoreMinimum", 70); // 70% pour obtenir le certificat
+        result.put("niveau",       niveau);
+        result.put("scoreMinimum", "EXPERT".equals(niveau) ? 80 : 70); 
+        result.put("tentativesUtilisees", tentatives);
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // 4. Soumettre le quiz final et générer le certificat si réussi
-    // ══════════════════════════════════════════════════════════════
+
     @PostMapping("/quiz-final/soumettre")
     public ResponseEntity<Map<String, Object>> soumettreQuizFinal(
             @RequestBody Map<String, Object> body) {
 
-        Long inscriptionId = Long.valueOf(body.get("inscriptionId").toString());
-        int  score         = Integer.parseInt(body.get("score").toString());
-        boolean reussi     = score >= 70;
+        Long inscriptionId = body.get("inscriptionId") != null ? Long.valueOf(body.get("inscriptionId").toString()) : 0L;
+        int  score         = body.get("score") != null ? Integer.parseInt(body.get("score").toString()) : 0;
+        
+        // Sécurité sur le champ niveau pour éviter le NPE
+        String niveauStr = body.get("niveau") != null ? body.get("niveau").toString() : "";
+        Long parcoursId = body.get("parcoursId") != null ? Long.valueOf(body.get("parcoursId").toString()) : null;
+
+        boolean reussi = score >= (("EXPERT".equals(niveauStr)) ? 80 : 70);
 
         Map<String, Object> result = new HashMap<>();
         result.put("score",  score);
         result.put("reussi", reussi);
 
         if (reussi) {
-            // Générer le certificat via le service
             try {
+                // 1. Validation de l'inscription individuelle
                 inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
-                    // Marquer comme certifié
                     ins.setStatut("Terminé");
+                    ins.setProgression(100.0);
                     inscriptionRepo.save(ins);
+
+                    // 2. Si c'est un parcours et niveau EXPERT, validation du parcours
+                    // On tente de récupérer le parcoursId s'il est manquant
+                    final Long finalParcoursId = (parcoursId != null) ? parcoursId : 
+                        inscriptionParcoursRepo.findByCandidatId(ins.getCandidat().getId()).stream()
+                            .filter(ip -> ip.getParcours().getNiveauExpert() != null && ip.getParcours().getNiveauExpert().getId().equals(ins.getFormation().getId()))
+                            .map(ip -> ip.getParcours().getId())
+                            .findFirst().orElse(null);
+
+                    if (finalParcoursId != null && "EXPERT".equalsIgnoreCase(niveauStr) && ins.getCandidat() != null) {
+                        inscriptionParcoursRepo.findByCandidatIdAndParcoursId(ins.getCandidat().getId(), finalParcoursId)
+                                .ifPresent(ip -> {
+                                    if (!"TERMINE".equals(ip.getStatut())) {
+                                        ip.setStatut("TERMINE");
+                                        ip.setEvaluationParcoursRequise(true);
+                                        inscriptionParcoursRepo.save(ip);
+                                        System.out.println("🏆 Parcours " + finalParcoursId + " terminé avec succès !");
+                                        
+                                        // 3. Notification de fin de parcours
+                                        notificationService.notifyParcoursCompletion(
+                                            ins.getCandidat().getId(), 
+                                            ip.getParcours().getTitre(), 
+                                            finalParcoursId
+                                        );
+
+                                        // 4. Génération du certificat final
+                                        try {
+                                            certificatService.genererPourParcours(ip);
+                                        } catch (Exception e) {
+                                            System.err.println("Erreur génération certificat : " + e.getMessage());
+                                        }
+                                    }
+                                });
+                    }
                 });
+                
                 result.put("certificatGenere", true);
                 result.put("message",
-                        "Félicitations ! Vous avez obtenu " + score
-                                + "% — Votre certificat est disponible !");
+                        "Félicitations ! Vous avez réussi avec " + score
+                                + "%. Votre certificat est disponible !");
             } catch (Exception e) {
                 result.put("certificatGenere", false);
-                result.put("message", "Score validé mais erreur certificat.");
+                result.put("message", "Score validé mais erreur lors de la mise à jour.");
             }
         } else {
             result.put("certificatGenere", false);
             result.put("message",
                     "Score insuffisant (" + score
-                            + "%). Il faut 70% minimum. Vous pouvez réessayer !");
+                            + "%). Il faut " + (parcoursId != null && "EXPERT".equals(niveauStr) ? "80" : "70") 
+                            + "% minimum. Vous pouvez réessayer !");
         }
         return ResponseEntity.ok(result);
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // GÉNÉRATION QUIZ FINAL — Claude AI
-    // ══════════════════════════════════════════════════════════════
+
+
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> genererQuizFinal(
             String titreFormation,
             String categorie,
-            List<String> videoTitles) {
+            List<String> videoTitles,
+            String niveau) {
 
         if (geminiApiKey == null || geminiApiKey.isEmpty()) {
             return getQuizFinalFallback(titreFormation);
@@ -209,20 +309,21 @@ public class VideoProgressionController {
                 
                 Le candidat vient de terminer la formation complète :
                 "%s"
+                Niveau ciblé : %s
                 
-                Voici les chapitres/vidéos qu'il a regardés :
+                Voici les titres des vidéos qu'il a étudiées :
                 - %s
                 
-                Génère exactement 10 questions QCM d'évaluation finale
-                qui couvrent l'ensemble des concepts importants de cette formation.
+                Génère exactement 10 questions QCM d'évaluation technique
+                parfaitement adaptées au niveau %s.
                 
                 Règles :
-                - Questions variées couvrant différents aspects de la formation
-                - Difficulté progressive (3 faciles, 4 moyennes, 3 difficiles)
-                - 4 options par question (A, B, C, D)
-                - Une seule bonne réponse
-                - Questions techniques et concrètes, PAS génériques
-                - Inclure une explication pour la bonne réponse
+                - Questions variées couvrant l'ensemble de la formation.
+                - Difficulté : %s.
+                - 4 options par question (A, B, C, D).
+                - Une seule bonne réponse.
+                - Questions techniques et concrètes (syntaxe, architecture, cas pratiques).
+                - Inclure une explication détaillée pour la bonne réponse.
                 
                 Réponds UNIQUEMENT en JSON valide sans markdown ni backticks :
                 [
@@ -234,16 +335,18 @@ public class VideoProgressionController {
                     "difficulte": "facile"
                   }
                 ]
-                """.formatted(categorie, titreFormation, listeVideos);
+                """.formatted(categorie, titreFormation, niveau.isEmpty() ? "Standard" : niveau, 
+                           listeVideos, niveau.isEmpty() ? "Intermédiaire" : niveau,
+                           "EXPERT".equals(niveau) ? "Haut Niveau / Architecture" : "Progressive");
 
-            // Structure OpenAI-compatible pour l'API gratuite GROQ (Llama 3.1)
             String requestBody = mapper.writeValueAsString(Map.of(
-                    "model", "llama-3.1-8b-instant", // Modèle courant gratuit et ultra-rapide
+                    "model", "llama-3.1-8b-instant",
                     "messages", List.of(Map.of(
                             "role", "user",
                             "content", prompt
                     )),
-                    "temperature", 0.5
+                    "temperature", 0.5,
+                    "max_tokens", 4096
             ));
 
             String url = "https://api.groq.com/openai/v1/chat/completions";
@@ -252,7 +355,7 @@ public class VideoProgressionController {
                     HttpRequest.newBuilder()
                             .uri(URI.create(url))
                             .header("Content-Type", "application/json")
-                            .header("Authorization", "Bearer " + geminiApiKey) // on a gardé l'ancien nom de variable
+                            .header("Authorization", "Bearer " + geminiApiKey)
                             .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                             .build(),
                     HttpResponse.BodyHandlers.ofString()
@@ -266,22 +369,24 @@ public class VideoProgressionController {
                 return getQuizFinalFallback(titreFormation);
             }
 
-            // Path OpenAI/Groq: choices[0].message.content
             String text = root.path("choices").get(0)
-                    .path("message").path("content").asText("[]").trim()
-                    .replaceAll("(?s)```json\\s*", "")
-                    .replaceAll("(?s)```\\s*", "").trim();
+                    .path("message").path("content").asText("[]").trim();
 
+            // Hardened JSON Extraction
             int start = text.indexOf('[');
             int end   = text.lastIndexOf(']');
             if (start >= 0 && end > start) {
                 text = text.substring(start, end + 1);
             }
 
+            // Nettoyer les éventuels backticks markdown
+            text = text.replaceAll("(?s)```json\\s*", "")
+                       .replaceAll("(?s)```\\s*", "").trim();
+
             List<Map<String, Object>> questions =
                     mapper.readValue(text, List.class);
 
-            System.out.println("✅ Quiz final généré par Gemini: "
+            System.out.println("✅ Quiz final généré par l'IA: "
                     + questions.size() + " questions pour " + titreFormation);
             return questions;
 
@@ -291,7 +396,6 @@ public class VideoProgressionController {
         }
     }
 
-    // ── Récupérer les titres des vidéos YouTube ───────────────────
     private List<String> getVideoTitles(List<String> videoIds) {
         if (videoIds.isEmpty()) return new ArrayList<>();
         try {
@@ -324,7 +428,6 @@ public class VideoProgressionController {
         }
     }
 
-    // ── Quiz fallback si Claude indisponible ──────────────────────
     private List<Map<String, Object>> getQuizFinalFallback(
             String titreFormation) {
         List<Map<String, Object>> questions = new ArrayList<>();
@@ -362,25 +465,34 @@ public class VideoProgressionController {
         return questions;
     }
 
-    // ══════════════════════════════════════════════════════════════
-    // UTILITAIRES
-    // ══════════════════════════════════════════════════════════════
-    private int calculerProgression(Long inscriptionId, int totalVideos) {
-        if (totalVideos == 0) return 0;
+    private int calculerProgression(Long inscriptionId, Long formationId, int totalVideos) {
+        if (totalVideos <= 0) return 0;
+        
+        // Sécurité : on regarde d'abord le statut forcé
+        Optional<t.esprit.arctic.jobmatch.entity.InscriptionFormation> insOpt = inscriptionRepo.findById(inscriptionId);
+        if (insOpt.isPresent() && ("Terminé".equalsIgnoreCase(insOpt.get().getStatut()) || insOpt.get().getProgression() >= 100)) {
+            return 100;
+        }
+
         long videosVues = videoProgressionRepo
-                .countByInscriptionIdAndVuCompleteTrue(inscriptionId);
+                .countDistinctVideoIdByInscriptionIdAndFormationIdAndVuCompleteTrue(inscriptionId, formationId);
         return (int) Math.min(100,
                 Math.round((double) videosVues / totalVideos * 100));
     }
 
     private void mettreAJourInscription(Long inscriptionId, int progression) {
         inscriptionRepo.findById(inscriptionId).ifPresent(ins -> {
+            // On ne revient jamais en arrière si c'est déjà terminé
+            if ("Terminé".equalsIgnoreCase(ins.getStatut()) || ins.getProgression() >= 100) {
+                return;
+            }
+            
             ins.setProgression((double) progression);
             if (progression > 0 && progression < 100) {
                 ins.setStatut("EnCours");
+            } else if (progression >= 100) {
+                ins.setStatut("Terminé");
             }
-            // Ne pas mettre "Terminé" automatiquement —
-            // seulement après quiz final réussi
             inscriptionRepo.save(ins);
         });
     }

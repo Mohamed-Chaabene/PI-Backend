@@ -219,6 +219,15 @@ public class CandidatureService implements ICandidatureService {
         dto.setCompetences(c.getCompetences());
         dto.setLettreMotivation(c.getLettreMotivation());
 
+        dto.setDateDisponibilite(c.getDateDisponibilite());
+        dto.setPreavis(c.getPreavis());
+        dto.setAcceptContact(c.getAcceptContact());
+        dto.setAcceptRGPD(c.getAcceptRGPD());
+        dto.setScoreEntretien(c.getScoreEntretien());
+        dto.setTotalQuestionsEntretien(c.getTotalQuestionsEntretien());
+        dto.setBonnesReponsesEntretien(c.getBonnesReponsesEntretien());
+        dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
+
         if (c.getCandidat() != null) {
             dto.setCandidatId(c.getCandidat().getId());
             dto.setCandidatNom(c.getCandidat().getNom());

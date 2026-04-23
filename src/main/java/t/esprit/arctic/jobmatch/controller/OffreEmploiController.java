@@ -1,10 +1,12 @@
 package t.esprit.arctic.jobmatch.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,8 +16,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import t.esprit.arctic.jobmatch.dto.OffreEmploiRequestDTO;
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
+import t.esprit.arctic.jobmatch.entity.Entretien;
 import t.esprit.arctic.jobmatch.entity.Recruteur;
+import t.esprit.arctic.jobmatch.repository.EntretienRepository;
 import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
 import t.esprit.arctic.jobmatch.repository.RecruteurRepository;
 import t.esprit.arctic.jobmatch.service.NotificationService;
@@ -32,6 +37,7 @@ import java.util.Map;
 public class OffreEmploiController {
 
     private final OffreEmploiRepository offreEmploiRepository;
+    private final EntretienRepository entretienRepository;
     private final RecruteurRepository recruteurRepository;
     private final NotificationService notificationService;
 
@@ -84,20 +90,11 @@ public class OffreEmploiController {
     }
 
     @PostMapping
-    public ResponseEntity<OffreEmploi> createOffre(@RequestBody OffreEmploi offrePayload) {
+    public ResponseEntity<OffreEmploi> createOffre(@Valid @RequestBody OffreEmploiRequestDTO offrePayload) {
         Recruteur recruteur = getCurrentRecruteur();
 
         OffreEmploi offre = new OffreEmploi();
-        offre.setTitre(offrePayload.getTitre());
-        offre.setDescription(offrePayload.getDescription());
-        offre.setEntreprise(offrePayload.getEntreprise() != null ? offrePayload.getEntreprise() : recruteur.getEntreprise());
-        offre.setLocation(offrePayload.getLocation());
-        offre.setSalary(offrePayload.getSalary());
-        offre.setTypeContrat(offrePayload.getTypeContrat());
-        offre.setDeadline(offrePayload.getDeadline());
-        offre.setCompetencesRequises(offrePayload.getCompetencesRequises());
-        offre.setImage(offrePayload.getImage());
-        offre.setStatut(offrePayload.getStatut() != null ? offrePayload.getStatut() : "ACTIVE");
+        applyPayloadToOffre(offre, offrePayload);
         offre.setDatePublication(new Date());
         offre.setRecruteur(recruteur);
 
@@ -109,12 +106,19 @@ public class OffreEmploiController {
             recruteur.getNom(),
             offre.getTitre()
         );
+        
+        // Notify all candidates in the same location
+        notificationService.notifyCandidatesByJobLocation(
+            offre.getLocation(),
+            offre.getTitre(),
+            recruteur.getNom()
+        );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedOffre);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateOffre(@PathVariable Long id, @RequestBody OffreEmploi payload) {
+    public ResponseEntity<?> updateOffre(@PathVariable Long id, @Valid @RequestBody OffreEmploiRequestDTO payload) {
         Recruteur recruteur = getCurrentRecruteur();
         OffreEmploi offre = offreEmploiRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Offre non trouvée"));
@@ -124,16 +128,7 @@ public class OffreEmploiController {
                     .body(Map.of("error", "Vous ne pouvez modifier que vos propres offres"));
         }
 
-        offre.setTitre(payload.getTitre());
-        offre.setDescription(payload.getDescription());
-        offre.setEntreprise(payload.getEntreprise() != null ? payload.getEntreprise() : offre.getEntreprise());
-        offre.setLocation(payload.getLocation());
-        offre.setSalary(payload.getSalary());
-        offre.setTypeContrat(payload.getTypeContrat());
-        offre.setDeadline(payload.getDeadline());
-        offre.setCompetencesRequises(payload.getCompetencesRequises());
-        offre.setImage(payload.getImage());
-        offre.setStatut(payload.getStatut() != null ? payload.getStatut() : offre.getStatut());
+        applyPayloadToOffre(offre, payload);
 
         return ResponseEntity.ok(offreEmploiRepository.save(offre));
     }
@@ -149,8 +144,25 @@ public class OffreEmploiController {
                     .body(Map.of("error", "Vous ne pouvez supprimer que vos propres offres"));
         }
 
-        offreEmploiRepository.delete(offre);
-        return ResponseEntity.noContent().build();
+        try {
+            // Prevent FK violations: interviews keep history but no longer reference deleted offer.
+            List<Entretien> linkedEntretiens = entretienRepository.findByOffreEmploiId(id);
+            if (!linkedEntretiens.isEmpty()) {
+                linkedEntretiens.forEach(entretien -> entretien.setOffreEmploi(null));
+                entretienRepository.saveAll(linkedEntretiens);
+            }
+
+            offreEmploiRepository.delete(offre);
+            return ResponseEntity.noContent().build();
+        } catch (DataIntegrityViolationException ex) {
+            // Last-resort fallback: mark offer inactive instead of crashing with 500.
+            offre.setStatut("INACTIVE");
+            offreEmploiRepository.save(offre);
+            return ResponseEntity.ok(Map.of(
+                    "archived", true,
+                    "message", "Offre archivée car des références existent"
+            ));
+        }
     }
 
     private Recruteur getCurrentRecruteur() {
@@ -163,5 +175,18 @@ public class OffreEmploiController {
 
         return recruteurRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new RuntimeException("Recruteur non trouvé"));
+    }
+
+    private void applyPayloadToOffre(OffreEmploi offre, OffreEmploiRequestDTO payload) {
+        offre.setTitre(payload.getTitre());
+        offre.setDescription(payload.getDescription());
+        offre.setEntreprise(payload.getEntreprise());
+        offre.setLocation(payload.getLocation());
+        offre.setSalary(payload.getSalary());
+        offre.setTypeContrat(payload.getTypeContrat());
+        offre.setDeadline(payload.getDeadline());
+        offre.setCompetencesRequises(payload.getCompetencesRequises());
+        offre.setImage(payload.getImage());
+        offre.setStatut(payload.getStatut() != null ? payload.getStatut() : "ACTIVE");
     }
 }

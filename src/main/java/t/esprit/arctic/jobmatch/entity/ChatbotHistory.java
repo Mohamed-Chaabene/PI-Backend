@@ -19,15 +19,15 @@ public class ChatbotHistory {
     private Long formationId;
 
     @Column(columnDefinition = "TEXT")
-    private String historiqueJson; // Stocke la liste JSON des messages de la discussion
+    private String historiqueJson;
 
     @Column(nullable = true)
-    private String sessionId; // UUID de la session (nullable for backward compatibility temporaire)
+    private String sessionId;
 
     @Column(nullable = true)
-    private String sessionTitle; // Titre de la conversation généré
+    private String sessionTitle;
 
     @Column(nullable = true)
-    private java.time.LocalDateTime createdAt; // Date de création de la session
+    private java.time.LocalDateTime createdAt;
 
 }

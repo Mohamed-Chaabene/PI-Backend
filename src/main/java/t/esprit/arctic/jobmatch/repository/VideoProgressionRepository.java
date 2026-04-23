@@ -15,4 +15,10 @@ public interface VideoProgressionRepository
 
     long countByInscriptionIdAndVuCompleteTrue(Long inscriptionId);
     long countByInscriptionIdAndQuizReussiTrue(Long inscriptionId);
-}
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT v.videoId) FROM VideoProgression v WHERE v.inscriptionId = :inscriptionId AND v.vuComplete = true")
+    long countDistinctVideoIdByInscriptionIdAndVuCompleteTrue(@org.springframework.data.repository.query.Param("inscriptionId") Long inscriptionId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT v.videoId) FROM VideoProgression v WHERE v.inscriptionId = :inscriptionId AND v.formationId = :formationId AND v.vuComplete = true")
+    long countDistinctVideoIdByInscriptionIdAndFormationIdAndVuCompleteTrue(@org.springframework.data.repository.query.Param("inscriptionId") Long inscriptionId, @org.springframework.data.repository.query.Param("formationId") Long formationId);
+}

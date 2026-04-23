@@ -1,5 +1,7 @@
 package t.esprit.arctic.jobmatch.controller;
 
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -38,34 +40,14 @@ public class CertificatController {
                 certificatService.getByCandidat(candidatId));
     }
 
-    // ✅ Générer certificat depuis une inscription (après quiz final réussi)
     @PostMapping("/generer/{inscriptionId}")
     public ResponseEntity<?> genererDepuisInscription(
             @PathVariable Long inscriptionId) {
         return inscriptionRepo.findById(inscriptionId)
-                .map(ins -> {
-                    try {
-                        Certificat cert =
-                                certificatService.genererAutomatiquement(ins);
-                        return ResponseEntity.ok(cert);
-                    } catch (RuntimeException e) {
-                        // Certificat déjà existant → le retourner
-                        List<Certificat> certs =
-                                certificatService.getByCandidat(
-                                        ins.getCandidat().getId());
-                        return ResponseEntity.ok(
-                                certs.stream()
-                                        .filter(c -> c.getInscription().getId()
-                                                .equals(inscriptionId))
-                                        .findFirst()
-                                        .orElseThrow()
-                        );
-                    }
-                })
+                .map(ins -> ResponseEntity.ok(certificatService.genererAutomatiquement(ins)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ── Téléchargement PDF ────────────────────────────────────────
     @GetMapping("/{id}/telecharger")
     public ResponseEntity<byte[]> telecharger(@PathVariable Long id) {
         byte[] pdf = certificatService.genererPdf(id);

@@ -20,11 +20,11 @@ public class Notification {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "sender_id", nullable = false)
+    @Column(name = "sender_id", nullable = true)
     private Long senderId;
 
     @Column(nullable = false)
-    private String type; // "follow", "message", etc.
+    private String type; // "follow", "message", "interview_reminder", "offer_expired", etc.
 
     @Column(nullable = false)
     private String message; // "[UserName] started following you"
@@ -34,6 +34,12 @@ public class Notification {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "entretien_id", nullable = true)
+    private Long entretienId;
+
+    @Column(name = "offre_emploi_id", nullable = true)
+    private Long offreEmploiId;
 
     @PrePersist
     protected void onCreate() {

@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Feedback;
 import t.esprit.arctic.jobmatch.dto.FeedbackDTO;
 import org.springframework.beans.BeanUtils;
+import t.esprit.arctic.jobmatch.dto.FeedbackMacroDTO;
+import t.esprit.arctic.jobmatch.entity.FeedbackMacro;
 import t.esprit.arctic.jobmatch.service.FeedbackService;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +21,6 @@ public class FeedbackController {
 
     private final FeedbackService feedbackService;
 
-    // ── CRUD complet ──────────────────────────────────────────────────────────
 
     @GetMapping
     public ResponseEntity<List<Feedback>> getAll() {
@@ -51,7 +52,6 @@ public class FeedbackController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Requêtes métier ───────────────────────────────────────────────────────
 
     @GetMapping("/formation/{formationId}")
     public ResponseEntity<List<Feedback>> getByFormation(@PathVariable Long formationId) {
@@ -70,10 +70,26 @@ public class FeedbackController {
         return ResponseEntity.ok(feedbackService.getByCandidatAndFormation(candidatId, formationId));
     }
 
+    @GetMapping("/parcours/{parcoursId}")
+    public ResponseEntity<List<Feedback>> getByParcours(@PathVariable Long parcoursId) {
+        return ResponseEntity.ok(feedbackService.getByParcours(parcoursId));
+    }
+
     @GetMapping("/formation/{formationId}/moyenne")
     public ResponseEntity<Map<String, Object>> getNoteMoyenne(@PathVariable Long formationId) {
         Double moyenne = feedbackService.getNoteMoyenne(formationId);
         int total = feedbackService.getByFormation(formationId).size();
         return ResponseEntity.ok(Map.of("moyenne", moyenne, "total", total));
+    }
+
+    @PostMapping("/macro")
+    public ResponseEntity<Void> saveMacro(@Valid @RequestBody FeedbackMacroDTO dto) {
+        feedbackService.saveMacro(dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/parcours/{parcoursId}/macro")
+    public ResponseEntity<List<FeedbackMacro>> getMacrosByParcours(@PathVariable Long parcoursId) {
+        return ResponseEntity.ok(feedbackService.getMacroByParcours(parcoursId));
     }
 }

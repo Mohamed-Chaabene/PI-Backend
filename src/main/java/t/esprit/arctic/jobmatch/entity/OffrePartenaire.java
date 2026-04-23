@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.Date;
+import jakarta.persistence.Column;
 
 
 @Entity
@@ -23,8 +24,12 @@ public class OffrePartenaire {
     @Enumerated(EnumType.STRING)
     private TypeOffrePartenaire type;  // EMPLOI ou STAGE
 
-    // Côté * → 1 (plusieurs offres appartiennent à 1 partenaire)
+
     @ManyToOne
     @JoinColumn(name = "partenaire_id")
     private Partenaire partenaire;
+
+    @Column(name = "epinglee",
+            columnDefinition = "boolean default false")
+    private boolean epinglee = false;
 }

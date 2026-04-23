@@ -41,16 +41,13 @@ public class LocalisationService {
     public void delete(Long id) {
         Localisation localisation = getById(id);
         
-        // Find all candidats referencing this localisation
         List<Candidat> candidats = candidatRepository.findByLocalisation(localisation);
         
-        // Clear the localisation reference from all candidats
         for (Candidat candidat : candidats) {
             candidat.setLocalisation(null);
             candidatRepository.save(candidat);
         }
         
-        // Now delete the localisation
         repository.deleteById(id);
     }
 }
