@@ -25,9 +25,6 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import java.io.ByteArrayInputStream;
 import java.util.Base64;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
 @RestController
 @RequestMapping("/api/chatbot")
 @CrossOrigin(origins = "http://localhost:4200", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
@@ -320,7 +317,7 @@ public class ChatbotController {
                     ? fileText.substring(0, 6000) + "\n...[document tronqué]"
                     : fileText;
             String prompt = message.isEmpty() ? "Analyse ce document." : message;
-            userMessageFull = prompt + "\n\n[Document joint: " + fileName + "]\n" + truncated;
+            userMessageFull = prompt + "\n\n[CONTENU DU DOCUMENT JOINT '" + fileName + "']:\n" + truncated;
         } else if (hasFile && (fileData != null && !fileData.trim().isEmpty())) {
             String prompt = message.isEmpty() ? "J'ai joint le document: " + fileName : message;
             userMessageFull = prompt + "\n\n[Document joint: " + fileName + " - le texte n'a pas pu être extrait]";
@@ -407,31 +404,37 @@ public class ChatbotController {
             Category: %s
             Level: %s
             
-            === CRITICAL OFF-TOPIC RULE (STRICT) ===
-            Before providing ANY analysis or description of a message, image, or document, you MUST determine if it is directly related to the training "%s".
+            === TOPIC RELEVANCE RULE ===
+            You must assist the user ONLY with topics directly related to the training "%s".
+            
+            HOW TO DETERMINE RELEVANCE:
+            - Accept slight variations in names (e.g., "Power BI" is the same as "Power BIiii").
+            - FOR DOCUMENTS:
+                * Check if the document focuses on the core concepts, tools, or techniques of "%s" (e.g., for Power BI, look for DAX, Power Query, Data Modeling, etc.).
+                * If the document is about a GENERAL or DIFFERENT subject (e.g., English lessons, general management, or project management not specific to the tool), it is OFF-TOPIC.
+                * If you are unsure, but the document doesn't explicitly mention the training's core technology, consider it OFF-TOPIC.
             
             IF THE CONTENT IS OFF-TOPIC:
             - You MUST refuse to analyze, describe, or summarize it.
             - You MUST output ONLY the following refusal sentence and NOTHING ELSE.
-            - NO analysis of the image/document.
-            - NO technical explanation of why it is off-topic.
-            - NO extra notes, NO suggestions, NO "I would be happy to help with...".
+            - NO analysis, NO notes, NO suggestions, NO "I am here to help with...".
             
-            EXACT REFUSAL PHRASING (to be used based on the user's language):
+            EXACT REFUSAL PHRASING (use the one matching the user's language):
             - FRENCH: "Cette image/question/document ne semble pas être liée à la formation **%s**. Je suis ici pour vous aider uniquement sur les thèmes liés à **%s**. Posez-moi une question sur ce sujet !"
             - ENGLISH: "This image/question/document does not seem to be related to the training **%s**. I am here to help you only with topics related to **%s**. Ask me a question about this subject!"
             - ARABIC: "هذه الصورة/السؤال/المستند لا يبدو مرتبطًا بالتكوين **%s**. أنا هنا لمساعدتك فقط في المواضيع المتعلقة بـ **%s**. اطرح سؤالاً حول هذا الموضوع!"
             
             === CRITICAL LANGUAGE RULE ===
-            Detect the language of the user's message and reply in EXACTLY the same language.
+            Reply in the SAME language as the user.
             
             === FORMAT ===
-            - Be concise.
+            - Be concise and pedagogical.
             - Use bullet points if helpful.
             - Stay strictly within the context of the training "%s".
             """,
                 titre, categorie, niveau,
-                titre, titre, titre, titre, titre, titre, titre,
+                titre, titre,
+                titre, titre, titre, titre, titre, titre,
                 titre
         );
     }

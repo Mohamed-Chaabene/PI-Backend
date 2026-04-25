@@ -17,6 +17,9 @@ import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.DocumentRepository;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.core.io.ByteArrayResource;
 
 import java.util.List;
 import java.util.Base64;
@@ -56,7 +59,7 @@ public class DocumentController {
 
     // CREATE
     @PostMapping
-    public ResponseEntity<Document> create(@RequestBody Document document) {
+    public ResponseEntity<?> create(@RequestBody Document document) {
         try {
             Candidat candidat = getCandidatConnecte();
             document.setCandidat(candidat);
@@ -64,8 +67,14 @@ public class DocumentController {
         } catch (Exception e) {
             System.out.println(" Liaison candidat échouée: " + e.getMessage());
         }
-        Document saved = documentRepository.save(document);
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        try {
+            Document saved = documentRepository.save(document);
+            return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        } catch (Exception e) {
+            System.err.println("❌ Erreur critique lors du documentRepository.save : " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // READ ALL
@@ -99,7 +108,7 @@ public class DocumentController {
 
     // UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<Document> update(@PathVariable Long id,
+    public ResponseEntity<?> update(@PathVariable Long id,
                                            @RequestBody Document document) {
         Document existing = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document non trouvé"));
@@ -112,11 +121,27 @@ public class DocumentController {
         } catch (Exception ignored) {}
 
         existing.setNom(document.getNom());
+        existing.setPrenom(document.getPrenom());
+        existing.setTitre(document.getTitre());
+        existing.setEmail(document.getEmail());
+        existing.setTelephone(document.getTelephone());
+        existing.setAdresse(document.getAdresse());
+        existing.setProfil(document.getProfil());
+        existing.setCompetences(document.getCompetences());
+        existing.setLangues(document.getLangues());
+        existing.setCentresInteret(document.getCentresInteret());
+        existing.setExperiences(document.getExperiences());
+        existing.setFormations(document.getFormations());
+        existing.setNomFichier(document.getNomFichier());
+        
         existing.setType(document.getType());
         existing.setContenu(document.getContenu());
         existing.setTemplate(document.getTemplate());
         existing.setCompatibleATS(document.getCompatibleATS());
         existing.setAjouterPhoto(document.getAjouterPhoto());
+        existing.setScoreATS(document.getScoreATS());
+        existing.setArchive(document.getArchive());
+        
         return ResponseEntity.ok(documentRepository.save(existing));
     }
 
@@ -622,15 +647,24 @@ public class DocumentController {
             try {
                 String mlUrl = ML_API_URL + "/photo/professionalize";
 
-                String base64Image = Base64.getEncoder().encodeToString(photo.getBytes());
+                // Créer le corps de la requête multipart
+                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+                
+                // Utiliser ByteArrayResource pour passer les bytes de la photo avec son nom original
+                ByteArrayResource photoResource = new ByteArrayResource(photo.getBytes()) {
+                    @Override
+                    public String getFilename() {
+                        return photo.getOriginalFilename();
+                    }
+                };
+                
+                // Le service ML attend le champ "file"
+                body.add("file", photoResource);
 
                 HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-                Map<String, String> requestBody = new HashMap<>();
-                requestBody.put("image_base64", "data:" + photo.getContentType() + ";base64," + base64Image);
-
-                HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+                HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
                 ResponseEntity<Map> response = restTemplate.postForEntity(mlUrl, requestEntity, Map.class);
 

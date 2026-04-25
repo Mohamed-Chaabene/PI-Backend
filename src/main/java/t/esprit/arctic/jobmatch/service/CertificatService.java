@@ -45,32 +45,40 @@ public class CertificatService {
      */
     @org.springframework.transaction.annotation.Transactional
     public Certificat genererPourParcours(InscriptionParcours inscriptionParcours) {
+        if (inscriptionParcours == null || inscriptionParcours.getParcours() == null) {
+            System.err.println("❌ Impossible de générer le certificat : Inscription ou Parcours null");
+            return null;
+        }
+
         // Récupérer la formation Expert du parcours
         t.esprit.arctic.jobmatch.entity.Formation formationExpert =
                 inscriptionParcours.getParcours().getFormationParNiveau(
                         t.esprit.arctic.jobmatch.entity.NiveauOrdre.EXPERT);
 
         if (formationExpert == null) {
-            throw new RuntimeException("Aucune formation Expert trouvée pour ce parcours");
+            System.err.println("⚠️ Aucune formation Expert trouvée pour le parcours : " + inscriptionParcours.getParcours().getTitre());
+            return null;
         }
 
-        // Trouver ou créer une InscriptionFormation pour la formation Expert
+        // Trouver ou créer une InscriptionFormation pour la formation Expert liée à ce parcours
         Long candidatId = inscriptionParcours.getCandidat().getId();
         Long formationId = formationExpert.getId();
+        Long parcoursId = inscriptionParcours.getParcours().getId();
 
         InscriptionFormation inscriptionFormation = inscriptionFormationRepository
-                .findByCandidatIdAndFormationId(candidatId, formationId)
+                .findByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId)
                 .orElseGet(() -> {
                     InscriptionFormation newInsc = new InscriptionFormation();
                     newInsc.setCandidat(inscriptionParcours.getCandidat());
                     newInsc.setFormation(formationExpert);
+                    newInsc.setParcoursId(parcoursId);
                     newInsc.setDateInscription(new Date());
                     newInsc.setStatut("Terminé");
                     newInsc.setProgression(100.0);
                     return inscriptionFormationRepository.save(newInsc);
                 });
 
-        // Vérifier si un certificat existe déjà
+        // Vérifier si un certificat existe déjà pour cette inscription
         return certificatRepository.findByInscriptionId(inscriptionFormation.getId())
                 .orElseGet(() -> {
                     Certificat certificat = new Certificat();
@@ -96,7 +104,7 @@ public class CertificatService {
     }
 
     private byte[] loadLogo() {
-        String[] names = {"/static/logo_transparent.png", "logo_png.png"};
+        String[] names = {"logo_transparent.png"};
         String workDir = System.getProperty("user.dir");
         for (String name : names) {
             try {
@@ -112,6 +120,7 @@ public class CertificatService {
         return null;
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public byte[] genererPdf(Long certificatId) {
         Certificat cert = getById(certificatId);
 

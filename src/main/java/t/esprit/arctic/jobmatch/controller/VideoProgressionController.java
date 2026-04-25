@@ -257,21 +257,17 @@ public class VideoProgressionController {
                                             finalParcoursId
                                         );
 
-                                        // 4. Génération du certificat final
-                                        try {
-                                            certificatService.genererPourParcours(ip);
-                                        } catch (Exception e) {
-                                            System.err.println("Erreur génération certificat : " + e.getMessage());
-                                        }
+                                        // 4. On ne génère plus le certificat ici, il sera généré après le macro-feedback
+                                        System.out.println("🏁 Parcours " + finalParcoursId + " terminé. En attente de feedback pour le certificat.");
                                     }
                                 });
                     }
                 });
                 
-                result.put("certificatGenere", true);
+                result.put("certificatGenere", false); // Car il faut d'abord le feedback
                 result.put("message",
                         "Félicitations ! Vous avez réussi avec " + score
-                                + "%. Votre certificat est disponible !");
+                                + "%. Votre certificat sera disponible juste après avoir partagé votre avis sur le parcours !");
             } catch (Exception e) {
                 result.put("certificatGenere", false);
                 result.put("message", "Score validé mais erreur lors de la mise à jour.");

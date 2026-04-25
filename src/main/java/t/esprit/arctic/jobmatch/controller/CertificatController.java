@@ -1,6 +1,5 @@
 package t.esprit.arctic.jobmatch.controller;
 
-import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +11,6 @@ import t.esprit.arctic.jobmatch.service.CertificatService;
 import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/certificats")
