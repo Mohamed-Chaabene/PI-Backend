@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/candidats/email/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/certificats/verify/**").permitAll()
 
                         // ── Suggestions et proxy ──────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()

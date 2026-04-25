@@ -34,6 +34,7 @@ public class CertificatService {
                     Certificat certificat = new Certificat();
                     certificat.setTitre("Certificat - " + inscription.getFormation().getTitre());
                     certificat.setDateObtention(new Date());
+                    certificat.setVerificationCode(java.util.UUID.randomUUID().toString());
                     certificat.setInscription(inscription);
                     return certificatRepository.save(certificat);
                 });
@@ -84,6 +85,7 @@ public class CertificatService {
                     Certificat certificat = new Certificat();
                     certificat.setTitre("Certificat Parcours - " + inscriptionParcours.getParcours().getTitre());
                     certificat.setDateObtention(new Date());
+                    certificat.setVerificationCode(java.util.UUID.randomUUID().toString());
                     certificat.setInscription(inscriptionFormation);
                     certificat.setParcours(inscriptionParcours.getParcours());
                     return certificatRepository.save(certificat);
@@ -97,6 +99,11 @@ public class CertificatService {
     public Certificat getById(Long id) {
         return certificatRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Certificat non trouve : " + id));
+    }
+
+    public Certificat verifyByCode(String code) {
+        return certificatRepository.findByVerificationCode(code)
+                .orElseThrow(() -> new RuntimeException("Certificat invalide ou non trouve"));
     }
 
     public List<Certificat> getByCandidat(Long candidatId) {
@@ -120,9 +127,14 @@ public class CertificatService {
         return null;
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @org.springframework.transaction.annotation.Transactional
     public byte[] genererPdf(Long certificatId) {
         Certificat cert = getById(certificatId);
+        
+        if (cert.getVerificationCode() == null) {
+            cert.setVerificationCode(java.util.UUID.randomUUID().toString());
+            certificatRepository.save(cert);
+        }
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -323,20 +335,32 @@ public class CertificatService {
                 cb.endText();
             }
 
+            float qrSize = 60f;
+            float rightAlign = W - bTotal - 40;
+            
+            if (cert.getVerificationCode() != null) {
+                String verifyUrl = "http://localhost:4200/verify-certificat/" + cert.getVerificationCode();
+                BarcodeQRCode qrcode = new BarcodeQRCode(verifyUrl, 100, 100, null);
+                Image qrcodeImage = qrcode.getImage();
+                qrcodeImage.scaleAbsolute(qrSize, qrSize);
+                qrcodeImage.setAbsolutePosition(rightAlign - qrSize, bTotal + 40);
+                cb.addImage(qrcodeImage);
+            }
+
             cb.beginText();
             cb.setColorFill(textMuted);
             cb.setFontAndSize(bfReg, 7.5f);
             cb.showTextAligned(Element.ALIGN_RIGHT,
                     "N Certificat : CERT-" + String.format("%05d", cert.getId()),
-                    W - bTotal - 40, bTotal + 36, 0);
+                    rightAlign, bTotal + 30, 0);
             cb.endText();
 
             cb.beginText();
             cb.setColorFill(textMuted);
             cb.setFontAndSize(bfReg, 7f);
             cb.showTextAligned(Element.ALIGN_RIGHT,
-                    "www.matchykhedma.tn",
-                    W - bTotal - 40, bTotal + 24, 0);
+                    "Vérifiez l'authenticité de ce document en scannant le QR code",
+                    rightAlign, bTotal + 20, 0);
             cb.endText();
 
             document.close();

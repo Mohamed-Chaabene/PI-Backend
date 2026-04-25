@@ -56,4 +56,14 @@ public class CertificatController {
         headers.setContentLength(pdf.length);
         return ResponseEntity.ok().headers(headers).body(pdf);
     }
+
+    @GetMapping("/verify/{code}")
+    public ResponseEntity<?> verifyCertificat(@PathVariable String code) {
+        try {
+            Certificat cert = certificatService.verifyByCode(code);
+            return ResponseEntity.ok(cert);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
