@@ -6,7 +6,9 @@ import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,6 +18,26 @@ public class FollowService {
     private final UtilisateurRepository utilisateurRepository;
     private final NotificationService notificationService;
 
+    private Set<Long> parseFollowerIds(String followers) {
+        if (followers == null || followers.isEmpty()) {
+            return new HashSet<>();
+        }
+        return Arrays.stream(followers.split(","))
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .map(Long::valueOf)
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    private String joinFollowerIds(Set<Long> followerIds) {
+        if (followerIds.isEmpty()) {
+            return null;
+        }
+        return followerIds.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+    }
+
     /**
      * Add a follower to a user
      * @param followerId The ID of the user who is following
@@ -23,22 +45,24 @@ public class FollowService {
      * @return The updated user with new follower
      */
     public Utilisateur followUser(Long followerId, Long userToFollowId) {
+        if (followerId.equals(userToFollowId)) {
+            throw new RuntimeException("Cannot follow yourself");
+        }
+
         Utilisateur userToFollow = utilisateurRepository.findById(userToFollowId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        String followers = userToFollow.getFollowers();
-        if (followers == null || followers.isEmpty()) {
-            userToFollow.setFollowers(String.valueOf(followerId));
-        } else if (!followers.contains(String.valueOf(followerId))) {
-            userToFollow.setFollowers(followers + "," + followerId);
+        Set<Long> followerIds = parseFollowerIds(userToFollow.getFollowers());
+        if (!followerIds.contains(followerId)) {
+            followerIds.add(followerId);
+            userToFollow.setFollowers(joinFollowerIds(followerIds));
+            utilisateurRepository.save(userToFollow);
+
+            // Send real-time notification
+            notificationService.createFollowNotification(userToFollowId, followerId);
         }
 
-        Utilisateur savedUser = utilisateurRepository.save(userToFollow);
-
-        // Send real-time notification
-        notificationService.createFollowNotification(userToFollowId, followerId);
-
-        return savedUser;
+        return userToFollow;
     }
 
     /**
@@ -51,14 +75,9 @@ public class FollowService {
         Utilisateur userToUnfollow = utilisateurRepository.findById(userToUnfollowId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        String followers = userToUnfollow.getFollowers();
-        if (followers != null && !followers.isEmpty()) {
-            String[] followerIds = followers.split(",");
-            String newFollowers = Arrays.stream(followerIds)
-                    .filter(id -> !id.trim().equals(String.valueOf(followerId)))
-                    .collect(Collectors.joining(","));
-
-            userToUnfollow.setFollowers(newFollowers.isEmpty() ? null : newFollowers);
+        Set<Long> followerIds = parseFollowerIds(userToUnfollow.getFollowers());
+        if (followerIds.remove(followerId)) {
+            userToUnfollow.setFollowers(joinFollowerIds(followerIds));
         }
 
         return utilisateurRepository.save(userToUnfollow);
@@ -73,15 +92,13 @@ public class FollowService {
         Utilisateur user = utilisateurRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        String followers = user.getFollowers();
+        Set<Long> followerIds = parseFollowerIds(user.getFollowers());
 
-        if (followers == null || followers.isEmpty()) {
+        if (followerIds.isEmpty()) {
             return List.of();
         }
 
-        return Arrays.stream(followers.split(","))
-                .map(String::trim)
-                .map(Long::parseLong)
+        return followerIds.stream()
                 .map(id -> utilisateurRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Follower non trouvé")))
                 .collect(Collectors.toList());
@@ -97,13 +114,7 @@ public class FollowService {
         Utilisateur user = utilisateurRepository.findById(userIdToCheck)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        String followers = user.getFollowers();
-
-        if (followers == null || followers.isEmpty()) {
-            return false;
-        }
-
-        return followers.contains(String.valueOf(followerId));
+        return parseFollowerIds(user.getFollowers()).contains(followerId);
     }
 
     /**
@@ -115,12 +126,6 @@ public class FollowService {
         Utilisateur user = utilisateurRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        String followers = user.getFollowers();
-
-        if (followers == null || followers.isEmpty()) {
-            return 0;
-        }
-
-        return followers.split(",").length;
+        return parseFollowerIds(user.getFollowers()).size();
     }
 }
