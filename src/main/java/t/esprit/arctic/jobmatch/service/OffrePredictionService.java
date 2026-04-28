@@ -78,15 +78,38 @@ public class OffrePredictionService {
 
 
         RestTemplate rest = new RestTemplate();
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
         HttpEntity<Map<String, Object>> req =
                 new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = rest.postForEntity(
-                flaskUrl + "/predict", req, Map.class
-        );
+        Map<String, Object> result = new LinkedHashMap<>();
 
-        return response.getBody();
+        try {
+            ResponseEntity<Map> response = rest.postForEntity(
+                    flaskUrl + "/predict", req, Map.class
+            );
+
+            Map<String, Object> flaskResponse = response.getBody();
+
+            if (flaskResponse != null) {
+                result.putAll(flaskResponse);
+            }
+
+        } catch (Exception e) {
+
+            result.put("type", "EMPLOI");
+            result.put("probability", 50.0);
+            result.put("confidence", "LOW");
+            result.put("probaStage", 50.0);
+            result.put("probaEmploi", 50.0);
+        }
+
+
+        result.putAll(body);
+
+        return result;
     }
 }

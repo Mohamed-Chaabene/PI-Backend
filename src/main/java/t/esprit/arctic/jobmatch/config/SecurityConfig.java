@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
+                        .requestMatchers("/api/email/postuler").permitAll()
 
                         // ── Search / Users ────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()
