@@ -9,7 +9,9 @@ import t.esprit.arctic.jobmatch.entity.*;
 import t.esprit.arctic.jobmatch.repository.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,7 +24,6 @@ public class ChatService {
     private final ParticipationRepository participationRepository;
     private final Pusher pusher;
 
-
     public ChatMessageResponse envoyer(ChatMessageRequest request) {
 
         Evenement evenement = evenementRepository.findById(request.getEvenementId())
@@ -32,10 +33,8 @@ public class ChatService {
             throw new RuntimeException("Le chat n'est pas encore ouvert");
         }
 
-
         boolean estOrganisateur = evenement.getOrganisateur() != null
                 && evenement.getOrganisateur().getId().equals(request.getCandidatId());
-
 
         boolean estConfirme = participationRepository
                 .existsByCandidatIdAndEvenementIdAndStatut(
@@ -48,15 +47,12 @@ public class ChatService {
             throw new RuntimeException("Accès refusé");
         }
 
-
         String nomExpediteur;
         Candidat candidat = null;
 
         if (estOrganisateur) {
-
             nomExpediteur = evenement.getOrganisateur().getNom();
         } else {
-
             candidat = candidatRepository.findById(request.getCandidatId())
                     .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
             nomExpediteur = candidat.getNom() + " " + candidat.getPrenom();
@@ -73,15 +69,25 @@ public class ChatService {
         ChatMessage saved = chatMessageRepository.save(message);
         ChatMessageResponse response = toResponse(saved);
 
+        // ✅ CORRECTION : Gson ne peut pas sérialiser LocalDateTime (module java.time non ouvert).
+        // On construit une Map simple avec envoyeA converti en String ISO-8601.
+        // Côté Angular, formatHeure() parse déjà ce format avec new Date(value).
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id",            saved.getId());
+        payload.put("contenu",       saved.getContenu());
+        payload.put("envoyeA",       saved.getEnvoyeA().toString()); // "2025-06-10T14:30:00"
+        payload.put("nomExpediteur", saved.getNomExpediteur());
+        payload.put("evenementId",   saved.getEvenement().getId());
+        payload.put("candidatId",    saved.getCandidat() != null ? saved.getCandidat().getId() : null);
+
         pusher.trigger(
                 "chat-evenement-" + request.getEvenementId(),
                 "nouveau-message",
-                response
+                payload
         );
 
         return response;
     }
-
 
     public List<ChatMessageResponse> getMessages(Long evenementId, Long candidatId) {
 
@@ -92,14 +98,11 @@ public class ChatService {
             throw new RuntimeException("Le chat n'est pas ouvert");
         }
 
-
         boolean estOrganisateur = evenement.getOrganisateur() != null
                 && evenement.getOrganisateur().getId().equals(candidatId);
 
-
         boolean estConfirme = participationRepository
                 .existsByCandidatIdAndEvenementIdAndStatut(candidatId, evenementId, "CONFIRME");
-
 
         if (!estOrganisateur && !estConfirme) {
             throw new RuntimeException("Accès refusé");
@@ -117,7 +120,6 @@ public class ChatService {
                 .map(Evenement::isChatOuvert)
                 .orElse(false);
     }
-
 
     private ChatMessageResponse toResponse(ChatMessage m) {
         return new ChatMessageResponse(

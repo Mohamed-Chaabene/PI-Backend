@@ -1,5 +1,6 @@
 package t.esprit.arctic.jobmatch.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -40,10 +41,12 @@ public class Evenement {
     private boolean chatOuvert = false;
 
     // Relation OneToMany avec Participation
+    @JsonIgnore
     @OneToMany(mappedBy = "evenement", cascade = CascadeType.ALL)
     private List<Participation> participations;
 
     // Relation avec OrganisateurEvenement
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "organisateur_id")
     private OrganisateurEvenement organisateur;

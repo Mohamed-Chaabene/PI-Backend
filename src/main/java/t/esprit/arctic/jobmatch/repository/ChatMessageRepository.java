@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    // Récupère tous les messages d'un événement, triés par date
+
     List<ChatMessage> findByEvenementIdOrderByEnvoyeAAsc(Long evenementId);
 }

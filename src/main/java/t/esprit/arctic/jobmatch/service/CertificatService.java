@@ -24,7 +24,7 @@ public class CertificatService {
 
     private final CertificatRepository certificatRepository;
 
-    // ── Generation automatique a 100% ────────────────────────────────────────
+
     public Certificat genererAutomatiquement(InscriptionFormation inscription) {
         if (certificatRepository.existsByInscriptionId(inscription.getId())) {
             throw new RuntimeException("Un certificat existe deja pour cette inscription");
@@ -36,7 +36,7 @@ public class CertificatService {
         return certificatRepository.save(certificat);
     }
 
-    // ── CRUD ──────────────────────────────────────────────────────────────────
+
     public List<Certificat> getAll() {
         return certificatRepository.findAll();
     }
@@ -50,7 +50,7 @@ public class CertificatService {
         return certificatRepository.findByInscriptionCandidatId(candidatId);
     }
 
-    // ── Chargement logo (priorite logo_transparent.png sans fond noir) ────────
+
     private byte[] loadLogo() {
         String[] names = {"/static/logo_transparent.png", "logo_png.png"};
         String workDir = System.getProperty("user.dir");
@@ -68,14 +68,14 @@ public class CertificatService {
         return null;
     }
 
-    // ── Generation PDF — style certificat classique avec logo ─────────────────
+
     public byte[] genererPdf(Long certificatId) {
         Certificat cert = getById(certificatId);
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            // Page paysage A4
+
             Rectangle pageSize = new Rectangle(PageSize.A4.getHeight(), PageSize.A4.getWidth());
             Document document  = new Document(pageSize, 0, 0, 0, 0);
             PdfWriter writer   = PdfWriter.getInstance(document, baos);

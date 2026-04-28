@@ -28,4 +28,7 @@ public interface EvenementRepository extends JpaRepository<Evenement, Long> {
             @Param("mois") int mois,
             @Param("annee") int annee,
             @Param("organisateurId") Long organisateurId);
+
+    List<Evenement> findTop5ByOrderByDateHeureDesc();
 }
+
