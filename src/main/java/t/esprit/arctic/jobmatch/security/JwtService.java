@@ -9,7 +9,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.entity.Candidat;
-import t.esprit.arctic.jobmatch.entity.ClientFreelance;
+
 import t.esprit.arctic.jobmatch.entity.OrganisateurEvenement;
 import t.esprit.arctic.jobmatch.entity.Recruteur;
 import t.esprit.arctic.jobmatch.entity.Role;
@@ -50,7 +50,6 @@ public class JwtService {
         private Role resolveEffectiveRole(Utilisateur user) {
         if (user instanceof OrganisateurEvenement) return Role.ORGANISATEUR;
         if (user instanceof Recruteur) return Role.RECRUTEUR;
-        if (user instanceof ClientFreelance) return Role.CLIENT_FREELANCE;
         if (user instanceof Candidat) return Role.CANDIDAT;
         return user.getRole() != null ? user.getRole() : Role.CANDIDAT;
         }

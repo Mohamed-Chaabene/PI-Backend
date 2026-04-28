@@ -25,8 +25,16 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
      */
     @Query(
         "SELECT NEW t.esprit.arctic.jobmatch.dto.OffreSearchDTO(" +
-        "o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
-        "o.location, o.typeContrat, CAST(o.salary AS string), o.datePublication, " +
+        "o.id, " +
+        "COALESCE(o.titre, ''), " +
+        "COALESCE(o.description, ''), " +
+        "COALESCE(r.entreprise, ''), " +
+        "COALESCE(r.nom, ''), " +
+        "COALESCE(r.email, ''), " +
+        "COALESCE(o.location, ''), " +
+        "COALESCE(o.typeContrat, ''), " +
+        "CAST(COALESCE(o.salary, 0) AS string), " +
+        "CAST(o.datePublication AS java.sql.Timestamp), " +
         "COUNT(DISTINCT c.id), " +
         "COUNT(DISTINCT CASE WHEN c.statut = 'ACCEPTEE' THEN c.id END), " +
         "CAST(CASE " +
@@ -38,14 +46,14 @@ public interface OffreSearchRepository extends JpaRepository<OffreEmploi, Long> 
         "'', '' " +
         ") " +
         "FROM OffreEmploi o " +
-        "JOIN o.recruteur r " +
+        "LEFT JOIN o.recruteur r " +
         "LEFT JOIN o.candidatures c " +
         "WHERE " +
-        "  LOWER(o.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "  LOWER(o.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "  LOWER(r.entreprise) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "  LOWER(o.location) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "  LOWER(o.typeContrat) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+        "  LOWER(COALESCE(o.titre, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "  LOWER(COALESCE(o.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "  LOWER(COALESCE(r.entreprise, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "  LOWER(COALESCE(o.location, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+        "  LOWER(COALESCE(o.typeContrat, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
         "GROUP BY o.id, o.titre, o.description, r.entreprise, r.nom, r.email, " +
         "         o.location, o.typeContrat, o.salary, o.datePublication " +
         "ORDER BY CASE " +

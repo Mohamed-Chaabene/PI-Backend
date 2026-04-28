@@ -16,6 +16,29 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class OffreSearchDTO {
+
+        /**
+         * Constructeur utilisé par la requête JPQL dans OffreSearchRepository
+         * Signature exacte requise par Hibernate :
+         * (Long, String, String, String, String, String, String, String, String, java.sql.Timestamp, Long, Long, Double, String, String)
+         */
+        public OffreSearchDTO(Long offreId, String titrOffre, String description, String entreprise, String recruteurNom, String recruteurEmail, String location, String typeContrat, String salaire, java.sql.Timestamp datePublication, Long nombreCandidatures, Long nombreCandidaturesAcceptees, Double relevanceScore, String matchedFields, String highlightedText) {
+            this.offreId = offreId;
+            this.titrOffre = titrOffre;
+            this.description = description;
+            this.entreprise = entreprise;
+            this.recruteurNom = recruteurNom;
+            this.recruteurEmail = recruteurEmail;
+            this.location = location;
+            this.typeContrat = typeContrat;
+            this.salaire = salaire;
+            this.datePublication = datePublication != null ? datePublication.toLocalDateTime() : null;
+            this.nombreCandidatures = nombreCandidatures != null ? nombreCandidatures.intValue() : 0;
+            this.nombreCandidaturesAcceptees = nombreCandidaturesAcceptees != null ? nombreCandidaturesAcceptees.intValue() : 0;
+            this.relevanceScore = relevanceScore;
+            this.matchedFields = matchedFields;
+            this.highlightedText = highlightedText;
+        }
     
     private Long offreId;
     private String titrOffre;
@@ -36,4 +59,5 @@ public class OffreSearchDTO {
     // Champs de recherche utilisés pour le surlignage du résultat
     private String matchedFields; // Ex: "titre, description, compétences"
     private String highlightedText; // Extrait du texte avec les mots-clés mis en avant
+
 }
