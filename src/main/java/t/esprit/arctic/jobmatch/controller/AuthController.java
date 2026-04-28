@@ -73,12 +73,7 @@ public class AuthController {
                 recruteur.setSecteur(request.secteur);
                 user = recruteur;
                 break;
-            case CLIENT_FREELANCE:
-                ClientFreelance client = new ClientFreelance();
-                client.setEntreprise(request.entreprise);
-                client.setBudget(request.budget != null ? request.budget : 0.0);
-                user = client;
-                break;
+
             case ORGANISATEUR:
                 OrganisateurEvenement organisateur = new OrganisateurEvenement();
                 organisateur.setOrganisation(request.organisation);
