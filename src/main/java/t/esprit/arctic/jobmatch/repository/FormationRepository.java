@@ -19,6 +19,10 @@ public interface FormationRepository extends JpaRepository<Formation, Long> {
 
     List<Formation> findByStatutNot(String statut);
 
+    // Pour le moteur ML : charge les compétences en une seule requête (évite le LazyInit)
+    @Query("SELECT DISTINCT f FROM Formation f LEFT JOIN FETCH f.competences WHERE f.statut != 'Archiv\u00e9e'")
+    List<Formation> findActivesWithCompetences();
+
     // ══════════════════════════════════════════════════════════════
     // JPQL — jointure sur 4 tables
     // Formation + InscriptionFormation + Feedback + Certificat

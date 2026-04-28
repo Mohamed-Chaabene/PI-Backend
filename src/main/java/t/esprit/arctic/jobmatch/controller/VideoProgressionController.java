@@ -141,6 +141,8 @@ public class VideoProgressionController {
         result.put("totalVideos", totalVideos);
         result.put("progression", progression);
         result.put("tentativesUtilisees", insOpt.map(i -> i.getTentativesQuizFinal() != null ? i.getTentativesQuizFinal() : 0).orElse(0));
+        result.put("parcoursId", insOpt.map(i -> i.getParcoursId()).orElse(null));
+        result.put("niveau", insOpt.map(i -> i.getNiveauContext()).orElse(null));
         result.put("details",     vps);
         return ResponseEntity.ok(result);
     }
@@ -188,10 +190,15 @@ public class VideoProgressionController {
             t.esprit.arctic.jobmatch.entity.InscriptionFormation ins = insOpt.get();
             tentatives = (ins.getTentativesQuizFinal() != null ? ins.getTentativesQuizFinal() : 0) + 1;
             
-            if (tentatives > 3) {
-                Map<String, Object> err = new HashMap<>();
-                err.put("error", "Nombre maximum de tentatives (3) atteint pour ce quiz.");
-                return ResponseEntity.badRequest().body(err);
+            boolean isExpert = "EXPERT".equalsIgnoreCase(ins.getNiveauContext());
+            boolean isParcours = ins.getParcoursId() != null;
+
+            if (!isParcours || isExpert) {
+                if (tentatives > 3) {
+                    Map<String, Object> err = new HashMap<>();
+                    err.put("error", "Nombre maximum de tentatives (3) atteint pour ce quiz.");
+                    return ResponseEntity.badRequest().body(err);
+                }
             }
             
             ins.setTentativesQuizFinal(tentatives);

@@ -102,7 +102,7 @@ public class InscriptionFormationService {
     }
 
     @Transactional
-    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation, Long parcoursId) {
+    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation, Long parcoursId, String niveau) {
         if (formation == null) return null;
 
         // Vérifier si déjà inscrit dans ce contexte (avec ou sans parcoursId)
@@ -112,11 +112,17 @@ public class InscriptionFormationService {
                     newIns.setCandidat(candidat);
                     newIns.setFormation(formation);
                     newIns.setParcoursId(parcoursId);
+                    newIns.setNiveauContext(niveau);
                     newIns.setDateInscription(new Date());
                     newIns.setStatut("EnCours");
                     newIns.setProgression(0.0);
                     return inscriptionRepository.save(newIns);
                 });
+    }
+
+    @Transactional
+    public InscriptionFormation inscrireAutomatiquement(t.esprit.arctic.jobmatch.entity.Candidat candidat, t.esprit.arctic.jobmatch.entity.Formation formation, Long parcoursId) {
+        return inscrireAutomatiquement(candidat, formation, parcoursId, null);
     }
 
     /**
@@ -139,6 +145,7 @@ public class InscriptionFormationService {
                     newIns.setCandidat(candidat);
                     newIns.setFormation(formation);
                     newIns.setParcoursId(parcoursId);
+                    newIns.setNiveauContext(null); // On pourrait essayer de le deviner ici si besoin
                     newIns.setDateInscription(new java.util.Date());
                     return newIns;
                 });

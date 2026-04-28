@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/domaines").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/formations/analyze-gap/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/candidats/email/**").permitAll()
