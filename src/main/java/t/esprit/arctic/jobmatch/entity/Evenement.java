@@ -36,7 +36,8 @@ public class Evenement {
             message = "Type invalide : JOB_FAIR, WORKSHOP, CONFERENCE ou NETWORKING"
     )
     private String type;
-    // Dans Evenement.java — ajouter ce champ
+
+    @Builder.Default
     private boolean chatOuvert = false;
 
     // Relation OneToMany avec Participation

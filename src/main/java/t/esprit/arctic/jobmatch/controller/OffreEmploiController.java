@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import t.esprit.arctic.jobmatch.dto.OffreEmploiRequestDTO;
+import t.esprit.arctic.jobmatch.dto.OffreSalairePredictionRequestDTO;
+import t.esprit.arctic.jobmatch.service.OffreSalairePredictionService;
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 import t.esprit.arctic.jobmatch.entity.Entretien;
 import t.esprit.arctic.jobmatch.entity.Recruteur;
@@ -40,6 +42,19 @@ public class OffreEmploiController {
     private final EntretienRepository entretienRepository;
     private final RecruteurRepository recruteurRepository;
     private final NotificationService notificationService;
+    private final OffreSalairePredictionService offreSalairePredictionService;
+    @PostMapping("/predict-salary")
+    public ResponseEntity<?> predictSalaire(@Valid @RequestBody OffreSalairePredictionRequestDTO dto) {
+        String predictedSalary = offreSalairePredictionService.predictSalaire(
+            dto.getTitre(),
+            dto.getDescription(),
+            dto.getEntreprise(),
+            dto.getLocation(),
+            dto.getTypeContrat(),
+            dto.getCompetences()
+        );
+        return ResponseEntity.ok(Map.of("predicted_salary", predictedSalary));
+    }
 
     @GetMapping
     public ResponseEntity<List<OffreEmploi>> getAllOffres() {
