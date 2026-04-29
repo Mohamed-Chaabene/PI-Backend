@@ -1,6 +1,5 @@
 package t.esprit.arctic.jobmatch.controller;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -38,8 +37,9 @@ public class CertificatController {
                 certificatService.getByCandidat(candidatId));
     }
 
+    // CORRECTION 1 : ResponseEntity<?> → ResponseEntity<Certificat>
     @PostMapping("/generer/{inscriptionId}")
-    public ResponseEntity<?> genererDepuisInscription(
+    public ResponseEntity<Certificat> genererDepuisInscription(
             @PathVariable Long inscriptionId) {
         return inscriptionRepo.findById(inscriptionId)
                 .map(ins -> ResponseEntity.ok(certificatService.genererAutomatiquement(ins)))
@@ -57,8 +57,9 @@ public class CertificatController {
         return ResponseEntity.ok().headers(headers).body(pdf);
     }
 
+    // CORRECTION 2 : ResponseEntity<?> → ResponseEntity<Certificat>
     @GetMapping("/verify/{code}")
-    public ResponseEntity<?> verifyCertificat(@PathVariable String code) {
+    public ResponseEntity<Certificat> verifyCertificat(@PathVariable String code) {
         try {
             Certificat cert = certificatService.verifyByCode(code);
             return ResponseEntity.ok(cert);

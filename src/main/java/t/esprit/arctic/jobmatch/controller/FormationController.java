@@ -11,7 +11,6 @@ import t.esprit.arctic.jobmatch.service.FormationService;
 import t.esprit.arctic.jobmatch.entity.Candidat;
 import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
-import java.util.*;
 
 import java.util.List;
 

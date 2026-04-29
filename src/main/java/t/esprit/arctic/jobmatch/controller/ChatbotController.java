@@ -2,81 +2,76 @@ package t.esprit.arctic.jobmatch.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-import java.util.UUID;
 
 import t.esprit.arctic.jobmatch.entity.ChatbotHistory;
 import t.esprit.arctic.jobmatch.repository.ChatbotHistoryRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-import java.io.ByteArrayInputStream;
-import java.util.Base64;
 
 @RestController
 @RequestMapping("/api/chatbot")
-@CrossOrigin(origins = "http://localhost:4200", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
+@CrossOrigin(
+        origins = "http://localhost:4200",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
+                RequestMethod.DELETE, RequestMethod.OPTIONS}
+)
 public class ChatbotController {
 
-    @Autowired
-    private ChatbotHistoryRepository chatHistoryRepo;
+    private static final Logger logger = LoggerFactory.getLogger(ChatbotController.class);
+
+    static final String KEY_FILE_DATA     = "fileData";
+    static final String KEY_FILE_TEXT     = "fileText";
+    static final String KEY_FILE_NAME     = "fileName";
+    static final String KEY_FILE_EXCERPT  = "fileExcerpt";
+    static final String KEY_IMAGE_URL     = "imageUrl";
+    static final String KEY_IMAGE_URL_OBJ = "image_url";
+    static final String TYPE_IMAGE_URL    = "image_url";
+    static final String KEY_SESSION_ID    = "sessionId";
+    static final String KEY_SESSION_TITLE = "sessionTitle";
+    static final String KEY_CANDIDAT_ID   = "candidatId";
+    static final String KEY_FORMATION_ID  = "formationId";
+    static final String KEY_MESSAGES      = "messages";
+    static final String KEY_HISTORY       = "history";
+    static final String KEY_MESSAGE       = "message";
+    static final String KEY_CONTENT       = "content";
+    static final String KEY_ERROR         = "error";
+    static final String KEY_RESPONSE      = "response";
+    static final String DATA_PREFIX       = "data:";
+    static final String BASE64_SEPARATOR  = ";base64,";
+
+    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String MODEL_VISION = "meta-llama/llama-4-scout-17b-16e-instruct";
+    private static final String MODEL_TEXT   = "llama-3.1-8b-instant";
+
+    private final ChatbotHistoryRepository chatHistoryRepo;
+    private final HttpClient               http;
+    private final ObjectMapper             mapper;
 
     @Value("${gemini.api.key:}")
     private String groqApiKey;
 
-    private final HttpClient   http   = HttpClient.newHttpClient();
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    private Map<String, Object> buildImageContent(String imageUrl) {
-        if (imageUrl.startsWith("data:image")) {
-            String mediaType  = "image/jpeg";
-            String base64Data = imageUrl;
-            if (imageUrl.contains(";base64,")) {
-                String[] parts = imageUrl.split(";base64,");
-                mediaType  = parts[0].replace("data:", "");
-                base64Data = parts[1];
-            }
-            return Map.of(
-                    "type", "image_url",
-                    "image_url", Map.of("url", "data:" + mediaType + ";base64," + base64Data)
-            );
-        } else {
-            return Map.of(
-                    "type", "image_url",
-                    "image_url", Map.of("url", imageUrl)
-            );
-        }
-    }
-
-    private String sanitizeImageUrlForDb(String imageUrl) {
-        if (imageUrl != null && imageUrl.startsWith("data:image")) {
-            String mediaType = "image/jpeg";
-            if (imageUrl.contains(";base64,")) {
-                mediaType = imageUrl.split(";base64,")[0].replace("data:", "");
-            }
-            return "[image:" + mediaType + "]";
-        }
-        return imageUrl;
-    }
-
-    private String sanitizeFileDataForDb(String fileData, String fileName) {
-        if (fileData != null && fileData.startsWith("data:")) {
-            String name = (fileName != null && !fileName.isEmpty()) ? fileName : "document";
-            return "[file:" + name + "]";
-        }
-        return fileData;
+    public ChatbotController(ChatbotHistoryRepository chatHistoryRepo) {
+        this.chatHistoryRepo = chatHistoryRepo;
+        this.http   = HttpClient.newHttpClient();
+        this.mapper = new ObjectMapper();
     }
 
     @GetMapping("/history")
@@ -86,30 +81,39 @@ public class ChatbotController {
 
         List<ChatbotHistory> histories = chatHistoryRepo
                 .findAllByCandidatIdAndFormationIdOrderByCreatedAtDesc(candidatId, formationId);
+
         List<Map<String, Object>> result = new ArrayList<>();
-
         for (ChatbotHistory h : histories) {
-            Map<String, Object> sessionData = new HashMap<>();
-            sessionData.put("id", h.getId());
-            sessionData.put("sessionId", h.getSessionId());
-            sessionData.put("sessionTitle", h.getSessionTitle());
-            sessionData.put("createdAt", h.getCreatedAt() != null ? h.getCreatedAt().toString() : null);
-
-            List<Map<String, String>> messages = new ArrayList<>();
-            if (h.getHistoriqueJson() != null && !h.getHistoriqueJson().isEmpty()) {
-                try {
-                    messages = mapper.readValue(h.getHistoriqueJson(), List.class);
-                } catch (Exception e) {}
-            }
-            sessionData.put("messages", messages);
-            result.add(sessionData);
+            result.add(toSessionMap(h));
         }
-
         return ResponseEntity.ok(result);
     }
 
+    private Map<String, Object> toSessionMap(ChatbotHistory h) {
+        Map<String, Object> sessionData = new HashMap<>();
+        sessionData.put("id",              h.getId());
+        sessionData.put(KEY_SESSION_ID,    h.getSessionId());
+        sessionData.put(KEY_SESSION_TITLE, h.getSessionTitle());
+        sessionData.put("createdAt",       h.getCreatedAt() != null ? h.getCreatedAt().toString() : null);
+        sessionData.put(KEY_MESSAGES,      parseMessages(h));
+        return sessionData;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, String>> parseMessages(ChatbotHistory h) {
+        if (h.getHistoriqueJson() == null || h.getHistoriqueJson().isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return mapper.readValue(h.getHistoriqueJson(), List.class);
+        } catch (IOException e) {
+            logger.error("Failed to parse historique JSON for session {}: {}", h.getSessionId(), e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
     @PutMapping("/session/{sessionId}")
-    public ResponseEntity<?> updateSession(
+    public ResponseEntity<Map<String, Object>> updateSession(
             @PathVariable String sessionId,
             @RequestBody Map<String, Object> body) {
 
@@ -120,241 +124,359 @@ public class ChatbotController {
 
         ChatbotHistory hist = histOpt.get();
 
-        if (body.containsKey("sessionTitle")) {
-            hist.setSessionTitle(body.get("sessionTitle").toString());
+        if (body.containsKey(KEY_SESSION_TITLE)) {
+            hist.setSessionTitle(body.get(KEY_SESSION_TITLE).toString());
         }
 
-        if (body.containsKey("messages")) {
+        if (body.containsKey(KEY_MESSAGES)) {
             try {
-                String json = mapper.writeValueAsString(body.get("messages"));
-                hist.setHistoriqueJson(json);
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid messages format"));
+                hist.setHistoriqueJson(mapper.writeValueAsString(body.get(KEY_MESSAGES)));
+            } catch (IOException e) {
+                logger.error("Failed to serialize messages for session {}: {}", sessionId, e.getMessage());
+                Map<String, Object> err = new HashMap<>();
+                err.put(KEY_ERROR, "Invalid messages format");
+                return ResponseEntity.badRequest().body(err);
             }
         }
 
         chatHistoryRepo.save(hist);
-        return ResponseEntity.ok(Map.of("message", "Session updated successfully"));
+        Map<String, Object> ok = new HashMap<>();
+        ok.put(KEY_MESSAGE, "Session updated successfully");
+        return ResponseEntity.ok(ok);
     }
 
     @Transactional
     @DeleteMapping("/session/{sessionId}")
-    public ResponseEntity<?> deleteSession(@PathVariable String sessionId) {
+    public ResponseEntity<Map<String, Object>> deleteSession(@PathVariable String sessionId) {
         try {
             Optional<ChatbotHistory> histOpt = chatHistoryRepo.findBySessionId(sessionId);
             if (histOpt.isPresent()) {
                 chatHistoryRepo.deleteById(histOpt.get().getId());
-                return ResponseEntity.ok(Map.of("message", "Session deleted successfully"));
+                Map<String, Object> ok = new HashMap<>();
+                ok.put(KEY_MESSAGE, "Session deleted successfully");
+                return ResponseEntity.ok(ok);
             }
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "error", e.getMessage() != null ? e.getMessage() : e.toString(),
-                    "trace", Arrays.toString(e.getStackTrace())
-            ));
+            logger.error("Error deleting session {}: {}", sessionId, e.getMessage(), e);
+            Map<String, Object> err = new HashMap<>();
+            err.put(KEY_ERROR, e.getMessage() != null ? e.getMessage() : e.toString());
+            err.put("trace", Arrays.toString(e.getStackTrace()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
         }
     }
 
     @PostMapping("/formation")
     public ResponseEntity<Map<String, String>> chat(
-            @RequestBody Map<String, Object> body) throws Exception {
+            @RequestBody Map<String, Object> body) throws IOException, InterruptedException {
 
-        String message   = body.getOrDefault("message", "").toString();
-        String imageUrl  = body.containsKey("imageUrl") && body.get("imageUrl") != null
-                ? body.get("imageUrl").toString() : null;
+        ChatRequest req = ChatRequest.from(body);
 
-        String fileData  = body.containsKey("fileData") && body.get("fileData") != null
-                ? body.get("fileData").toString() : null;
-        String fileName  = body.containsKey("fileName") && body.get("fileName") != null
-                ? body.get("fileName").toString() : null;
-        String fileText  = body.containsKey("fileText") && body.get("fileText") != null
-                ? body.get("fileText").toString() : null;
-
-        if ((fileText == null || fileText.trim().isEmpty()) && fileData != null && fileData.contains(";base64,")) {
-            try {
-                String base64Data = fileData.split(";base64,")[1];
-                byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(decodedBytes)) {
-                    if (fileName != null && fileName.toLowerCase().endsWith(".docx")) {
-                        try (XWPFDocument document = new XWPFDocument(bis);
-                             XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
-                            fileText = extractor.getText();
-                        }
-                    } else if (fileName != null && fileName.toLowerCase().endsWith(".pdf")) {
-                        try (PDDocument document = PDDocument.load(bis)) {
-                            PDFTextStripper pdfStripper = new PDFTextStripper();
-                            fileText = pdfStripper.getText(document);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("Backend document text extraction failed: " + e.getMessage());
-            }
+        if (req.message.isEmpty() && !req.hasImage && !req.hasFile) {
+            Map<String, String> err = new HashMap<>();
+            err.put(KEY_ERROR, "Message vide");
+            return ResponseEntity.badRequest().body(err);
         }
 
-        boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty();
-        boolean hasFile  = (fileData != null && !fileData.trim().isEmpty())
-                || (fileText != null && !fileText.trim().isEmpty());
+        SessionContext            ctx        = resolveSession(req);
+        List<Map<String, Object>> apiMessages = buildApiMessages(req, ctx);
+        String reply = callGroqApi(req, apiMessages);
 
-        String titreFormation = body.getOrDefault("titreFormation", "").toString();
-        String categorie      = body.getOrDefault("categorie", "").toString();
-        String niveau         = body.getOrDefault("niveau", "").toString();
-        String context        = body.getOrDefault("context", "video").toString();
-        String sessionId      = body.containsKey("sessionId") && body.get("sessionId") != null
-                ? body.get("sessionId").toString() : null;
+        return persistAndRespond(req, ctx, reply);
+    }
 
-        Long candidatId  = body.containsKey("candidatId")  && body.get("candidatId")  != null
-                ? Long.parseLong(body.get("candidatId").toString())  : null;
-        Long formationId = body.containsKey("formationId") && body.get("formationId") != null
-                ? Long.parseLong(body.get("formationId").toString()) : null;
+    private static class ChatRequest {
+
+        String  message;
+        String  imageUrl;
+        String  fileData;
+        String  fileName;
+        String  fileText;
+        String  titreFormation;
+        String  categorie;
+        String  niveau;
+        String  sessionId;
+        Long    candidatId;
+        Long    formationId;
+        boolean hasImage;
+        boolean hasFile;
+        List<Map<String, Object>> historyFromFrontend;
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> historyFromFrontend =
-                body.containsKey("history") && body.get("history") != null
-                        ? (List<Map<String, Object>>) body.get("history") : new ArrayList<>();
-
-        if (message.isEmpty() && !hasImage && !hasFile) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Message vide"));
+        static ChatRequest from(Map<String, Object> body) {
+            ChatRequest r         = new ChatRequest();
+            r.message             = body.getOrDefault(KEY_MESSAGE, "").toString();
+            r.imageUrl            = getStr(body, KEY_IMAGE_URL);
+            r.fileData            = getStr(body, KEY_FILE_DATA);
+            r.fileName            = getStr(body, KEY_FILE_NAME);
+            r.fileText            = getStr(body, KEY_FILE_TEXT);
+            r.titreFormation      = body.getOrDefault("titreFormation", "").toString();
+            r.categorie           = body.getOrDefault("categorie", "").toString();
+            r.niveau              = body.getOrDefault("niveau", "").toString();
+            r.sessionId           = getStr(body, KEY_SESSION_ID);
+            r.candidatId          = getLng(body, KEY_CANDIDAT_ID);
+            r.formationId         = getLng(body, KEY_FORMATION_ID);
+            r.historyFromFrontend = body.containsKey(KEY_HISTORY) && body.get(KEY_HISTORY) != null
+                    ? (List<Map<String, Object>>) body.get(KEY_HISTORY) : new ArrayList<>();
+            r.hasImage = r.imageUrl != null && !r.imageUrl.trim().isEmpty();
+            r.hasFile  = (r.fileData != null && !r.fileData.trim().isEmpty())
+                    || (r.fileText != null && !r.fileText.trim().isEmpty());
+            return r;
         }
 
+        private static String getStr(Map<String, Object> b, String key) {
+            return b.containsKey(key) && b.get(key) != null ? b.get(key).toString() : null;
+        }
+
+        private static Long getLng(Map<String, Object> b, String key) {
+            return b.containsKey(key) && b.get(key) != null
+                    ? Long.parseLong(b.get(key).toString()) : null;
+        }
+    }
+
+    private static class SessionContext {
+        ChatbotHistory            histDb;
         List<Map<String, Object>> dbHistoryList = new ArrayList<>();
-        ChatbotHistory chatHistDb = null;
+    }
 
-        if (candidatId != null && formationId != null) {
-            if (sessionId != null && !sessionId.isEmpty()) {
-                chatHistDb = chatHistoryRepo.findBySessionId(sessionId).orElse(null);
+    private SessionContext resolveSession(ChatRequest req) {
+        SessionContext ctx = new SessionContext();
+        if (req.candidatId == null || req.formationId == null) {
+            return ctx;
+        }
+        if (req.sessionId != null && !req.sessionId.isEmpty()) {
+            ctx.histDb = chatHistoryRepo.findBySessionId(req.sessionId).orElse(null);
+        }
+        if (ctx.histDb == null) {
+            ctx.histDb = createNewSession(req);
+        } else {
+            ctx.dbHistoryList = loadDbHistory(ctx.histDb);
+        }
+        return ctx;
+    }
+
+    private ChatbotHistory createNewSession(ChatRequest req) {
+        ChatbotHistory h = new ChatbotHistory();
+        h.setCandidatId(req.candidatId);
+        h.setFormationId(req.formationId);
+        h.setSessionId(UUID.randomUUID().toString());
+        h.setCreatedAt(java.time.LocalDateTime.now());
+
+        String titleSource;
+        if (!req.message.isEmpty()) {
+            titleSource = req.message;
+        } else if (req.fileName != null) {
+            titleSource = req.fileName;
+        } else {
+            titleSource = "Document";
+        }
+
+        String shortTitle = titleSource.length() > 30
+                ? titleSource.substring(0, 30) + "..." : titleSource;
+        h.setSessionTitle(shortTitle);
+        return h;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> loadDbHistory(ChatbotHistory h) {
+        if (h.getHistoriqueJson() == null || h.getHistoriqueJson().isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return mapper.readValue(h.getHistoriqueJson(), List.class);
+        } catch (IOException e) {
+            logger.error("Failed to parse historique JSON: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+
+    private List<Map<String, Object>> buildApiMessages(ChatRequest req, SessionContext ctx) {
+        req.fileText = extractFileTextIfNeeded(req);
+        appendUserMsgToHistory(req, ctx);
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(buildSystemMessage(req));
+
+        appendHistoryWindow(req, ctx, messages);
+        appendCurrentUserTurn(req, messages);
+        return messages;
+    }
+
+    private Map<String, Object> buildSystemMessage(ChatRequest req) {
+        Map<String, Object> sysMsg = new HashMap<>();
+        sysMsg.put("role", "system");
+        sysMsg.put(KEY_CONTENT, buildSystemPrompt(req.titreFormation, req.categorie, req.niveau));
+        return sysMsg;
+    }
+
+
+    private String extractFileTextIfNeeded(ChatRequest req) {
+        boolean needsExtraction = (req.fileText == null || req.fileText.trim().isEmpty())
+                && req.fileData != null && req.fileData.contains(BASE64_SEPARATOR);
+        if (!needsExtraction) {
+            return req.fileText;
+        }
+        try {
+            String base64Data   = req.fileData.split(BASE64_SEPARATOR)[1];
+            byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+            return extractTextFromBytes(decodedBytes, req.fileName);
+        } catch (IOException e) {
+            logger.error("Backend document text extraction failed: {}", e.getMessage());
+            return req.fileText;
+        }
+    }
+
+    private String extractTextFromBytes(byte[] bytes, String fileName) throws IOException {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
+            if (fileName != null && fileName.toLowerCase().endsWith(".docx")) {
+                try (XWPFDocument doc = new XWPFDocument(bis);
+                     XWPFWordExtractor extractor = new XWPFWordExtractor(doc)) {
+                    return extractor.getText();
+                }
             }
-
-            if (chatHistDb == null) {
-                chatHistDb = new ChatbotHistory();
-                chatHistDb.setCandidatId(candidatId);
-                chatHistDb.setFormationId(formationId);
-                chatHistDb.setSessionId(UUID.randomUUID().toString());
-                chatHistDb.setCreatedAt(java.time.LocalDateTime.now());
-                String titleSource = !message.isEmpty() ? message : (fileName != null ? fileName : "Document");
-                String shortTitle  = titleSource.length() > 30 ? titleSource.substring(0, 30) + "..." : titleSource;
-                chatHistDb.setSessionTitle(shortTitle);
-            } else {
-                if (chatHistDb.getHistoriqueJson() != null && !chatHistDb.getHistoriqueJson().isEmpty()) {
-                    try {
-                        dbHistoryList = mapper.readValue(chatHistDb.getHistoriqueJson(), List.class);
-                    } catch (Exception e) {}
+            if (fileName != null && fileName.toLowerCase().endsWith(".pdf")) {
+                try (PDDocument doc = PDDocument.load(bis)) {
+                    return new PDFTextStripper().getText(doc);
                 }
             }
         }
+        return null;
+    }
 
-        Map<String, Object> userMsgForDb = new HashMap<>();
-        userMsgForDb.put("role", "user");
-        userMsgForDb.put("content", message);
-        if (hasImage) {
-            userMsgForDb.put("imageUrl", sanitizeImageUrlForDb(imageUrl));
+
+    private void appendUserMsgToHistory(ChatRequest req, SessionContext ctx) {
+        Map<String, Object> userMsg = new HashMap<>();
+        userMsg.put("role",      "user");
+        userMsg.put(KEY_CONTENT, req.message);
+        if (req.hasImage) {
+            userMsg.put(KEY_IMAGE_URL, sanitizeImageUrlForDb(req.imageUrl));
         }
-        if (hasFile) {
-            // Stocker le nom du fichier + le texte extrait (pas le base64 brut)
-            userMsgForDb.put("fileName", fileName);
-            if (fileText != null && !fileText.isEmpty()) {
-                // Stocker un extrait du texte (max 500 chars pour ne pas saturer la BDD)
-                String excerpt = fileText.length() > 500 ? fileText.substring(0, 500) + "..." : fileText;
-                userMsgForDb.put("fileExcerpt", excerpt);
+        if (req.hasFile) {
+            userMsg.put(KEY_FILE_NAME, req.fileName);
+            if (req.fileText != null && !req.fileText.isEmpty()) {
+                String excerpt = req.fileText.length() > 500
+                        ? req.fileText.substring(0, 500) + "..." : req.fileText;
+                userMsg.put(KEY_FILE_EXCERPT, excerpt);
             } else {
-                userMsgForDb.put("fileExcerpt", sanitizeFileDataForDb(fileData, fileName));
+                userMsg.put(KEY_FILE_EXCERPT, sanitizeFileDataForDb(req.fileData, req.fileName));
             }
         }
-        dbHistoryList.add(userMsgForDb);
+        ctx.dbHistoryList.add(userMsg);
+    }
 
-        List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content",
-                buildSystemPrompt(titreFormation, categorie, niveau, context)));
 
-        List<Map<String, Object>> sourceHistory = (candidatId != null && formationId != null)
-                ? dbHistoryList : historyFromFrontend;
-        int historySizeToSend = (candidatId != null && formationId != null)
-                ? sourceHistory.size() - 1 : sourceHistory.size();
-
-        int start = Math.max(0, historySizeToSend - 8);
-        boolean historyHasImage = false;
-
-        for (int i = start; i < historySizeToSend; i++) {
-            Map<String, Object> h = sourceHistory.get(i);
-            String role           = h.getOrDefault("role", "user").toString();
-            String contentText    = h.getOrDefault("content", "").toString();
-            String imgUrl         = h.containsKey("imageUrl") && h.get("imageUrl") != null
-                    ? h.get("imageUrl").toString() : null;
-
-            boolean isPlaceholder = imgUrl != null && imgUrl.startsWith("[image:");
-            boolean hasRealImg    = imgUrl != null && !imgUrl.trim().isEmpty() && !isPlaceholder;
-
-            String fileExcerptHist = h.containsKey("fileExcerpt") && h.get("fileExcerpt") != null
-                    ? h.get("fileExcerpt").toString() : null;
-            String fileNameHist    = h.containsKey("fileName") && h.get("fileName") != null
-                    ? h.get("fileName").toString() : null;
-
-            String enrichedContent = contentText;
-            if (fileExcerptHist != null && !fileExcerptHist.startsWith("[file:")) {
-                enrichedContent += "\n\n[Contenu du document '" + fileNameHist + "':\n" + fileExcerptHist + "]";
-            }
-
-            if (hasRealImg) {
-                historyHasImage = true;
-                messages.add(Map.of(
-                        "role", role,
-                        "content", List.of(
-                                Map.of("type", "text", "text", enrichedContent),
-                                buildImageContent(imgUrl)
-                        )
-                ));
-            } else {
-                messages.add(Map.of("role", role, "content", enrichedContent));
-            }
+    private void appendHistoryWindow(ChatRequest req, SessionContext ctx,
+                                     List<Map<String, Object>> messages) {
+        List<Map<String, Object>> source = (req.candidatId != null && req.formationId != null)
+                ? ctx.dbHistoryList : req.historyFromFrontend;
+        int total = (req.candidatId != null && req.formationId != null)
+                ? source.size() - 1 : source.size();
+        int start = Math.max(0, total - 8);
+        for (int i = start; i < total; i++) {
+            appendHistoryEntry(source.get(i), messages);
         }
+    }
 
-        String userMessageFull = message;
+    private void appendHistoryEntry(Map<String, Object> h, List<Map<String, Object>> messages) {
+        String role        = h.getOrDefault("role", "user").toString();
+        String contentText = h.getOrDefault(KEY_CONTENT, "").toString();
+        String imgUrl      = getStringOrNull(h, KEY_IMAGE_URL);
 
-        if (hasFile && fileText != null && !fileText.trim().isEmpty()) {
-            // Tronquer à 6000 chars pour éviter la limite de tokens Groq (6000 TPM)
-            String truncated = fileText.length() > 6000
-                    ? fileText.substring(0, 6000) + "\n...[document tronqué]"
-                    : fileText;
-            String prompt = message.isEmpty() ? "Analyse ce document." : message;
-            userMessageFull = prompt + "\n\n[CONTENU DU DOCUMENT JOINT '" + fileName + "']:\n" + truncated;
-        } else if (hasFile && (fileData != null && !fileData.trim().isEmpty())) {
-            String prompt = message.isEmpty() ? "J'ai joint le document: " + fileName : message;
-            userMessageFull = prompt + "\n\n[Document joint: " + fileName + " - le texte n'a pas pu être extrait]";
-        }
+        boolean isPlaceholder = imgUrl != null && imgUrl.startsWith("[image:");
+        boolean hasRealImg    = imgUrl != null && !imgUrl.trim().isEmpty() && !isPlaceholder;
 
-        if (hasImage) {
-            historyHasImage = true;
-            String fallbackImgPrompt = "Analyse cette image.";
-            String txtToSend = userMessageFull.isEmpty() ? fallbackImgPrompt : userMessageFull;
+        String fileExcerptHist = getStringOrNull(h, KEY_FILE_EXCERPT);
+        String fileNameHist    = getStringOrNull(h, KEY_FILE_NAME);
+        String enrichedContent = enrichWithFileExcerpt(contentText, fileExcerptHist, fileNameHist);
 
-            List<Map<String, Object>> contentParts = new ArrayList<>();
-            contentParts.add(Map.of("type", "text", "text", txtToSend));
-            contentParts.add(buildImageContent(imageUrl));
-            messages.add(Map.of("role", "user", "content", contentParts));
+        Map<String, Object> entry = new HashMap<>();
+        if (hasRealImg) {
+            entry.put("role", role);
+            List<Map<String, Object>> parts = new ArrayList<>();
+            Map<String, Object> textPart = new HashMap<>();
+            textPart.put("type", "text");
+            textPart.put("text", enrichedContent);
+            parts.add(textPart);
+            parts.add(buildImageContent(imgUrl));
+            entry.put(KEY_CONTENT, parts);
         } else {
-            messages.add(Map.of("role", "user", "content",
-                    userMessageFull.isEmpty() ? "." : userMessageFull));
+            entry.put("role", role);
+            entry.put(KEY_CONTENT, enrichedContent);
         }
+        messages.add(entry);
+    }
 
-        String modelToUse = (hasImage || historyHasImage)
-                ? "meta-llama/llama-4-scout-17b-16e-instruct"
-                : "llama-3.1-8b-instant";
+    private String enrichWithFileExcerpt(String contentText, String excerpt, String fileNameHist) {
+        if (excerpt != null && !excerpt.startsWith("[file:")) {
+            return contentText + "\n\n[Contenu du document '" + fileNameHist + "':\n" + excerpt + "]";
+        }
+        return contentText;
+    }
 
-        String requestBody = mapper.writeValueAsString(Map.of(
-                "model",       modelToUse,
-                "messages",    messages,
-                "temperature", 0.1,
-                "max_tokens",  1024
-        ));
 
-        System.out.println("=== GROQ REQUEST ===");
-        System.out.println("Model: " + modelToUse);
-        System.out.println("Has image: " + hasImage + " | Has file: " + hasFile);
+    private void appendCurrentUserTurn(ChatRequest req, List<Map<String, Object>> messages) {
+        String userText = buildUserMessageText(req);
+        Map<String, Object> turn = new HashMap<>();
+        if (req.hasImage) {
+            String txtToSend = userText.isEmpty() ? "Analyse cette image." : userText;
+            List<Map<String, Object>> parts = new ArrayList<>();
+            Map<String, Object> textPart = new HashMap<>();
+            textPart.put("type", "text");
+            textPart.put("text", txtToSend);
+            parts.add(textPart);
+            parts.add(buildImageContent(req.imageUrl));
+            turn.put("role", "user");
+            turn.put(KEY_CONTENT, parts);
+        } else {
+            turn.put("role", "user");
+            turn.put(KEY_CONTENT, userText.isEmpty() ? "." : userText);
+        }
+        messages.add(turn);
+    }
 
-        HttpResponse<String> response = http.send(
+    private String buildUserMessageText(ChatRequest req) {
+        if (req.hasFile && req.fileText != null && !req.fileText.trim().isEmpty()) {
+            String truncated = req.fileText.length() > 6000
+                    ? req.fileText.substring(0, 6000) + "\n...[document tronqué]" : req.fileText;
+            String prompt = req.message.isEmpty() ? "Analyse ce document." : req.message;
+            return prompt
+                    + "\n\n[CONTENU DU DOCUMENT JOINT '" + req.fileName + "']:\n" + truncated
+                    + "\n\n[INSTRUCTION OBLIGATOIRE : Avant toute analyse, vérifie si ce document"
+                    + " est lié à la formation. Si le document ne porte pas principalement sur les"
+                    + " concepts, outils ou techniques de la formation, applique EXACTEMENT et"
+                    + " UNIQUEMENT la règle TOPIC RELEVANCE RULE définie dans le system prompt."
+                    + " N'analyse, ne résume et ne décris aucune partie d'un document hors-sujet.]";
+        }
+        if (req.hasFile && req.fileData != null && !req.fileData.trim().isEmpty()) {
+            String prompt = req.message.isEmpty()
+                    ? "J'ai joint le document: " + req.fileName : req.message;
+            return prompt + "\n\n[Document joint: " + req.fileName
+                    + " - le texte n'a pas pu être extrait]";
+        }
+        return req.message;
+    }
+
+    private String callGroqApi(ChatRequest req, List<Map<String, Object>> messages)
+            throws IOException, InterruptedException {
+
+        boolean usesVision = req.hasImage || historyContainsImage(messages);
+        String modelToUse  = usesVision ? MODEL_VISION : MODEL_TEXT;
+
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("model",       modelToUse);
+        requestMap.put(KEY_MESSAGES,  messages);
+        requestMap.put("temperature", 0.1);
+        requestMap.put("max_tokens",  1024);
+
+        String requestBody = mapper.writeValueAsString(requestMap);
+
+        logger.info("=== GROQ REQUEST === Model: {} | hasImage: {} | hasFile: {}",
+                modelToUse, req.hasImage, req.hasFile);
+
+        HttpResponse<String> httpResp = http.send(
                 HttpRequest.newBuilder()
-                        .uri(URI.create("https://api.groq.com/openai/v1/chat/completions"))
+                        .uri(URI.create(GROQ_API_URL))
                         .header("Content-Type",  "application/json")
                         .header("Authorization", "Bearer " + groqApiKey)
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
@@ -362,79 +484,157 @@ public class ChatbotController {
                 HttpResponse.BodyHandlers.ofString()
         );
 
-        System.out.println("=== GROQ RESPONSE STATUS: " + response.statusCode() + " ===");
+        logger.info("=== GROQ RESPONSE STATUS: {} ===", httpResp.statusCode());
 
-        JsonNode root = mapper.readTree(response.body());
-
-        if (root.has("error")) {
-            String errMsg = root.path("error").path("message").asText();
-            System.err.println("GROQ error: " + errMsg);
-            return ResponseEntity.ok(Map.of(
-                    "response", "Désolé, je rencontre un problème technique : " + errMsg
-            ));
+        JsonNode root = mapper.readTree(httpResp.body());
+        if (root.has(KEY_ERROR)) {
+            String errMsg = root.path(KEY_ERROR).path(KEY_MESSAGE).asText();
+            logger.error("GROQ error: {}", errMsg);
+            return "Désolé, je rencontre un problème technique : " + errMsg;
         }
 
-        String reply = root.path("choices").get(0)
-                .path("message").path("content").asText("Pas de réponse.");
-
-        if (chatHistDb != null && candidatId != null && formationId != null) {
-            Map<String, Object> aiMsgMap = new HashMap<>();
-            aiMsgMap.put("role", "assistant");
-            aiMsgMap.put("content", reply);
-            dbHistoryList.add(aiMsgMap);
-            chatHistDb.setHistoriqueJson(mapper.writeValueAsString(dbHistoryList));
-            chatHistoryRepo.save(chatHistDb);
-
-            Map<String, String> result = new HashMap<>();
-            result.put("response", reply);
-            result.put("sessionId", chatHistDb.getSessionId());
-            result.put("sessionTitle", chatHistDb.getSessionTitle());
-            return ResponseEntity.ok(result);
-        }
-
-        return ResponseEntity.ok(Map.of("response", reply));
+        return root.path("choices").get(0)
+                .path(KEY_MESSAGE).path(KEY_CONTENT).asText("Pas de réponse.");
     }
 
-    private String buildSystemPrompt(String titre, String categorie, String niveau, String context) {
+    private boolean historyContainsImage(List<Map<String, Object>> messages) {
+        for (Map<String, Object> m : messages) {
+            if (m.get(KEY_CONTENT) instanceof List) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+
+    private ResponseEntity<Map<String, String>> persistAndRespond(
+            ChatRequest req, SessionContext ctx, String reply) throws IOException {
+
+        if (ctx.histDb == null || req.candidatId == null || req.formationId == null) {
+            Map<String, String> res = new HashMap<>();
+            res.put(KEY_RESPONSE, reply);
+            return ResponseEntity.ok(res);
+        }
+
+        Map<String, Object> aiMsg = new HashMap<>();
+        aiMsg.put("role",      "assistant");
+        aiMsg.put(KEY_CONTENT, reply);
+        ctx.dbHistoryList.add(aiMsg);
+        ctx.histDb.setHistoriqueJson(mapper.writeValueAsString(ctx.dbHistoryList));
+        chatHistoryRepo.save(ctx.histDb);
+
+        Map<String, String> result = new HashMap<>();
+        result.put(KEY_RESPONSE,      reply);
+        result.put(KEY_SESSION_ID,    ctx.histDb.getSessionId());
+        result.put(KEY_SESSION_TITLE, ctx.histDb.getSessionTitle());
+        return ResponseEntity.ok(result);
+    }
+
+
+    private static String getStringOrNull(Map<String, Object> map, String key) {
+        return map.containsKey(key) && map.get(key) != null ? map.get(key).toString() : null;
+    }
+
+    private Map<String, Object> buildImageContent(String imageUrl) {
+        Map<String, Object> imgContent = new HashMap<>();
+        imgContent.put("type", TYPE_IMAGE_URL);
+        Map<String, Object> urlObj = new HashMap<>();
+
+        if (imageUrl.startsWith("data:image")) {
+            String mediaType  = "image/jpeg";
+            String base64Data = imageUrl;
+            if (imageUrl.contains(BASE64_SEPARATOR)) {
+                String[] parts = imageUrl.split(BASE64_SEPARATOR);
+                mediaType  = parts[0].replace(DATA_PREFIX, "");
+                base64Data = parts[1];
+            }
+            urlObj.put("url", DATA_PREFIX + mediaType + BASE64_SEPARATOR + base64Data);
+        } else {
+            urlObj.put("url", imageUrl);
+        }
+
+        imgContent.put(KEY_IMAGE_URL_OBJ, urlObj);
+        return imgContent;
+    }
+
+    private String sanitizeImageUrlForDb(String imageUrl) {
+        if (imageUrl != null && imageUrl.startsWith("data:image")) {
+            String mediaType = "image/jpeg";
+            if (imageUrl.contains(BASE64_SEPARATOR)) {
+                mediaType = imageUrl.split(BASE64_SEPARATOR)[0].replace(DATA_PREFIX, "");
+            }
+            return "[image:" + mediaType + "]";
+        }
+        return imageUrl;
+    }
+
+    private String sanitizeFileDataForDb(String fileData, String fileName) {
+        if (fileData != null && fileData.startsWith(DATA_PREFIX)) {
+            String name = (fileName != null && !fileName.isEmpty()) ? fileName : "document";
+            return "[file:" + name + "]";
+        }
+        return fileData;
+    }
+
+
+    private String buildSystemPrompt(String titre, String categorie, String niveau) {
         return String.format("""
             You are a pedagogical AI assistant.
-            
+
             Training: "%s"
             Category: %s
             Level: %s
-            
-            === TOPIC RELEVANCE RULE ===
+
+            === TOPIC RELEVANCE RULE (HIGHEST PRIORITY) ===
             You must assist the user ONLY with topics directly related to the training "%s".
-            
+            This rule applies to ALL inputs: questions, images, and documents.
+
             HOW TO DETERMINE RELEVANCE:
             - Accept slight variations in names (e.g., "Power BI" is the same as "Power BIiii").
-            - FOR DOCUMENTS:
-                * Check if the document focuses on the core concepts, tools, or techniques of "%s" (e.g., for Power BI, look for DAX, Power Query, Data Modeling, etc.).
-                * If the document is about a GENERAL or DIFFERENT subject (e.g., English lessons, general management, or project management not specific to the tool), it is OFF-TOPIC.
-                * If you are unsure, but the document doesn't explicitly mention the training's core technology, consider it OFF-TOPIC.
-            
+            - FOR QUESTIONS: Refuse any question that is not about "%s" concepts, tools, or techniques.
+            - FOR IMAGES:
+                * Check if the image shows content directly related to "%s".
+                * If the image shows unrelated content (nature, people, generic objects, etc.): REFUSE.
+            - FOR DOCUMENTS (STRICT):
+                * Your FIRST action is to verify: does this document primarily discuss "%s"?
+                * Read the beginning, middle, and any section titles to assess relevance.
+                * If the document is about a DIFFERENT tool, language, framework, or domain: REFUSE.
+                * If the document is a CV, cover letter, or generic text not about "%s": REFUSE.
+                * If the document is a general or unrelated subject: REFUSE.
+                * WHEN IN DOUBT → REFUSE. Only accept if the link to "%s" is explicit and clear.
+                * Do NOT summarize, analyze, describe, or quote ANY part of an off-topic document.
+
             IF THE CONTENT IS OFF-TOPIC:
-            - You MUST refuse to analyze, describe, or summarize it.
-            - You MUST output ONLY the following refusal sentence and NOTHING ELSE.
-            - NO analysis, NO notes, NO suggestions, NO "I am here to help with...".
-            
-            EXACT REFUSAL PHRASING (use the one matching the user's language):
-            - FRENCH: "Cette image/question/document ne semble pas être liée à la formation **%s**. Je suis ici pour vous aider uniquement sur les thèmes liés à **%s**. Posez-moi une question sur ce sujet !"
+            - You MUST output ONLY the exact refusal sentence below, in the user's language.
+            - Do NOT add any analysis, notes, partial summary, or suggestions.
+            - Do NOT mention any content from the document or image.
+
+            EXACT REFUSAL SENTENCES (use the one matching the user's language):
+            - FRENCH:  "Cette image/question/document ne semble pas être liée à la formation **%s**. Je suis ici pour vous aider uniquement sur les thèmes liés à **%s**. Posez-moi une question sur ce sujet !"
             - ENGLISH: "This image/question/document does not seem to be related to the training **%s**. I am here to help you only with topics related to **%s**. Ask me a question about this subject!"
-            - ARABIC: "هذه الصورة/السؤال/المستند لا يبدو مرتبطًا بالتكوين **%s**. أنا هنا لمساعدتك فقط في المواضيع المتعلقة بـ **%s**. اطرح سؤالاً حول هذا الموضوع!"
-            
+            - ARABIC:  "هذه الصورة/السؤال/المستند لا يبدو مرتبطًا بالتكوين **%s**. أنا هنا لمساعدتك فقط في المواضيع المتعلقة بـ **%s**. اطرح سؤالاً حول هذا الموضوع!"
+
             === CRITICAL LANGUAGE RULE ===
-            Reply in the SAME language as the user.
-            
+            Reply in the SAME language as the user's message.
+
             === FORMAT ===
             - Be concise and pedagogical.
             - Use bullet points if helpful.
             - Stay strictly within the context of the training "%s".
             """,
+                // Line 1-3 : titre, categorie, niveau
                 titre, categorie, niveau,
+                // TOPIC RELEVANCE : 7 occurrences de titre
+                titre, titre, titre, titre, titre, titre, titre,
+                // IF OFF-TOPIC : 1 occurrence
+                titre,
+                // FRENCH refusal : 2 occurrences
                 titre, titre,
-                titre, titre, titre, titre, titre, titre,
+                // ENGLISH refusal : 2 occurrences
+                titre, titre,
+                // ARABIC refusal : 2 occurrences
+                titre, titre,
+                // FORMAT : 1 occurrence
                 titre
         );
     }

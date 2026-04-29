@@ -8,6 +8,7 @@ import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.InscriptionParcoursRepository;
 import t.esprit.arctic.jobmatch.repository.ParcoursFormationRepository;
 
+import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -33,9 +34,9 @@ public class InscriptionParcoursService {
         }
 
         Candidat candidat = candidatRepository.findById(candidatId)
-                .orElseThrow(() -> new RuntimeException("Candidat non trouvé : " + candidatId));
+                .orElseThrow(() -> new ResourceNotFoundException("Candidat non trouvé : " + candidatId));
         ParcoursFormation parcours = parcoursRepository.findById(parcoursId)
-                .orElseThrow(() -> new RuntimeException("Parcours non trouvé : " + parcoursId));
+                .orElseThrow(() -> new ResourceNotFoundException("Parcours non trouvé : " + parcoursId));
 
         InscriptionParcours inscription = new InscriptionParcours();
         inscription.setCandidat(candidat);
@@ -69,7 +70,7 @@ public class InscriptionParcoursService {
     @Transactional
     public InscriptionParcours getInscription(Long candidatId, Long parcoursId) {
         InscriptionParcours ins = inscriptionParcoursRepository.findByCandidatIdAndParcoursId(candidatId, parcoursId)
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Inscription non trouvée pour candidat " + candidatId + " et parcours " + parcoursId));
         syncProgression(ins);
         return ins;
@@ -81,7 +82,7 @@ public class InscriptionParcoursService {
     @Transactional
     public InscriptionParcours getById(Long id) {
         InscriptionParcours ins = inscriptionParcoursRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Inscription parcours non trouvée : " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Inscription parcours non trouvée : " + id));
         syncProgression(ins);
         return ins;
     }

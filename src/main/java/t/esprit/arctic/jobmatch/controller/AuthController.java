@@ -11,7 +11,6 @@ import t.esprit.arctic.jobmatch.dto.RegisterRequest;
 import t.esprit.arctic.jobmatch.dto.LoginResponse;
 import t.esprit.arctic.jobmatch.dto.RegisterResponse;
 import t.esprit.arctic.jobmatch.dto.PasswordResetRequest;
-import t.esprit.arctic.jobmatch.dto.VerifyOtpRequest;
 import t.esprit.arctic.jobmatch.dto.PasswordResetResponse;
 import t.esprit.arctic.jobmatch.dto.ProfileCompletenessDto;
 import t.esprit.arctic.jobmatch.entity.*;
