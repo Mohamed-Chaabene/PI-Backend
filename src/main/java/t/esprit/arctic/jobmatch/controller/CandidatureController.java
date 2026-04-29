@@ -20,7 +20,7 @@ import t.esprit.arctic.jobmatch.service.EmailService;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
+import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/candidatures")
 @CrossOrigin(origins = "http://localhost:4200")
@@ -76,7 +76,7 @@ public class CandidatureController {
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
 
         Candidature candidature = new Candidature();
-        candidature.setDateEnvoi(new Date());
+        candidature.setDateEnvoi(LocalDateTime.now());
         candidature.setStatut("EN_ATTENTE");
         candidature.setCandidat(candidat);
 
@@ -147,9 +147,9 @@ public class CandidatureController {
 
         List<Candidature> candidatures = candidatureRepository.findByCandidatId(candidat.getId());
 
-        Calendar now = Calendar.getInstance();
-        int currentMonth = now.get(Calendar.MONTH);
-        int currentYear = now.get(Calendar.YEAR);
+        LocalDateTime now = LocalDateTime.now();
+        int currentMonth = now.getMonthValue();
+        int currentYear = now.getYear();
 
         long total = candidatures.size();
         long enAttente = candidatures.stream().filter(c -> "EN_ATTENTE".equals(c.getStatut())).count();
@@ -159,9 +159,8 @@ public class CandidatureController {
 
         long candidaturesCeMois = candidatures.stream().filter(c -> {
             if (c.getDateEnvoi() == null) return false;
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(c.getDateEnvoi());
-            return cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear;
+            return c.getDateEnvoi().getMonthValue() == currentMonth &&
+                    c.getDateEnvoi().getYear() == currentYear;
         }).count();
 
         Map<String, Object> stats = new HashMap<>();
@@ -174,7 +173,6 @@ public class CandidatureController {
 
         return ResponseEntity.ok(stats);
     }
-
     // ==================== EXISTANT: READ - Candidatures par offre ====================
     @GetMapping("/offre/{offreId}")
     public ResponseEntity<List<CandidatureDTO>> getCandidaturesByOffre(@PathVariable Long offreId) {
@@ -349,7 +347,7 @@ public class CandidatureController {
                     .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
 
             Candidature candidature = new Candidature();
-            candidature.setDateEnvoi(new Date());
+            candidature.setDateEnvoi(LocalDateTime.now());
             candidature.setStatut("EN_ATTENTE");
             candidature.setCandidat(candidat);
             candidature.setAcceptRGPD(true);
@@ -581,9 +579,8 @@ public class CandidatureController {
 
         candidatures.forEach(c -> {
             if (c.getDateEnvoi() != null) {
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(c.getDateEnvoi());
-                compteur[cal.get(Calendar.MONTH)]++;
+                int month = c.getDateEnvoi().getMonthValue() - 1; // LocalDateTime retourne 1-12, Calendar attend 0-11
+                compteur[month]++;
             }
         });
 
@@ -772,7 +769,7 @@ public class CandidatureController {
         List<Map<String, Object>> result = candidatures.stream().map(c -> {
                     long joursEcoules = 0;
                     if (c.getDateEnvoi() != null) {
-                        joursEcoules = (new Date().getTime() - c.getDateEnvoi().getTime()) / (1000 * 60 * 60 * 24);
+                        joursEcoules = java.time.Duration.between(c.getDateEnvoi(), LocalDateTime.now()).toDays();
                     }
 
                     String urgence = joursEcoules > 14 ? "haute" : joursEcoules > 7 ? "moyenne" : "basse";
@@ -826,18 +823,15 @@ public class CandidatureController {
 
         long candidaturesCeMois = candidatures.stream().filter(c -> {
             if (c.getDateEnvoi() == null) return false;
-            Calendar c2 = Calendar.getInstance();
-            c2.setTime(c.getDateEnvoi());
-            return c2.get(Calendar.MONTH) == currentMonth && c2.get(Calendar.YEAR) == currentYear;
+            return c.getDateEnvoi().getMonthValue() == currentMonth &&
+                    c.getDateEnvoi().getYear() == currentYear;
         }).count();
 
         long accepteesCeMois = candidatures.stream().filter(c -> {
             if (c.getDateEnvoi() == null) return false;
-            Calendar c2 = Calendar.getInstance();
-            c2.setTime(c.getDateEnvoi());
             return "ACCEPTEE".equals(c.getStatut()) &&
-                    c2.get(Calendar.MONTH) == currentMonth &&
-                    c2.get(Calendar.YEAR) == currentYear;
+                    c.getDateEnvoi().getMonthValue() == currentMonth &&
+                    c.getDateEnvoi().getYear() == currentYear;
         }).count();
 
         Set<String> competences = new HashSet<>();
@@ -1234,7 +1228,6 @@ public class CandidatureController {
         dto.setScoreEntretien(c.getScoreEntretien());
         dto.setTotalQuestionsEntretien(c.getTotalQuestionsEntretien());
         dto.setBonnesReponsesEntretien(c.getBonnesReponsesEntretien());
-        dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
 
         String statutLabel = switch (c.getStatut()) {
             case "EN_ATTENTE" -> "En attente";

@@ -1,20 +1,23 @@
 package t.esprit.arctic.jobmatch.controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import t.esprit.arctic.jobmatch.security.JwtService;
 import t.esprit.arctic.jobmatch.service.FollowService;
 
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/follows")
 @RequiredArgsConstructor
 public class FollowController {
+
+    private static final Logger logger = LoggerFactory.getLogger(FollowController.class);
 
     private final FollowService followService;
     private final JwtService jwtService;
@@ -26,12 +29,20 @@ public class FollowController {
      * @return The updated user with new follower
      */
     @PostMapping("/{userToFollowId}/follow")
-    public ResponseEntity<Utilisateur> followUser(
+    public ResponseEntity<Map<String, Object>> followUser(
             @PathVariable Long userToFollowId,
             @RequestHeader("Authorization") String token) {
         Long followerId = extractUserIdFromToken(token);
+        logger.info("Follow request: followerId={} targetId={}", followerId, userToFollowId);
         Utilisateur result = followService.followUser(followerId, userToFollowId);
-        return ResponseEntity.ok(result);
+        logger.info("Follow successful: followerId={} targetId={}", followerId, userToFollowId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", userToFollowId);
+        response.put("followers", result.getFollowers());
+        response.put("followersCount", followService.getFollowersCount(userToFollowId));
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -41,12 +52,20 @@ public class FollowController {
      * @return The updated user with follower removed
      */
     @PostMapping("/{userToUnfollowId}/unfollow")
-    public ResponseEntity<Utilisateur> unfollowUser(
+    public ResponseEntity<Map<String, Object>> unfollowUser(
             @PathVariable Long userToUnfollowId,
             @RequestHeader("Authorization") String token) {
         Long followerId = extractUserIdFromToken(token);
+        logger.info("Unfollow request: followerId={} targetId={}", followerId, userToUnfollowId);
         Utilisateur result = followService.unfollowUser(followerId, userToUnfollowId);
-        return ResponseEntity.ok(result);
+        logger.info("Unfollow successful: followerId={} targetId={}", followerId, userToUnfollowId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", userToUnfollowId);
+        response.put("followers", result.getFollowers());
+        response.put("followersCount", followService.getFollowersCount(userToUnfollowId));
+
+        return ResponseEntity.ok(response);
     }
 
     /**

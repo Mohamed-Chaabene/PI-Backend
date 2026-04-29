@@ -1,18 +1,14 @@
 package t.esprit.arctic.jobmatch.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import com.pusher.rest.Pusher;
-import t.esprit.arctic.jobmatch.entity.Candidat;
-import t.esprit.arctic.jobmatch.entity.Notification;
-import t.esprit.arctic.jobmatch.entity.Utilisateur;
-import t.esprit.arctic.jobmatch.repository.CandidatRepository;
-import t.esprit.arctic.jobmatch.repository.NotificationRepository;
-import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.pusher.rest.Pusher;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -311,16 +307,16 @@ public class NotificationService {
                 return;
             }
             
-            // Get all candidates with matching location (comparing by pays/country)
+            // Get all candidates with matching location (comparing by ville/city)
             List<Candidat> candidatesInLocation = candidatRepository.findAll()
                     .stream()
                     .filter(candidat -> {
                         if (candidat.getLocalisation() == null) {
                             return false;
                         }
-                        String candidatCountry = candidat.getLocalisation().getPays();
-                        return candidatCountry != null && 
-                                candidatCountry.equalsIgnoreCase(jobLocation);
+                        String candidatCity = candidat.getLocalisation().getVille();
+                        return candidatCity != null && 
+                                candidatCity.toLowerCase().contains(jobLocation.toLowerCase());
                     })
                     .toList();
             

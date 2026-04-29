@@ -1,19 +1,23 @@
 package t.esprit.arctic.jobmatch.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import t.esprit.arctic.jobmatch.entity.Utilisateur;
-import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import t.esprit.arctic.jobmatch.entity.Utilisateur;
+import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 
 @Service
 @RequiredArgsConstructor
 public class FollowService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FollowService.class);
 
     private final UtilisateurRepository utilisateurRepository;
     private final NotificationService notificationService;
@@ -44,10 +48,13 @@ public class FollowService {
      * @param userToFollowId The ID of the user to be followed
      * @return The updated user with new follower
      */
+    @Transactional
     public Utilisateur followUser(Long followerId, Long userToFollowId) {
         if (followerId.equals(userToFollowId)) {
             throw new RuntimeException("Cannot follow yourself");
         }
+
+        logger.info("Processing follow: followerId={} targetId={}", followerId, userToFollowId);
 
         Utilisateur userToFollow = utilisateurRepository.findById(userToFollowId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
@@ -58,8 +65,11 @@ public class FollowService {
             userToFollow.setFollowers(joinFollowerIds(followerIds));
             utilisateurRepository.save(userToFollow);
 
-            // Send real-time notification
-            notificationService.createFollowNotification(userToFollowId, followerId);
+            try {
+                notificationService.createFollowNotification(userToFollowId, followerId);
+            } catch (Exception e) {
+                logger.warn("Follow saved but notification failed: {}", e.getMessage(), e);
+            }
         }
 
         return userToFollow;
@@ -71,7 +81,9 @@ public class FollowService {
      * @param userToUnfollowId The ID of the user to unfollow
      * @return The updated user with follower removed
      */
+    @Transactional
     public Utilisateur unfollowUser(Long followerId, Long userToUnfollowId) {
+        logger.info("Processing unfollow: followerId={} targetId={}", followerId, userToUnfollowId);
         Utilisateur userToUnfollow = utilisateurRepository.findById(userToUnfollowId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
