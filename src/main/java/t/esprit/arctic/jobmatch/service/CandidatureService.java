@@ -10,6 +10,7 @@ import t.esprit.arctic.jobmatch.repository.CandidatRepository;
 import t.esprit.arctic.jobmatch.repository.CandidatureRepository;
 import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ public class CandidatureService implements ICandidatureService {
                 .orElseThrow(() -> new RuntimeException("Candidat non trouvé"));
 
         Candidature c = new Candidature();
-        c.setDateEnvoi(new Date());
+        c.setDateEnvoi(LocalDateTime.now());
         c.setStatut("EN_ATTENTE");
         c.setCandidat(candidat);
 
@@ -132,9 +133,9 @@ public class CandidatureService implements ICandidatureService {
         int[] mois = new int[12];
 
         list.forEach(c -> {
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(c.getDateEnvoi());
-            mois[cal.get(Calendar.MONTH)]++;
+            if (c.getDateEnvoi() != null) {
+                mois[c.getDateEnvoi().getMonthValue() - 1]++;
+            }
         });
 
         List<Map<String, Object>> result = new ArrayList<>();
@@ -226,7 +227,9 @@ public class CandidatureService implements ICandidatureService {
         dto.setScoreEntretien(c.getScoreEntretien());
         dto.setTotalQuestionsEntretien(c.getTotalQuestionsEntretien());
         dto.setBonnesReponsesEntretien(c.getBonnesReponsesEntretien());
-        dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
+      //  dto.setDateEvaluationEntretien(c.getDateEvaluationEntretien());
+        dto.setArchive(c.getArchive());
+        dto.setArchiveDate(c.getArchiveDate());
 
         if (c.getCandidat() != null) {
             dto.setCandidatId(c.getCandidat().getId());

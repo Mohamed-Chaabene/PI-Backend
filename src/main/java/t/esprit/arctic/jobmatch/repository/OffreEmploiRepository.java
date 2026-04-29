@@ -16,15 +16,7 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
     List<OffreEmploi> findByRecruteurEmailIgnoreCaseOrderByDatePublicationDesc(String email);
     List<OffreEmploi> findByEntrepriseIgnoreCaseOrderByDatePublicationDesc(String entreprise);
 
-    /**
-     * JPQL COMPLEXE : Récupère les offres avec stats de candidatures
-     * Utilise :
-     *  - LEFT JOIN : pour inclure offres sans candidatures
-     *  - GROUP BY : pour regrouper par offre
-     *  - COUNT : pour compter les candidatures
-     *  - NEW (constructor expression) : pour créer des DTOs directement
-     *  - ORDER BY : pour trier par nombre de candidatures DESC
-     */
+
     @Query("SELECT NEW t.esprit.arctic.jobmatch.dto.OffreStatistiquesDTO(" +
            "o.id, " +
            "o.titre, " +
@@ -44,10 +36,7 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
            "ORDER BY COUNT(c.id) DESC")
     List<OffreStatistiquesDTO> findOffresAvecStatistiques();
 
-    /**
-     * JPQL COMPLEXE : Recherche offres avec candidatures d'un recruteur spécifique
-     * Filtre par recruteur et date
-     */
+
     @Query("SELECT NEW t.esprit.arctic.jobmatch.dto.OffreStatistiquesDTO(" +
            "o.id, o.titre, o.entreprise, r.nom, r.email, " +
            "COUNT(c.id), " +
@@ -62,9 +51,7 @@ public interface OffreEmploiRepository extends JpaRepository<OffreEmploi, Long> 
            "ORDER BY o.datePublication DESC")
     List<OffreStatistiquesDTO> findOffresParRecruteurAvecStats(@Param("recruteurId") Long recruteurId);
 
-    /**
-     * JPQL COMPLEXE : Offres avec candidatures dans une plage de salaire
-     */
+
     @Query("SELECT NEW t.esprit.arctic.jobmatch.dto.OffreStatistiquesDTO(" +
            "o.id, o.titre, o.entreprise, r.nom, r.email, " +
            "COUNT(c.id), " +
