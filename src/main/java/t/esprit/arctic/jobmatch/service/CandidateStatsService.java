@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import t.esprit.arctic.jobmatch.dto.CandidateStatsDTO;
 import t.esprit.arctic.jobmatch.entity.*;
+import t.esprit.arctic.jobmatch.exception.ResourceNotFoundException;
 import t.esprit.arctic.jobmatch.repository.*;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class CandidateStatsService {
             Optional<Candidat> candidatOpt = candidatRepository.findById(candidatId);
             if (candidatOpt.isEmpty()) {
                 log.error("❌ Candidate not found with ID: {}", candidatId);
-                throw new RuntimeException("Candidate not found");
+                throw new ResourceNotFoundException("Candidate with ID " + candidatId + " not found. The account may have been deleted.");
             }
 
             Candidat candidat = candidatOpt.get();
@@ -85,6 +86,8 @@ public class CandidateStatsService {
 
             log.info("✅ Stats retrieved for candidate: {}", candidat.getEmail());
             return stats;
+        } catch (ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             log.error("❌ Error fetching candidate stats: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to fetch candidate stats", e);
