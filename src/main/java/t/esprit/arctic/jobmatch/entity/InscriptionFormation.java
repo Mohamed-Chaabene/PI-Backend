@@ -52,4 +52,7 @@ public class InscriptionFormation {
     
     @Column(name = "parcours_id")
     private Long parcoursId;
+
+    @Column(name = "niveau_context")
+    private String niveauContext;
 }

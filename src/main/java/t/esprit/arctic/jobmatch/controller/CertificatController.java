@@ -1,6 +1,5 @@
 package t.esprit.arctic.jobmatch.controller;
 
-import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +11,6 @@ import t.esprit.arctic.jobmatch.service.CertificatService;
 import t.esprit.arctic.jobmatch.repository.InscriptionFormationRepository;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/certificats")
@@ -57,5 +55,15 @@ public class CertificatController {
                 "attachment", "certificat-" + id + ".pdf");
         headers.setContentLength(pdf.length);
         return ResponseEntity.ok().headers(headers).body(pdf);
+    }
+
+    @GetMapping("/verify/{code}")
+    public ResponseEntity<?> verifyCertificat(@PathVariable String code) {
+        try {
+            Certificat cert = certificatService.verifyByCode(code);
+            return ResponseEntity.ok(cert);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

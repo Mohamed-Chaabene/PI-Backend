@@ -106,7 +106,13 @@ public class FeedbackService {
         }
 
         alertService.checkLowRating(dto.getParcoursId(), "MACRO", dto.getNoteGlobale());
-        // notificationService.deleteParcoursCompletionNotification(inscription.getCandidat().getId(), dto.getParcoursId());
+        
+        // Générer le certificat de parcours après le feedback
+        try {
+            certificatService.genererPourParcours(inscription);
+        } catch (Exception e) {
+            System.err.println("❌ Erreur lors de la génération du certificat après feedback: " + e.getMessage());
+        }
     }
 
     public List<FeedbackMacro> getMacroByParcours(Long parcoursId) {

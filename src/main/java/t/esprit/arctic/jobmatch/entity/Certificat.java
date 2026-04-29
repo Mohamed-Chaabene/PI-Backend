@@ -21,6 +21,9 @@ public class Certificat {
     @Temporal(TemporalType.DATE)
     private Date dateObtention;
 
+    @Column(unique = true)
+    private String verificationCode;
+
     @OneToOne
     @JoinColumn(name = "inscription_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"certificat", "hibernateLazyInitializer", "handler"})

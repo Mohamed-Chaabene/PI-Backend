@@ -23,6 +23,11 @@ public class FormationService {
         return formationRepository.findByStatutNot("Archivée");
     }
 
+    /** Version utilisée par le moteur ML — charge les compétences en JOIN FETCH */
+    public List<Formation> getAllActivesWithCompetences() {
+        return formationRepository.findActivesWithCompetences();
+    }
+
     public List<Formation> getAllForAdmin() {
         return formationRepository.findAll();
     }

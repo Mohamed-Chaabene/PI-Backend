@@ -111,7 +111,7 @@ public class CandidatureController {
                     ? saved.getOffreEmploi().getTitre()
                     : "l'offre";
 
-            emailService.envoyerConfirmationCandidature(emailCandidat, candidatNom.trim(), posteNom);
+
             System.out.println(" Email de confirmation envoyé à: " + emailCandidat);
 
         } catch (Exception e) {

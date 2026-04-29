@@ -52,9 +52,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/domaines").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/formations/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/formations/analyze-gap/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/entretiens/public/tests").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/questions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/candidats/email/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/certificats/verify/**").permitAll()
 
                         // ── Suggestions et proxy ──────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/suggestions/**").permitAll()
@@ -65,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/offres-partenaires/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
+                        .requestMatchers("/api/email/postuler").permitAll()
 
                         // ── Search / Users ────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/users/search").authenticated()

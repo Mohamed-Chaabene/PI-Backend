@@ -34,6 +34,7 @@ public class CertificatService {
                     Certificat certificat = new Certificat();
                     certificat.setTitre("Certificat - " + inscription.getFormation().getTitre());
                     certificat.setDateObtention(new Date());
+                    certificat.setVerificationCode(java.util.UUID.randomUUID().toString());
                     certificat.setInscription(inscription);
                     return certificatRepository.save(certificat);
                 });
@@ -45,37 +46,46 @@ public class CertificatService {
      */
     @org.springframework.transaction.annotation.Transactional
     public Certificat genererPourParcours(InscriptionParcours inscriptionParcours) {
+        if (inscriptionParcours == null || inscriptionParcours.getParcours() == null) {
+            System.err.println("❌ Impossible de générer le certificat : Inscription ou Parcours null");
+            return null;
+        }
+
         // Récupérer la formation Expert du parcours
         t.esprit.arctic.jobmatch.entity.Formation formationExpert =
                 inscriptionParcours.getParcours().getFormationParNiveau(
                         t.esprit.arctic.jobmatch.entity.NiveauOrdre.EXPERT);
 
         if (formationExpert == null) {
-            throw new RuntimeException("Aucune formation Expert trouvée pour ce parcours");
+            System.err.println("⚠️ Aucune formation Expert trouvée pour le parcours : " + inscriptionParcours.getParcours().getTitre());
+            return null;
         }
 
-        // Trouver ou créer une InscriptionFormation pour la formation Expert
+        // Trouver ou créer une InscriptionFormation pour la formation Expert liée à ce parcours
         Long candidatId = inscriptionParcours.getCandidat().getId();
         Long formationId = formationExpert.getId();
+        Long parcoursId = inscriptionParcours.getParcours().getId();
 
         InscriptionFormation inscriptionFormation = inscriptionFormationRepository
-                .findByCandidatIdAndFormationId(candidatId, formationId)
+                .findByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId)
                 .orElseGet(() -> {
                     InscriptionFormation newInsc = new InscriptionFormation();
                     newInsc.setCandidat(inscriptionParcours.getCandidat());
                     newInsc.setFormation(formationExpert);
+                    newInsc.setParcoursId(parcoursId);
                     newInsc.setDateInscription(new Date());
                     newInsc.setStatut("Terminé");
                     newInsc.setProgression(100.0);
                     return inscriptionFormationRepository.save(newInsc);
                 });
 
-        // Vérifier si un certificat existe déjà
+        // Vérifier si un certificat existe déjà pour cette inscription
         return certificatRepository.findByInscriptionId(inscriptionFormation.getId())
                 .orElseGet(() -> {
                     Certificat certificat = new Certificat();
                     certificat.setTitre("Certificat Parcours - " + inscriptionParcours.getParcours().getTitre());
                     certificat.setDateObtention(new Date());
+                    certificat.setVerificationCode(java.util.UUID.randomUUID().toString());
                     certificat.setInscription(inscriptionFormation);
                     certificat.setParcours(inscriptionParcours.getParcours());
                     return certificatRepository.save(certificat);
@@ -91,12 +101,17 @@ public class CertificatService {
                 .orElseThrow(() -> new RuntimeException("Certificat non trouve : " + id));
     }
 
+    public Certificat verifyByCode(String code) {
+        return certificatRepository.findByVerificationCode(code)
+                .orElseThrow(() -> new RuntimeException("Certificat invalide ou non trouve"));
+    }
+
     public List<Certificat> getByCandidat(Long candidatId) {
         return certificatRepository.findByInscriptionCandidatId(candidatId);
     }
 
     private byte[] loadLogo() {
-        String[] names = {"/static/logo_transparent.png", "logo_png.png"};
+        String[] names = {"logo_transparent.png"};
         String workDir = System.getProperty("user.dir");
         for (String name : names) {
             try {
@@ -112,8 +127,14 @@ public class CertificatService {
         return null;
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public byte[] genererPdf(Long certificatId) {
         Certificat cert = getById(certificatId);
+        
+        if (cert.getVerificationCode() == null) {
+            cert.setVerificationCode(java.util.UUID.randomUUID().toString());
+            certificatRepository.save(cert);
+        }
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -314,20 +335,32 @@ public class CertificatService {
                 cb.endText();
             }
 
+            float qrSize = 60f;
+            float rightAlign = W - bTotal - 40;
+            
+            if (cert.getVerificationCode() != null) {
+                String verifyUrl = "http://localhost:4200/verify-certificat/" + cert.getVerificationCode();
+                BarcodeQRCode qrcode = new BarcodeQRCode(verifyUrl, 100, 100, null);
+                Image qrcodeImage = qrcode.getImage();
+                qrcodeImage.scaleAbsolute(qrSize, qrSize);
+                qrcodeImage.setAbsolutePosition(rightAlign - qrSize, bTotal + 40);
+                cb.addImage(qrcodeImage);
+            }
+
             cb.beginText();
             cb.setColorFill(textMuted);
             cb.setFontAndSize(bfReg, 7.5f);
             cb.showTextAligned(Element.ALIGN_RIGHT,
                     "N Certificat : CERT-" + String.format("%05d", cert.getId()),
-                    W - bTotal - 40, bTotal + 36, 0);
+                    rightAlign, bTotal + 30, 0);
             cb.endText();
 
             cb.beginText();
             cb.setColorFill(textMuted);
             cb.setFontAndSize(bfReg, 7f);
             cb.showTextAligned(Element.ALIGN_RIGHT,
-                    "www.matchykhedma.tn",
-                    W - bTotal - 40, bTotal + 24, 0);
+                    "Vérifiez l'authenticité de ce document en scannant le QR code",
+                    rightAlign, bTotal + 20, 0);
             cb.endText();
 
             document.close();

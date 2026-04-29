@@ -49,7 +49,7 @@ public class InscriptionParcoursService {
         // Inscription automatique au premier niveau (DEBUTANT)
         Formation beginnerLevel = parcours.getNiveauDebutant();
         if (beginnerLevel != null) {
-            inscriptionFormationService.inscrireAutomatiquement(candidat, beginnerLevel, parcoursId);
+            inscriptionFormationService.inscrireAutomatiquement(candidat, beginnerLevel, parcoursId, "DEBUTANT");
         }
 
         return saved;

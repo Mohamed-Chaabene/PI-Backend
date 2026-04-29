@@ -116,20 +116,29 @@ public class CandidatService {
     @Transactional
     public Candidat updateCompetencesFromStrings(Long id, List<String> competenceNames) {
         Candidat candidat = getById(id);
-        
-        // Link to existing competences or create new ones if they don't exist
+
         List<Competence> competences = competenceNames.stream()
-                .map(name -> competenceRepository.findByNom(name)
-                        .orElseGet(() -> {
-                            // Auto-create competence if it doesn't exist
-                            Competence newCompetence = new Competence();
-                            newCompetence.setNom(name);
-                            newCompetence.setNiveau("Intermédiaire"); // Default level
-                            newCompetence.setType("Technique"); // Default type
-                            return competenceRepository.save(newCompetence);
-                        }))
+                .map(name -> {
+                    // Cherche d'abord la compétence existante (insensible à la casse)
+                    return competenceRepository.findFirstByNom(name)
+                            .orElseGet(() -> {
+                                // Créer une nouvelle compétence avec des valeurs valides par défaut
+                                Competence newComp = new Competence();
+                                newComp.setNom(name);
+                                newComp.setNiveau("Intermédiaire"); // valeur acceptée par @Pattern
+                                newComp.setType("Technique");       // min 2 chars ✓
+                                try {
+                                    return competenceRepository.save(newComp);
+                                } catch (Exception e) {
+                                    // Si doublon ou contrainte, chercher à nouveau
+                                    return competenceRepository.findFirstByNom(name)
+                                            .orElseThrow(() -> new RuntimeException(
+                                                "Impossible de créer la compétence : " + name));
+                                }
+                            });
+                })
                 .collect(Collectors.toList());
-        
+
         candidat.setCompetences(competences);
         return repository.save(candidat);
     }
