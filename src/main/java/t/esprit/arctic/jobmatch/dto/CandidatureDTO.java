@@ -6,7 +6,8 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -18,7 +19,7 @@ public class CandidatureDTO {
     private Long candidatId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date dateEnvoi;
+    private LocalDateTime dateEnvoi;
     private String statut;
     private String lettreGeneree;
     private String candidatNom;
@@ -66,6 +67,8 @@ public class CandidatureDTO {
     private String documentType;
     private Long offreId;
     private String offreTitre;
+    private Boolean archive;
+    private LocalDateTime archiveDate;
 
     private String statutLabel;
     private String statutClass;
@@ -74,9 +77,5 @@ public class CandidatureDTO {
     private Integer bonnesReponsesEntretien;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date dateEvaluationEntretien;
+    private LocalDateTime dateEvaluationEntretien;
 }
-
-
-
-

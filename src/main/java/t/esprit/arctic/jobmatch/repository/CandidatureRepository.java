@@ -8,10 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import t.esprit.arctic.jobmatch.entity.Candidature;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface CandidatureRepository extends JpaRepository<Candidature, Long> {
-
 
     List<Candidature> findByCandidatId(Long candidatId);
 
@@ -23,12 +24,12 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
 
     List<Candidature> findByCandidatIdAndStatut(Long candidatId, String statut);
 
-    List<Candidature> findByStatutAndDateEnvoiBefore(String statut, LocalDateTime date);
+    List<Candidature> findByStatutAndDateEnvoiBefore(String statut, Date date);
 
-    List<Candidature> findByDateEnvoiBefore(LocalDateTime date);
+    List<Candidature> findByDateEnvoiBefore(Date date);
 
     List<Candidature> findByCandidatIdAndStatutAndDateEnvoiBefore(
-            Long candidatId, String statut, LocalDateTime date);
+            Long candidatId, String statut, Date date);
 
     List<Candidature> findByCandidatIdAndEmail(Long candidatId, String email);
 
@@ -38,12 +39,15 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
 
     List<Candidature> findByCandidatIdAndNecessiteAttentionTrue(Long candidatId);
 
-    List<Candidature> findByDateEnvoiBeforeAndArchiveFalse(LocalDateTime date);
+    List<Candidature> findByDateEnvoiBeforeAndArchiveFalse(Date date);
 
     // ==================== ARCHIVAGE ====================
 
     @Query("SELECT c FROM Candidature c WHERE c.dateEnvoi < :dateLimite AND (c.archive = false OR c.archive IS NULL)")
     List<Candidature> findCandidaturesPlusDe7Jours(@Param("dateLimite") LocalDateTime dateLimite);
+
+    // SUPPRIMÉ : première version avec LocalDateTime pour les deux paramètres
+    // Cette méthode causait le conflit
 
     @Modifying
     @Transactional
@@ -58,7 +62,7 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
     @Query("UPDATE Candidature c SET c.archive = false, c.archiveDate = null WHERE c.id = :id")
     int restaurerCandidature(@Param("id") Long id);
 
-    // ==================== JPQL  ====================
+    // ==================== JPQL ====================
 
     @Query("SELECT c, ca FROM Candidature c JOIN c.candidat ca WHERE ca.nom = :nom")
     List<Object[]> findCandidaturesByCandidatNom(@Param("nom") String nom);
@@ -100,4 +104,6 @@ public interface CandidatureRepository extends JpaRepository<Candidature, Long> 
             "JOIN c.offreEmploi o " +
             "WHERE o.salary >= :minSalary")
     List<Object[]> findCandidaturesByMinSalary(@Param("minSalary") Double minSalary);
+
+    Optional<Object> findTopByCandidatIdAndOffreEmploiIdOrderByDateEnvoiDesc(Long candidatId, Long offreId);
 }
