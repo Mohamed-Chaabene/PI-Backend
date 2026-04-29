@@ -18,8 +18,8 @@ public class Candidature {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date dateEnvoi;
+    @Column(name = "date_envoi")
+    private LocalDateTime dateEnvoi;
 
     private String statut;
 
@@ -84,6 +84,8 @@ public class Candidature {
 
     @Column(name = "archive_date")
     private LocalDateTime archiveDate;
+
+
     @Column(name = "score_entretien")
     private Double scoreEntretien;
 

@@ -26,6 +26,7 @@ public class Participation {
     @Column(name = "certificate_url")
     private String certificateUrl;
 
+    @Builder.Default
     @Column(name = "certificate_generated")
     private Boolean certificateGenerated = false;
 

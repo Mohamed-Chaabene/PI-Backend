@@ -54,6 +54,7 @@ public class UtilisateurService {
         return savedUser;
     }
 
+    @Transactional(readOnly = true)
     public List<Utilisateur> getAll() {
         return repository.findAll();
     }
@@ -74,6 +75,7 @@ public class UtilisateurService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Utilisateur getById(Long id) {
         return repository.findById(id).orElseThrow();
     }

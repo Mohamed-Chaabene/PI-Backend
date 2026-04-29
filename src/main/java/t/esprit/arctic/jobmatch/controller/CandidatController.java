@@ -89,6 +89,45 @@ public class CandidatController {
         }
     }
 
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentCandidat() {
+        try {
+            // Récupérer l'email de l'utilisateur connecté depuis Spring Security
+            org.springframework.security.core.Authentication authentication =
+                    org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                logger.warn("No authenticated user found");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Utilisateur non authentifié"));
+            }
+
+            String email = authentication.getName();
+            logger.info(" Fetching current candidat with email: {}", email);
+
+            // Chercher le candidat par email
+            Candidat candidat = service.findByEmail(email);
+
+            if (candidat == null) {
+                logger.warn("No candidate found with email: {}", email);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Candidat non trouvé avec email: " + email));
+            }
+
+            logger.info(" Candidat found: {} {}", candidat.getPrenom(), candidat.getNom());
+            logger.info(" Description: {}", candidat.getDescription());
+
+            return ResponseEntity.ok(toCandidateProfilePayload(candidat));
+
+        } catch (Exception e) {
+            logger.error(" Error fetching current candidat: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Erreur serveur: " + e.getMessage()));
+        }
+    }
+
+
     @GetMapping("/{id}/download-cv")
     public ResponseEntity<?> downloadCV(@PathVariable Long id) {
         try {

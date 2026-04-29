@@ -308,8 +308,8 @@ public class EntretienService {
         Candidature target = null;
         Long offreId = entretien.getOffreEmploi() != null ? entretien.getOffreEmploi().getId() : null;
         if (offreId != null && offreId > 0) {
-            target = candidatureRepository.findTopByCandidatIdAndOffreEmploiIdOrderByDateEnvoiDesc(candidatId, offreId)
-                    .orElse(null);
+           // target = candidatureRepository.findTopByCandidatIdAndOffreEmploiIdOrderByDateEnvoiDesc(candidatId, offreId)
+             //       .orElse(null);
         }
 
         if (target == null) {
