@@ -25,6 +25,7 @@ public class QuizNiveauController {
     private final QuizNiveauService quizService;
     private final ObjectMapper mapper;
 
+    /** Génère un quiz Groq pour le niveau actuel */
     @PostMapping("/generer")
     public ResponseEntity<?> generer(@RequestBody QuizGenerationRequest request) {
         try {
@@ -36,6 +37,7 @@ public class QuizNiveauController {
         }
     }
 
+    /** Récupère un quiz (questions sans bonnes réponses) */
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Long id) {
         try {
@@ -46,6 +48,7 @@ public class QuizNiveauController {
         }
     }
 
+    /** Soumet les réponses, retourne résultat */
     @PostMapping("/soumettre")
     public ResponseEntity<?> soumettre(@RequestBody QuizSoumissionDTO dto) {
         try {
@@ -56,6 +59,7 @@ public class QuizNiveauController {
         }
     }
 
+    /** Récupère le résultat détaillé d'un quiz déjà passé */
     @GetMapping("/{id}/resultat")
     public ResponseEntity<?> getResultat(@PathVariable Long id) {
         try {
@@ -65,13 +69,16 @@ public class QuizNiveauController {
         }
     }
 
+    /** Historique des quiz du candidat pour une inscription parcours */
     @GetMapping("/inscription/{inscriptionParcoursId}")
     public ResponseEntity<List<QuizNiveau>> getHistorique(
             @PathVariable Long inscriptionParcoursId) {
         return ResponseEntity.ok(quizService.getHistorique(inscriptionParcoursId));
     }
 
-
+    /**
+     * Masque les bonnes réponses et explications avant d'envoyer au client.
+     */
     private Map<String, Object> sanitizeQuizForClient(QuizNiveau quiz) {
         try {
             JsonNode root = mapper.readTree(quiz.getQuestionsJson());

@@ -9,6 +9,10 @@ import t.esprit.arctic.jobmatch.entity.Utilisateur;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
+
+
+
 import java.util.List;
 import java.util.Optional;
 
@@ -36,8 +40,8 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     @Query("SELECT COUNT(p) FROM Participation p " +
             "WHERE p.evenement.organisateur.id = :organisateurId " +
-            "AND MONTH(p.evenement.dateHeure) = :mois " +
-            "AND YEAR(p.evenement.dateHeure) = :annee " +
+            "AND MONTH(p.evenement.dateHeure) = :mois " +    // ← date → dateHeure
+            "AND YEAR(p.evenement.dateHeure) = :annee " +    // ← date → dateHeure
             "AND p.statut = :statut")
     int countByOrganisateurAndMoisAndStatut(
             @Param("organisateurId") Long organisateurId,

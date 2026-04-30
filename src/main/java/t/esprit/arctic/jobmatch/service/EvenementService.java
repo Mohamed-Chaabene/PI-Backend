@@ -117,7 +117,7 @@ public class EvenementService {
         repository.deleteById(id);
     }
 
-
+    // Stats
     public EvenementStatsResponse getStats(int mois, int annee, Long organisateurId) {
         int totalEvenements = repository
                 .countByMoisAndAnneeAndOrganisateur(mois, annee, organisateurId);

@@ -23,22 +23,14 @@ public class FollowService {
     private final NotificationService notificationService;
 
     private Set<Long> parseFollowerIds(String followers) {
-        if (followers == null || followers.isBlank()) {
+        if (followers == null || followers.isEmpty()) {
             return new HashSet<>();
         }
-        Set<Long> ids = new HashSet<>();
-        for (String s : followers.split(",")) {
-            try {
-                String trimmed = s.trim();
-                if (!trimmed.isEmpty()) {
-                    ids.add(Long.valueOf(trimmed));
-                }
-            } catch (NumberFormatException e) {
-                // Ignore invalid IDs instead of throwing 500 error
-                System.err.println("Invalid follower ID ignored: " + s);
-            }
-        }
-        return ids;
+        return Arrays.stream(followers.split(","))
+                .map(String::trim)
+                .filter(id -> !id.isEmpty())
+                .map(Long::valueOf)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     private String joinFollowerIds(Set<Long> followerIds) {

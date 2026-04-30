@@ -42,8 +42,6 @@ public interface InscriptionFormationRepository
 
     @Query("""
         SELECT i FROM InscriptionFormation i
-        LEFT JOIN FETCH i.formation f
-        LEFT JOIN FETCH i.candidat c
         WHERE i.candidat.id = :candidatId
         AND i.formation.id = :formationId
         AND ( (:parcoursId IS NULL AND i.parcoursId IS NULL) OR i.parcoursId = :parcoursId )

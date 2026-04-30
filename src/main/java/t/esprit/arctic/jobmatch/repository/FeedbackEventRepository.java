@@ -43,6 +43,8 @@ public interface FeedbackEventRepository extends JpaRepository<FeedbackEvent, Lo
             @Param("organisateurId") Long organisateurId,
             @Param("type") String type
     );
+
+
     @Query("""
     SELECT f FROM FeedbackEvent f
     JOIN f.participation p

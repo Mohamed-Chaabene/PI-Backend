@@ -12,8 +12,6 @@ public interface InscriptionParcoursRepository extends JpaRepository<Inscription
 
     List<InscriptionParcours> findByCandidatId(Long candidatId);
 
-    List<InscriptionParcours> findByStatut(String statut);
-
     boolean existsByCandidatIdAndParcoursId(Long candidatId, Long parcoursId);
 
     @org.springframework.data.jpa.repository.Modifying

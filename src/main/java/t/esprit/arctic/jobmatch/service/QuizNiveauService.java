@@ -17,7 +17,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,9 @@ public class QuizNiveauService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * ÉTAPE 1 : Génère les questions via Groq
+     */
     @Transactional
     public QuizNiveau genererQuiz(QuizGenerationRequest req) {
         // 1. Vérifier que l'inscription existe
@@ -50,13 +56,6 @@ public class QuizNiveauService {
                     inscription.getId(), niveau).orElse(null);
             Long quizId = lastSuccessful != null ? lastSuccessful.getId() : 0L;
             throw new RuntimeException("ALREADY_PASSED:" + quizId);
-        }
-
-        // 2.bis Vérifier si un quiz a déjà été généré mais non encore soumis (ex: par le scheduler)
-        Optional<QuizNiveau> existing = quizRepository.findTopByInscriptionParcoursIdAndNiveauOrderByTentativeDesc(
-                inscription.getId(), niveau);
-        if (existing.isPresent() && (existing.get().getReponsesCandidat() == null || existing.get().getReponsesCandidat().isEmpty())) {
-            return existing.get();
         }
 
         int nombreQuestions = req.getNombreQuestions() > 0 ? req.getNombreQuestions() : 10;
