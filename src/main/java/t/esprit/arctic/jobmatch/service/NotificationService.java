@@ -9,6 +9,12 @@ import org.springframework.stereotype.Service;
 import com.pusher.rest.Pusher;
 
 import lombok.RequiredArgsConstructor;
+import t.esprit.arctic.jobmatch.entity.Candidat;
+import t.esprit.arctic.jobmatch.entity.Notification;
+import t.esprit.arctic.jobmatch.entity.Utilisateur;
+import t.esprit.arctic.jobmatch.repository.CandidatRepository;
+import t.esprit.arctic.jobmatch.repository.NotificationRepository;
+import t.esprit.arctic.jobmatch.repository.UtilisateurRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +24,33 @@ public class NotificationService {
     private final UtilisateurRepository utilisateurRepository;
     private final CandidatRepository candidatRepository;
     private final Pusher pusher;
+
+    /** Freelance — notification persistée + Pusher */
+    public void createNotification(Long userId, Long senderId, String type, String message) {
+        createNotification(userId, senderId, null, type, message);
+    }
+
+    /** Variante avec id contextuel (stocké dans {@code offreEmploiId} si besoin). */
+    public void createNotification(Long userId, Long senderId, Long relatedEntityId, String type, String message) {
+        if (userId == null) {
+            return;
+        }
+        try {
+            Notification notification = new Notification();
+            notification.setUserId(userId);
+            notification.setSenderId(senderId);
+            notification.setType(type != null ? type : "system");
+            notification.setMessage(message != null ? message : "");
+            notification.setIsRead(false);
+            if (relatedEntityId != null) {
+                notification.setOffreEmploiId(relatedEntityId);
+            }
+            Notification saved = notificationRepository.save(notification);
+            sendPusherNotification(userId, saved);
+        } catch (Exception e) {
+            System.err.println("createNotification failed: " + e.getMessage());
+        }
+    }
 
     /**
      * Send profile incomplete notification via Pusher (same pattern as follow - with DB persistence)

@@ -1,5 +1,7 @@
 package t.esprit.arctic.jobmatch.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,8 @@ import java.util.List;
 @RequestMapping("/api/entretiens")
 @CrossOrigin(origins = "*")
 public class EntretienController {
+
+    private static final Logger log = LoggerFactory.getLogger(EntretienController.class);
 
     @Autowired
     private EntretienService entretienService;
@@ -43,9 +47,15 @@ public class EntretienController {
         return ResponseEntity.ok(entretienService.getAllEntretiens());
     }
 
+    /** Declare before /{id} so the path public/tests is never captured as an id. */
     @GetMapping("/public/tests")
     public ResponseEntity<List<EntretienTestPublicDto>> getPublicTestEntretiens() {
-        return ResponseEntity.ok(entretienService.getPublicTestEntretiens());
+        try {
+            return ResponseEntity.ok(entretienService.getPublicTestEntretiens());
+        } catch (Exception ex) {
+            log.warn("getPublicTestEntretiens failed — returning empty list", ex);
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/recruteur/{recruteurId}")

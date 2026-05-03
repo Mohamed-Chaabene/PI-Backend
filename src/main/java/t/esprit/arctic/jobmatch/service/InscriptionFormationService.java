@@ -20,6 +20,12 @@ public class InscriptionFormationService {
 
     private static final double SEUIL_CERTIFICAT = 70.0;
 
+    private InscriptionFormation findLatestByContext(Long candidatId, Long formationId, Long parcoursId) {
+        List<InscriptionFormation> matches = inscriptionRepository
+                .findAllByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId);
+        return matches.isEmpty() ? null : matches.get(0);
+    }
+
     public List<InscriptionFormation> getAll() {
         return inscriptionRepository.findAll();
     }
@@ -106,18 +112,18 @@ public class InscriptionFormationService {
         if (formation == null) return null;
 
         // Vérifier si déjà inscrit dans ce contexte (avec ou sans parcoursId)
-        return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidat.getId(), formation.getId(), parcoursId)
-                .orElseGet(() -> {
-                    InscriptionFormation newIns = new InscriptionFormation();
-                    newIns.setCandidat(candidat);
-                    newIns.setFormation(formation);
-                    newIns.setParcoursId(parcoursId);
-                    newIns.setNiveauContext(niveau);
-                    newIns.setDateInscription(new Date());
-                    newIns.setStatut("EnCours");
-                    newIns.setProgression(0.0);
-                    return inscriptionRepository.save(newIns);
-                });
+        InscriptionFormation existing = findLatestByContext(candidat.getId(), formation.getId(), parcoursId);
+        if (existing != null) return existing;
+
+        InscriptionFormation newIns = new InscriptionFormation();
+        newIns.setCandidat(candidat);
+        newIns.setFormation(formation);
+        newIns.setParcoursId(parcoursId);
+        newIns.setNiveauContext(niveau);
+        newIns.setDateInscription(new Date());
+        newIns.setStatut("EnCours");
+        newIns.setProgression(0.0);
+        return inscriptionRepository.save(newIns);
     }
 
     @Transactional
@@ -137,18 +143,16 @@ public class InscriptionFormationService {
         if (candidat == null || formation == null) return;
 
         // Use parcoursId-aware lookup to avoid contaminating standalone inscriptions
-        InscriptionFormation ins = inscriptionRepository
-                .findByCandidatIdAndFormationIdAndParcoursId(candidat.getId(), formation.getId(), parcoursId)
-                .orElseGet(() -> {
-                    // Fallback: create a new inscription in context
-                    InscriptionFormation newIns = new InscriptionFormation();
-                    newIns.setCandidat(candidat);
-                    newIns.setFormation(formation);
-                    newIns.setParcoursId(parcoursId);
-                    newIns.setNiveauContext(null); // On pourrait essayer de le deviner ici si besoin
-                    newIns.setDateInscription(new java.util.Date());
-                    return newIns;
-                });
+        InscriptionFormation ins = findLatestByContext(candidat.getId(), formation.getId(), parcoursId);
+        if (ins == null) {
+            // Fallback: create a new inscription in context
+            ins = new InscriptionFormation();
+            ins.setCandidat(candidat);
+            ins.setFormation(formation);
+            ins.setParcoursId(parcoursId);
+            ins.setNiveauContext(null); // On pourrait essayer de le deviner ici si besoin
+            ins.setDateInscription(new java.util.Date());
+        }
 
         ins.setProgression(100.0);
         ins.setStatut("Terminé");
@@ -166,9 +170,23 @@ public class InscriptionFormationService {
 
     @Transactional(readOnly = true)
     public InscriptionFormation getByCandidatAndFormationAndParcours(Long candidatId, Long formationId, Long parcoursId) {
-        return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId)
-                .orElseThrow(() -> new RuntimeException("Inscription non trouvée pour candidat=" + candidatId 
-                    + ", formation=" + formationId + ", parcours=" + parcoursId));
+        try {
+            return inscriptionRepository.findByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId)
+                    .orElseThrow(() -> new RuntimeException("Inscription non trouvée pour candidat=" + candidatId
+                            + ", formation=" + formationId + ", parcours=" + parcoursId));
+        } catch (Exception e) {
+            // Defensive fallback for legacy duplicated rows that cause NonUniqueResultException.
+            List<InscriptionFormation> matches = inscriptionRepository
+                    .findAllByCandidatIdAndFormationIdAndParcoursId(candidatId, formationId, parcoursId);
+            if (matches.isEmpty()) {
+                throw new RuntimeException("Inscription non trouvée pour candidat=" + candidatId
+                        + ", formation=" + formationId + ", parcours=" + parcoursId);
+            }
+            System.err.println("⚠️ Inscriptions dupliquées détectées pour candidat=" + candidatId
+                    + ", formation=" + formationId + ", parcours=" + parcoursId
+                    + " -> utilisation de la plus récente (id=" + matches.get(0).getId() + ")");
+            return matches.get(0);
+        }
     }
 
     public void delete(Long id) {

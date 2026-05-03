@@ -319,7 +319,9 @@ public class ChatbotController {
             String prompt = message.isEmpty() ? "Analyse ce document." : message;
             userMessageFull = prompt + "\n\n[CONTENU DU DOCUMENT JOINT '" + fileName + "']:\n" + truncated;
         } else if (hasFile && (fileData != null && !fileData.trim().isEmpty())) {
-            String prompt = message.isEmpty() ? "J'ai joint le document: " + fileName : message;
+            String prompt = message.isEmpty()
+                    ? "J'ai joint le document: " + fileName + ". Analyse-le par rapport à la formation \"" + titreFormation + "\"."
+                    : message;
             userMessageFull = prompt + "\n\n[Document joint: " + fileName + " - le texte n'a pas pu être extrait]";
         }
 
@@ -412,9 +414,10 @@ public class ChatbotController {
             - FOR DOCUMENTS:
                 * Check if the document focuses on the core concepts, tools, or techniques of "%s" (e.g., for Power BI, look for DAX, Power Query, Data Modeling, etc.).
                 * If the document is about a GENERAL or DIFFERENT subject (e.g., English lessons, general management, or project management not specific to the tool), it is OFF-TOPIC.
-                * If you are unsure, but the document doesn't explicitly mention the training's core technology, consider it OFF-TOPIC.
+                * IMPORTANT: if the document text is missing, partial, noisy, or could not be extracted, DO NOT classify it as OFF-TOPIC by default.
+                * In that case, ask the user to upload a clearer/searchable document (or paste an excerpt) and continue helping on the training topic.
             
-            IF THE CONTENT IS OFF-TOPIC:
+            IF THE CONTENT IS CLEARLY OFF-TOPIC:
             - You MUST refuse to analyze, describe, or summarize it.
             - You MUST output ONLY the following refusal sentence and NOTHING ELSE.
             - NO analysis, NO notes, NO suggestions, NO "I am here to help with...".

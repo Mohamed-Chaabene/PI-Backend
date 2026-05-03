@@ -75,7 +75,10 @@ public class SecurityConfig {
 
                         // ── Offres emploi ─────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/offres-emploi", "/api/offres-emploi/").permitAll()
+                        // mes-offres must be matched before the wildcard below.
                         .requestMatchers(HttpMethod.GET, "/api/offres-emploi/mes-offres").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
+                        // Public job detail by numeric id (unauthenticated visitors).
+                        .requestMatchers(HttpMethod.GET, "/api/offres-emploi/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/candidatures/offre/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/offres-emploi/**").hasAnyAuthority("ROLE_RECRUTEUR", "ROLE_ADMIN")

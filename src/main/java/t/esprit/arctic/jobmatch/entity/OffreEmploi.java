@@ -191,6 +191,8 @@ public class OffreEmploi {
         this.image = image;
     }
 
+    /** Ignoré au JSON pour éviter LazyInitializationException hors session (liste publique des offres). */
+    @JsonIgnore
     public Recruteur getRecruteur() {
         return recruteur;
     }
@@ -199,6 +201,7 @@ public class OffreEmploi {
         this.recruteur = recruteur;
     }
 
+    @JsonIgnore
     public List<Candidature> getCandidatures() {
         return candidatures;
     }

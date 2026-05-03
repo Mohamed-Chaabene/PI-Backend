@@ -99,7 +99,7 @@ public class DocumentScheduler {
 
     // Test du scheduler Pour tester, décommentez l'annotation @Scheduled
 
-     @Scheduled(cron = "0 * * * * *")
+     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void testScheduler() {
         log.info(" [TEST] Scheduler fonctionne - {}", LocalDateTime.now());

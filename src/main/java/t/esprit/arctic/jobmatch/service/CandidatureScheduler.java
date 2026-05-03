@@ -15,7 +15,7 @@ public class CandidatureScheduler {
     @Autowired
     private CandidatureRepository candidatureRepository;
 
-    @Scheduled(fixedRate = 3600000)
+    @Scheduled(fixedRate = 60000)
     public void archiverAnciennesCandidatures() {
         LocalDateTime dateLimite = LocalDateTime.now().minusDays(7);
         LocalDateTime maintenant = LocalDateTime.now();

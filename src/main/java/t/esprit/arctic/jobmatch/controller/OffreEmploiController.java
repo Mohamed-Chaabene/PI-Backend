@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import t.esprit.arctic.jobmatch.dto.OffreEmploiPublicDto;
 import t.esprit.arctic.jobmatch.dto.OffreEmploiRequestDTO;
 import t.esprit.arctic.jobmatch.dto.OffreSalairePredictionRequestDTO;
+import t.esprit.arctic.jobmatch.service.OffreEmploiReadService;
 import t.esprit.arctic.jobmatch.service.OffreSalairePredictionService;
 import t.esprit.arctic.jobmatch.entity.OffreEmploi;
 import t.esprit.arctic.jobmatch.entity.Entretien;
@@ -27,7 +29,6 @@ import t.esprit.arctic.jobmatch.repository.OffreEmploiRepository;
 import t.esprit.arctic.jobmatch.repository.RecruteurRepository;
 import t.esprit.arctic.jobmatch.service.NotificationService;
 
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import java.util.Map;
 public class OffreEmploiController {
 
     private final OffreEmploiRepository offreEmploiRepository;
+    private final OffreEmploiReadService offreEmploiReadService;
     private final EntretienRepository entretienRepository;
     private final RecruteurRepository recruteurRepository;
     private final NotificationService notificationService;
@@ -57,11 +59,8 @@ public class OffreEmploiController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OffreEmploi>> getAllOffres() {
-        List<OffreEmploi> offres = offreEmploiRepository.findAll();
-        offres.sort(Comparator.comparing(OffreEmploi::getDatePublication,
-                Comparator.nullsLast(Comparator.reverseOrder())));
-        return ResponseEntity.ok(offres);
+    public ResponseEntity<List<OffreEmploiPublicDto>> getAllOffres() {
+        return ResponseEntity.ok(offreEmploiReadService.listPublicOffresSorted());
     }
 
     @GetMapping("/mes-offres")

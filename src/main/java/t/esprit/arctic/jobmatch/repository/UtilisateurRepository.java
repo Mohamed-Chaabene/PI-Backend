@@ -27,4 +27,12 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
     // Find Candidat by phone number using JPQL (proper inheritance handling)
     @Query("SELECT c FROM Candidat c WHERE c.telephone = ?1")
     Optional<Utilisateur> findByPhoneNumber(String phoneNumber);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Utilisateur u WHERE u.id = ?1")
+    void deleteUtilisateurById(Long id);
+
+    @Query("SELECT DISTINCT c FROM Candidat c LEFT JOIN c.loginHistories lh LEFT JOIN c.localisation l WHERE c.id = ?1")
+    Optional<Utilisateur> findCandidatWithLocalisationAndHistory(Long id);
 }
